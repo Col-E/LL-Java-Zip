@@ -89,8 +89,8 @@ public class Array {
 	 * @return {@code true} when the content of the array at the offset matches the pattern.
 	 */
 	public static boolean startsWith(byte[] array, int offset, int[] pattern) {
-		// Remaining data must be as long as pattern
-		if (array == null || (array.length - offset) < pattern.length)
+		// Remaining data must be as long as pattern and in the array bounds
+		if (array == null || (array.length - offset) < pattern.length || offset < 0 || offset >= array.length)
 			return false;
 		// Check for mis-match
 		for (int i = 0; i < pattern.length; i++) {

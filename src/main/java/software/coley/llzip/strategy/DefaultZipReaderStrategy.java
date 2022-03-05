@@ -22,6 +22,7 @@ public class DefaultZipReaderStrategy implements ZipReaderStrategy {
 
 	@Override
 	public void read(ZipArchive zip, byte[] data) throws IOException {
+		// Read scanning forwards
 		int endOfCentralDirectoryOffset = Array.indexOf(data, ZipPatterns.END_OF_CENTRAL_DIRECTORY);
 		if (endOfCentralDirectoryOffset < 0)
 			throw new IOException("No Central-Directory-File-Header found!");
