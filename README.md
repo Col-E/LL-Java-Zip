@@ -14,3 +14,8 @@ The JVM zip reader implementation is based off this piece.
 
 > This is a zip format reader for seekable files, **that tolerates leading and trailing garbage**, 
 > and **tolerates having had internal offsets adjusted for leading garbage** _(as with Info-Zip's zip -A)_.
+
+But that's not all it does. That's just what that one comment says. Some other fun quirks of the JVM zip parser:
+
+- The central directory names are authoritative. Names defined by the local file headers are ignored.
+- The file data of local file headers is not size bound by the compressed size field. Instead, it includes any data until the next PK header.

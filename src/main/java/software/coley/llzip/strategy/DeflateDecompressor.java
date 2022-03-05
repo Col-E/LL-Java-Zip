@@ -10,7 +10,7 @@ import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
 /**
- * Decompressor implementation for {@link ZipCompressions#DEFLATED}
+ * Decompressor implementation for {@link ZipCompressions#DEFLATED}.
  *
  * @author Matt Coley
  */
@@ -22,9 +22,11 @@ public class DeflateDecompressor implements Decompressor {
 		Inflater inflater = new Inflater(true);
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		InflaterInputStream in = new InflaterInputStream(new ByteArrayInputStream(bytes), inflater);
-		byte[] buffer = new byte[header.getUncompressedSize()];
-		int read = in.read(buffer);
-		out.write(buffer, 0, read);
+		// We can't trust the uncompressed size, so we will keep going until the inflater stream says we're done.
+		byte[] buffer = new byte[1024];
+		int len;
+		while ((len = in.read(buffer)) != -1)
+			out.write(buffer, 0, len);
 		return out.toByteArray();
 	}
 }

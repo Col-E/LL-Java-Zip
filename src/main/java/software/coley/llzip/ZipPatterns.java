@@ -12,6 +12,10 @@ import software.coley.llzip.util.Array;
  */
 public interface ZipPatterns {
 	/**
+	 * Any PK header match.
+	 */
+	int[] PK = {0x50, 0x4B};
+	/**
 	 * Header for {@link LocalFileHeader}.
 	 */
 	int[] LOCAL_FILE_HEADER = {0x50, 0x4B, 0x03, 0x04};

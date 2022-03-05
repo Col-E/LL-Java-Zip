@@ -55,9 +55,10 @@ public class PartParseTests {
 	}
 
 	@Test
-	public void testJvmJar() {
+	public void testJvmStandardJar() {
 		try {
-			byte[] data = Files.readAllBytes(Paths.get("src/test/resources/hello-trick.jar"));
+			byte[] data = Files.readAllBytes(Paths.get("src/test/resources/hello.jar"));
+			// Even with edge case parsing being the focus, the JVM reader should be able to handle this jar fine.
 			ZipArchive zip = ZipIO.readJvm(data);
 			assertNotNull(zip);
 			// The 'hello' jar has a manifest and single class to run itself when invoked via 'java -jar'
@@ -68,10 +69,27 @@ public class PartParseTests {
 		}
 	}
 
+	@Test
+	public void testJvmTrickJar() {
+		try {
+			byte[] data = Files.readAllBytes(Paths.get("src/test/resources/hello-trick.jar"));
+			ZipArchive zip = ZipIO.readJvm(data);
+			assertNotNull(zip);
+			// The 'hello' jar has a manifest and single class to run itself when invoked via 'java -jar'
+			assertTrue(hasFile(zip, "META-INF/MANIFEST.MF"));
+			// There are two classes with deceiving names in the trick jar
+			//  - The central directory names are authoritative in Java.
+			//  - The local file names are ignored, so they can be anything, even `\0`
+			assertTrue(hasFile(zip, "Hello.class/"));
+			assertTrue(hasFile(zip, "Hello.class\1"));
+		} catch (IOException ex) {
+			fail(ex);
+		}
+	}
+
 	private static boolean hasFile(ZipArchive zip, String name) {
 		return zip.getCentralDirectories().stream()
 				.anyMatch(cdfh -> cdfh.getLinked() != null &&
-						cdfh.getFileName().equals(name) &&
-						cdfh.getLinked().getFileName().equals(name));
+						cdfh.getFileName().equals(name));
 	}
 }
