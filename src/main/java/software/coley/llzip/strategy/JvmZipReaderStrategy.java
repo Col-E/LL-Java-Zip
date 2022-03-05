@@ -7,6 +7,7 @@ import software.coley.llzip.ZipPatterns;
 import software.coley.llzip.part.CentralDirectoryFileHeader;
 import software.coley.llzip.part.EndOfCentralDirectory;
 import software.coley.llzip.part.JvmLocalFileHeader;
+import software.coley.llzip.part.LocalFileHeader;
 import software.coley.llzip.util.Array;
 import software.coley.llzip.util.OffsetComparator;
 
@@ -41,8 +42,22 @@ public class JvmZipReaderStrategy implements ZipReaderStrategy {
 			// The prior end part match is target end part, so we can't use it as a base offset.
 			jvmBaseOffset = 0;
 		} else if (precedingEndOfCentralDirectory == -1) {
-			// There was no match for a prior end part. We will seek forwards until finding a valid PK starting header.
+			// There was no match for a prior end part. We will seek forwards until finding a *VALID* PK starting header.
 			jvmBaseOffset = Array.indexOf(data, ZipPatterns.PK);
+			while (jvmBaseOffset >= 0) {
+				// Check that the PK discovered represents a valid zip part
+				try {
+					if (Array.startsWith(data, jvmBaseOffset, ZipPatterns.LOCAL_FILE_HEADER))
+						new LocalFileHeader().read(data, jvmBaseOffset);
+					else if (Array.startsWith(data, jvmBaseOffset, ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER))
+						new CentralDirectoryFileHeader().read(data, jvmBaseOffset);
+					// Valid, we're good to go
+					break;
+				} catch (Exception ex) {
+					// Invalid, seek forward
+					jvmBaseOffset = Array.indexOf(data, jvmBaseOffset+1, ZipPatterns.PK);
+				}
+			}
 		} else {
 			// There was a prior end part, so we will seek past it's length and use that as the base offset.
 			// 22 is the minimum possible size of an end part. It can be longer with comments applied, but there are almost never comments.
@@ -74,11 +89,15 @@ public class JvmZipReaderStrategy implements ZipReaderStrategy {
 				if (nextPk == -1) {
 					nextPk = data.length;
 				}
-				JvmLocalFileHeader file = new JvmLocalFileHeader(nextPk);
-				file.read(data, offset);
-				zip.getParts().add(file);
-				directory.link(file);
-				offsets.add(offset);
+				try {
+					JvmLocalFileHeader file = new JvmLocalFileHeader(nextPk);
+					file.read(data, offset);
+					zip.getParts().add(file);
+					directory.link(file);
+					offsets.add(offset);
+				} catch (Exception ex) {
+					logger.warn("Failed to read 'local file header' at offset[{}]", offset);
+				}
 			} else {
 				logger.warn("Central-Directory-File-Header's offset[{}] to Local-File-Header does not match the Local-File-Header magic!", offset);
 			}

@@ -74,6 +74,31 @@ public class CompressionTests {
 		}
 	}
 
+	@Test
+	public void testDeflateJvmJarWithGarbageHeader() {
+		try {
+			// The trick jar is similar to the above, but with extra garbage at the beginning of the file.
+			// This test shows that garbage bytes in the beginning of the file can be bypassed.
+			byte[] data = Files.readAllBytes(Paths.get("src/test/resources/hello-trick-garbagehead.jar"));
+			ZipArchive zip = ZipIO.readJvm(data);
+			// The red herring class that most zip tools see
+			CentralDirectoryFileHeader redHerringCentralDir = zip.getCentralDirectories().get(1);
+			assertEquals("Hello\t.class", redHerringCentralDir.getFileName());
+			byte[] redHerringClassData = redHerringCentralDir.getLinked().decompress(new DeflateDecompressor());
+			assertDefinesString(redHerringClassData, "Hello world!");
+			// The real class that gets run by the JVM
+			CentralDirectoryFileHeader jvmCentralDir = zip.getCentralDirectories().get(0);
+			assertEquals("Hello.class/", jvmCentralDir.getFileName());
+			assertNotEquals("Hello.class/", jvmCentralDir.getLinked().getFileName());
+			byte[] classData = jvmCentralDir.getLinked().decompress(new DeflateDecompressor());
+			assertDefinesString(classData, "The secret code is: ROSE");
+		} catch (IOException ex) {
+			fail(ex);
+		}
+	}
+
+
+
 	public static void assertDefinesString(byte[] code, String target) {
 		boolean[] visited = new boolean[1];
 		ClassReader cr = new ClassReader(code);
