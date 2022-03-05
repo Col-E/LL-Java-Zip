@@ -11,6 +11,8 @@ import software.coley.llzip.util.Array;
 import software.coley.llzip.util.OffsetComparator;
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * The standard read strategy that should work with standard zip archives.
@@ -40,13 +42,16 @@ public class DefaultZipReaderStrategy implements ZipReaderStrategy {
 			zip.getParts().add(directory);
 		}
 		// Read local files
+		// - Set to prevent duplicate file header entries for the same offset
+		Set<Integer> offsets = new HashSet<>();
 		for (CentralDirectoryFileHeader directory : zip.getCentralDirectories()) {
 			int offset = directory.getRelativeOffsetOfLocalHeader();
-			if (Array.startsWith(data, offset, ZipPatterns.LOCAL_FILE_HEADER)) {
+			if (!offsets.contains(offset) && Array.startsWith(data, offset, ZipPatterns.LOCAL_FILE_HEADER)) {
 				LocalFileHeader file = new LocalFileHeader();
 				file.read(data, offset);
 				zip.getParts().add(file);
 				directory.link(file);
+				offsets.add(offset);
 			} else {
 				logger.warn("Central-Directory-File-Header's offset[{}] to Local-File-Header does not match the Local-File-Header magic!", offset);
 			}
