@@ -21,12 +21,16 @@ public class DeflateDecompressor implements Decompressor {
 			throw new IOException("LocalFileHeader contents not using 'Deflated'!");
 		Inflater inflater = new Inflater(true);
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		InflaterInputStream in = new InflaterInputStream(new ByteArrayInputStream(bytes), inflater);
-		// We can't trust the uncompressed size, so we will keep going until the inflater stream says we're done.
-		byte[] buffer = new byte[1024];
-		int len;
-		while ((len = in.read(buffer)) != -1)
-			out.write(buffer, 0, len);
+		try {
+			InflaterInputStream in = new InflaterInputStream(new ByteArrayInputStream(bytes), inflater);
+			// We can't trust the uncompressed size, so we will keep going until the inflater stream says we're done.
+			byte[] buffer = new byte[1024];
+			int len;
+			while ((len = in.read(buffer)) != -1)
+				out.write(buffer, 0, len);
+		} finally {
+			inflater.end();
+		}
 		return out.toByteArray();
 	}
 }
