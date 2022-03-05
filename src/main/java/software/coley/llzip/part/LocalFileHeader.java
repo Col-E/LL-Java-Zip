@@ -1,6 +1,9 @@
 package software.coley.llzip.part;
 
+import software.coley.llzip.strategy.Decompressor;
 import software.coley.llzip.util.Array;
+
+import java.io.IOException;
 
 /**
  * ZIP LocalFileHeader structure.
@@ -56,6 +59,10 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 	@Override
 	public int offset() {
 		return offset;
+	}
+
+	public byte[] decompress(Decompressor decompressor) throws IOException {
+		return decompressor.decompress(this, fileData);
 	}
 
 	public int getVersionNeededToExtract() {
