@@ -39,7 +39,7 @@ public class ZipIO {
 	 * @throws IOException
 	 * 		When the archive bytes cannot be read from, usually indicating a malformed zip.
 	 */
-	public static ZipArchive readJvmStandard(byte[] data) throws IOException {
+	public static ZipArchive readJvm(byte[] data) throws IOException {
 		return read(data, new JvmZipReaderStrategy());
 	}
 

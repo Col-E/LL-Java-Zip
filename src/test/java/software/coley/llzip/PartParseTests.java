@@ -3,6 +3,7 @@ package software.coley.llzip;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import software.coley.llzip.part.ZipPart;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -10,7 +11,13 @@ import java.nio.file.Paths;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class Tests {
+/**
+ * Parse tests for {@link ZipArchive}.
+ * Ensures all the {@link ZipPart}s of the archive are read as expected.
+ *
+ * @author Matt Coley
+ */
+public class PartParseTests {
 	@ParameterizedTest
 	@ValueSource(strings = {
 			"src/test/resources/code-windows.zip",
@@ -51,7 +58,7 @@ public class Tests {
 	public void testJvmJar() {
 		try {
 			byte[] data = Files.readAllBytes(Paths.get("src/test/resources/hello-trick.jar"));
-			ZipArchive zip = ZipIO.readJvmStandard(data);
+			ZipArchive zip = ZipIO.readJvm(data);
 			assertNotNull(zip);
 			// The 'hello' jar has a manifest and single class to run itself when invoked via 'java -jar'
 			assertTrue(hasFile(zip, "META-INF/MANIFEST.MF"));

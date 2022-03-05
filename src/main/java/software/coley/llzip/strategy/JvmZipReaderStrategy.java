@@ -26,7 +26,6 @@ public class JvmZipReaderStrategy implements ZipReaderStrategy {
 
 	@Override
 	public void read(ZipArchive zip, byte[] data) throws IOException {
-
 		// TODO: Track leading garbage offset
 
 		// Read scanning backwards
@@ -39,12 +38,14 @@ public class JvmZipReaderStrategy implements ZipReaderStrategy {
 		zip.getParts().add(end);
 		// Read central directories
 		int len = data.length;
-		int centralDirectoryOffset = end.getCentralDirectoryOffset();
-		while (centralDirectoryOffset < len && Array.startsWith(data, centralDirectoryOffset, ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER)) {
-			CentralDirectoryFileHeader directory = new CentralDirectoryFileHeader();
-			directory.read(data, centralDirectoryOffset);
-			centralDirectoryOffset = Array.indexOf(data, centralDirectoryOffset + directory.length(), ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER);
-			zip.getParts().add(directory);
+		int centralDirectoryOffset = len - ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER.length;
+		while (centralDirectoryOffset > 0) {
+			centralDirectoryOffset = Array.lastIndexOf(data, centralDirectoryOffset - 1, ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER);
+			if (centralDirectoryOffset >= 0) {
+				CentralDirectoryFileHeader directory = new CentralDirectoryFileHeader();
+				directory.read(data, centralDirectoryOffset);
+				zip.getParts().add(directory);
+			}
 		}
 		// Read local files
 		for (CentralDirectoryFileHeader directory : zip.getCentralDirectories()) {
