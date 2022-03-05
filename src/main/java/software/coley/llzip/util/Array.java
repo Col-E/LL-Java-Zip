@@ -95,7 +95,9 @@ public class Array {
 		// Check for mis-match
 		for (int i = 0; i < pattern.length; i++) {
 			int p = pattern[i];
-			if (p == WILDCARD || array[offset + i] != p)
+			if (p == WILDCARD)
+				continue;
+			if (array[offset + i] != p)
 				return false;
 		}
 		// No mis-match, array starts with pattern
