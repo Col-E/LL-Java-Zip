@@ -1,5 +1,6 @@
 package software.coley.llzip.util;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 /**
@@ -147,7 +148,7 @@ public class Array {
 	public static String readString(byte[] data, int start, int len) {
 		if (len == 0)
 			return "";
-		return new String(data, start, len);
+		return new String(data, start, len, StandardCharsets.UTF_8);
 	}
 
 	/**
