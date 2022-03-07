@@ -17,6 +17,7 @@ The JVM zip reader implementation is based off this piece.
 
 But that's not all it does. That's just what that one comment says. Some other fun quirks of the JVM zip parser:
 
+- The end central directory entry is found by scanning from the end of the file, rather than from the beginning.
 - The central directory names are authoritative. Names defined by the local file headers are ignored.
 - The file data of local file headers is not size bound by the compressed size field. Instead, it includes any data until the next PK header.
 - Class names are allowed to end in trailing `/` which most tools interpret as directories.
