@@ -85,12 +85,8 @@ public class JvmZipReaderStrategy implements ZipReaderStrategy {
 			int offset = jvmBaseOffset + directory.getRelativeOffsetOfLocalHeader();
 			if (!offsets.contains(offset) && Array.startsWith(data, offset, ZipPatterns.LOCAL_FILE_HEADER)) {
 				// JVM local file header needs to be aware of where the NEXT entry is.
-				int nextPk = Array.indexOf(data, offset + 1, ZipPatterns.PK);
-				if (nextPk == -1) {
-					nextPk = data.length;
-				}
 				try {
-					JvmLocalFileHeader file = new JvmLocalFileHeader(nextPk);
+					JvmLocalFileHeader file = new JvmLocalFileHeader();
 					file.read(data, offset);
 					zip.getParts().add(file);
 					directory.link(file);
