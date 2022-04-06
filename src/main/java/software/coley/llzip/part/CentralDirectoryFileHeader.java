@@ -14,7 +14,7 @@ import java.util.Objects;
  */
 public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 	private transient int offset = -1;
-	private transient LocalFileHeader linked;
+	private transient LocalFileHeader linkedFileHeader;
 	// Zip spec elements
 	private int versionMadeBy;
 	private int versionNeededToExtract;
@@ -78,16 +78,16 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 	/**
 	 * @return The file header associated with {@link #getRelativeOffsetOfLocalHeader()}. May be {@code null}.
 	 */
-	public LocalFileHeader getLinked() {
-		return linked;
+	public LocalFileHeader getLinkedFileHeader() {
+		return linkedFileHeader;
 	}
 
 	/**
-	 * @param linked
+	 * @param header
 	 * 		The file header associated with {@link #getRelativeOffsetOfLocalHeader()}. May be {@code null}.
 	 */
-	public void link(LocalFileHeader linked) {
-		this.linked = linked;
+	public void link(LocalFileHeader header) {
+		this.linkedFileHeader = header;
 	}
 
 	/**
@@ -453,7 +453,7 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 				internalFileAttributes == that.internalFileAttributes &&
 				externalFileAttributes == that.externalFileAttributes &&
 				relativeOffsetOfLocalHeader == that.relativeOffsetOfLocalHeader &&
-				Objects.equals(linked, that.linked) &&
+				Objects.equals(linkedFileHeader, that.linkedFileHeader) &&
 				fileName.equals(that.fileName) &&
 				Arrays.equals(extraField, that.extraField) &&
 				fileComment.equals(that.fileComment);
@@ -461,7 +461,7 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 
 	@Override
 	public int hashCode() {
-		int result = Objects.hash(offset, linked, versionMadeBy, versionNeededToExtract, generalPurposeBitFlag,
+		int result = Objects.hash(offset, linkedFileHeader, versionMadeBy, versionNeededToExtract, generalPurposeBitFlag,
 				compressionMethod, lastModFileTime, lastModFileDate, crc32, compressedSize, uncompressedSize,
 				fileNameLength, extraFieldLength, fileCommentLength, diskNumberStart, internalFileAttributes,
 				externalFileAttributes, relativeOffsetOfLocalHeader, fileName, fileComment);

@@ -89,7 +89,7 @@ public class PartParseTests {
 
 	private static boolean hasFile(ZipArchive zip, String name) {
 		return zip.getCentralDirectories().stream()
-				.anyMatch(cdfh -> cdfh.getLinked() != null &&
+				.anyMatch(cdfh -> cdfh.getLinkedFileHeader() != null &&
 						cdfh.getFileName().equals(name));
 	}
 }

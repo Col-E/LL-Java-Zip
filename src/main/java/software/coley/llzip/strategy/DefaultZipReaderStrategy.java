@@ -51,6 +51,7 @@ public class DefaultZipReaderStrategy implements ZipReaderStrategy {
 				file.read(data, offset);
 				zip.getParts().add(file);
 				directory.link(file);
+				file.link(directory);
 				offsets.add(offset);
 			} else {
 				logger.warn("Central-Directory-File-Header's offset[{}] to Local-File-Header does not match the Local-File-Header magic!", offset);

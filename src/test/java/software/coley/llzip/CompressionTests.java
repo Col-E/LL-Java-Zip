@@ -9,7 +9,6 @@ import software.coley.llzip.part.CentralDirectoryFileHeader;
 import software.coley.llzip.part.LocalFileHeader;
 import software.coley.llzip.strategy.Decompressor;
 import software.coley.llzip.strategy.DeflateDecompressor;
-import software.coley.llzip.strategy.JvmZipReaderStrategy;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -60,14 +59,14 @@ public class CompressionTests {
 			// The red herring class that most zip tools see
 			CentralDirectoryFileHeader redHerringCentralDir = zip.getCentralDirectories().get(0);
 			assertEquals("Hello.class", redHerringCentralDir.getFileName());
-			assertNull( redHerringCentralDir.getLinked(), "The red herring central directory got linked");
+			assertNull( redHerringCentralDir.getLinkedFileHeader(), "The red herring central directory got linked");
 			byte[] redHerringClassData = zip.getLocalFiles().get(1).decompress(new DeflateDecompressor());
 			assertDefinesString(redHerringClassData, "Hello world!");
 			// The real class that gets run by the JVM
 			CentralDirectoryFileHeader jvmCentralDir = zip.getCentralDirectories().get(3);
 			assertEquals("Hello.class/", jvmCentralDir.getFileName());
-			assertNotEquals("Hello.class/", jvmCentralDir.getLinked().getFileName());
-			byte[] classData = jvmCentralDir.getLinked().decompress(new DeflateDecompressor());
+			assertNotEquals("Hello.class/", jvmCentralDir.getLinkedFileHeader().getFileName());
+			byte[] classData = jvmCentralDir.getLinkedFileHeader().decompress(new DeflateDecompressor());
 			assertDefinesString(classData, "The secret code is: ROSE");
 		} catch (IOException ex) {
 			fail(ex);
@@ -84,13 +83,13 @@ public class CompressionTests {
 			// The red herring class that most zip tools see
 			CentralDirectoryFileHeader redHerringCentralDir = zip.getCentralDirectories().get(1);
 			assertEquals("Hello\t.class", redHerringCentralDir.getFileName());
-			byte[] redHerringClassData = redHerringCentralDir.getLinked().decompress(new DeflateDecompressor());
+			byte[] redHerringClassData = redHerringCentralDir.getLinkedFileHeader().decompress(new DeflateDecompressor());
 			assertDefinesString(redHerringClassData, "Hello world!");
 			// The real class that gets run by the JVM
 			CentralDirectoryFileHeader jvmCentralDir = zip.getCentralDirectories().get(0);
 			assertEquals("Hello.class/", jvmCentralDir.getFileName());
-			assertNotEquals("Hello.class/", jvmCentralDir.getLinked().getFileName());
-			byte[] classData = jvmCentralDir.getLinked().decompress(new DeflateDecompressor());
+			assertNotEquals("Hello.class/", jvmCentralDir.getLinkedFileHeader().getFileName());
+			byte[] classData = jvmCentralDir.getLinkedFileHeader().decompress(new DeflateDecompressor());
 			assertDefinesString(classData, "The secret code is: ROSE");
 		} catch (IOException ex) {
 			fail(ex);

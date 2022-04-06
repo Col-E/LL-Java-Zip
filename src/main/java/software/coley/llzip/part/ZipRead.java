@@ -14,6 +14,8 @@ public interface ZipRead {
 	 */
 	void read(byte[] data, int offset);
 
-	// TODO: Write conventions, then rename to 'ZipReadWrite' and tie into ZipWriterStrategy
-	//        - maybe transform primitive 'offset' to data type references and auto-compute offsets in output.
+	// TODO: Write conventions, then rename to 'ZipReadWrite' and tie into a new ZipWriterStrategy
+	//        - similar to read, but with data-output-stream writes bytes to stream
+	//        - obviously requires offset data to be correct for a 'valid' output
+	//            - but still allows invalid output to facilitate crafting intentional malformed zips/jars
 }

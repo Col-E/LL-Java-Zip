@@ -90,6 +90,7 @@ public class JvmZipReaderStrategy implements ZipReaderStrategy {
 					file.read(data, offset);
 					zip.getParts().add(file);
 					directory.link(file);
+					file.link(directory);
 					offsets.add(offset);
 				} catch (Exception ex) {
 					logger.warn("Failed to read 'local file header' at offset[{}]", offset);

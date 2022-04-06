@@ -13,6 +13,7 @@ import java.io.IOException;
  */
 public class LocalFileHeader implements ZipPart, ZipRead {
 	private transient int offset = -1;
+	private transient CentralDirectoryFileHeader linkedDirectoryFileHeader;
 	// Zip spec elements
 	private int versionNeededToExtract;
 	private int generalPurposeBitFlag;
@@ -72,6 +73,21 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 	 */
 	public byte[] decompress(Decompressor decompressor) throws IOException {
 		return decompressor.decompress(this, fileData);
+	}
+
+	/**
+	 * @return The central directory file header this file is associated with.
+	 */
+	public CentralDirectoryFileHeader getLinkedDirectoryFileHeader() {
+		return linkedDirectoryFileHeader;
+	}
+
+	/**
+	 * @param directoryFileHeader
+	 * 		The central directory file header this file is associated with.
+	 */
+	public void link(CentralDirectoryFileHeader directoryFileHeader) {
+		this.linkedDirectoryFileHeader = directoryFileHeader;
 	}
 
 	/**
