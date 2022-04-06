@@ -26,9 +26,18 @@ public class JavaZipWriterStategy implements ZipWriterStrategy {
 				if (linked == null)
 					continue;
 				String name = linked.getFileName();
-				zos.putNextEntry(new ZipEntry(name));
-				zos.write(ZipCompressions.decompress(fileHeader));
-				zos.closeEntry();
+				if (fileHeader.getFileData().length > 0) {
+					// File, may need to patch things like traling '/' for '.class' files.
+					if (name.contains(".class/"))
+						name = name.substring(0, name.lastIndexOf('/'));
+					zos.putNextEntry(new ZipEntry(name));
+					zos.write(ZipCompressions.decompress(fileHeader));
+					zos.closeEntry();
+				} else {
+					// Directory, don't need to do any extra work
+					zos.putNextEntry(new ZipEntry(name));
+					zos.closeEntry();
+				}
 			}
 		}
 	}
