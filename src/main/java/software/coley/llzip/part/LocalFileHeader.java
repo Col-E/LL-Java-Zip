@@ -2,9 +2,10 @@ package software.coley.llzip.part;
 
 import software.coley.llzip.ZipCompressions;
 import software.coley.llzip.strategy.Decompressor;
-import software.coley.llzip.util.Array;
+import software.coley.llzip.util.Buffers;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /**
  * ZIP LocalFileHeader structure.
@@ -25,31 +26,33 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 	private int uncompressedSize;
 	private int fileNameLength;
 	private int extraFieldLength;
-	private String fileName;
-	private byte[] extraField;
-	private byte[] fileData;
+	private ByteBuffer fileName;
+	private ByteBuffer extraField;
+	private ByteBuffer fileData;
+	
+	private transient String fileNameCache;
 
 	@Override
-	public void read(byte[] data, int offset) {
+	public void read(ByteBuffer data, int offset) {
 		this.offset = offset;
-		versionNeededToExtract = Array.readWord(data, offset + 4);
-		generalPurposeBitFlag = Array.readWord(data, offset + 6);
-		compressionMethod = Array.readWord(data, offset + 8);
-		lastModFileTime = Array.readWord(data, offset + 10);
-		lastModFileDate = Array.readWord(data, offset + 12);
-		crc32 = Array.readQuad(data, offset + 14);
-		compressedSize = Array.readQuad(data, offset + 18);
-		uncompressedSize = Array.readQuad(data, offset + 22);
-		fileNameLength = Array.readWord(data, offset + 26);
-		extraFieldLength = Array.readWord(data, offset + 28);
-		fileName = Array.readString(data, offset + 30, fileNameLength);
-		extraField = Array.readArray(data, offset + 30 + fileNameLength, extraFieldLength);
-		fileData = Array.readArray(data, offset + 30 + fileNameLength + extraFieldLength, compressedSize);
+		versionNeededToExtract = Buffers.readWord(data, offset + 4);
+		generalPurposeBitFlag = Buffers.readWord(data, offset + 6);
+		compressionMethod = Buffers.readWord(data, offset + 8);
+		lastModFileTime = Buffers.readWord(data, offset + 10);
+		lastModFileDate = Buffers.readWord(data, offset + 12);
+		crc32 = Buffers.readQuad(data, offset + 14);
+		compressedSize = Buffers.readQuad(data, offset + 18);
+		uncompressedSize = Buffers.readQuad(data, offset + 22);
+		fileNameLength = Buffers.readWord(data, offset + 26);
+		extraFieldLength = Buffers.readWord(data, offset + 28);
+		fileName = Buffers.slice(data, offset + 30, fileNameLength);
+		extraField = Buffers.slice(data, offset + 30 + fileNameLength, extraFieldLength);
+		fileData = Buffers.slice(data, offset + 30 + fileNameLength + extraFieldLength, compressedSize);
 	}
 
 	@Override
 	public int length() {
-		return 30 + fileName.length() + extraField.length + fileData.length;
+		return 30 + Buffers.length(fileName) + Buffers.length(extraField) + Buffers.length(fileData);
 	}
 
 	@Override
@@ -71,7 +74,7 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 	 * @throws IOException
 	 * 		When the decompressor fails.
 	 */
-	public byte[] decompress(Decompressor decompressor) throws IOException {
+	public ByteBuffer decompress(Decompressor decompressor) throws IOException {
 		return decompressor.decompress(this, fileData);
 	}
 
@@ -253,7 +256,7 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 	 *
 	 * @return File name.
 	 */
-	public String getFileName() {
+	public ByteBuffer getFileName() {
 		return fileName;
 	}
 
@@ -261,15 +264,30 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 	 * @param fileName
 	 * 		File name.
 	 */
-	public void setFileName(String fileName) {
+	public void setFileName(ByteBuffer fileName) {
 		this.fileName = fileName;
+		fileNameCache = null;
+	}
+
+	/**
+	 * Should match {@link CentralDirectoryFileHeader#getFileName()} but is not a strict requirement.
+	 * If they do not match, the central directory file name should be trusted instead.
+	 *
+	 * @return File name.
+	 */
+	public String getFileNameAsString() {
+		String fileNameCache = this.fileNameCache;
+		if (fileNameCache == null) {
+			return this.fileNameCache = Buffers.toString(fileName);
+		}
+		return fileNameCache;
 	}
 
 	/**
 	 * @return May be used for extra compression information,
 	 * depending on the {@link #getCompressionMethod() compression method} used.
 	 */
-	public byte[] getExtraField() {
+	public ByteBuffer getExtraField() {
 		return extraField;
 	}
 
@@ -277,7 +295,7 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 	 * @param extraField
 	 * 		Extra field bytes.
 	 */
-	public void setExtraField(byte[] extraField) {
+	public void setExtraField(ByteBuffer extraField) {
 		this.extraField = extraField;
 	}
 
@@ -286,7 +304,7 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 	 *
 	 * @see #decompress(Decompressor) Decompresses this data.
 	 */
-	public byte[] getFileData() {
+	public ByteBuffer getFileData() {
 		return fileData;
 	}
 
@@ -294,7 +312,7 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 	 * @param fileData
 	 * 		Compressed file contents.
 	 */
-	public void setFileData(byte[] fileData) {
+	public void setFileData(ByteBuffer fileData) {
 		this.fileData = fileData;
 	}
 }

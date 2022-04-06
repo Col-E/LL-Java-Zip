@@ -4,6 +4,7 @@ import software.coley.llzip.ZipArchive;
 import software.coley.llzip.ZipCompressions;
 import software.coley.llzip.part.CentralDirectoryFileHeader;
 import software.coley.llzip.part.LocalFileHeader;
+import software.coley.llzip.util.Buffers;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -17,7 +18,7 @@ import java.util.zip.ZipOutputStream;
  *
  * @author Matt Coley
  */
-public class JavaZipWriterStategy implements ZipWriterStrategy {
+public class JavaZipWriterStrategy implements ZipWriterStrategy {
 	@Override
 	public void write(ZipArchive archive, OutputStream os) throws IOException {
 		try (ZipOutputStream zos = new ZipOutputStream(os)) {
@@ -25,13 +26,13 @@ public class JavaZipWriterStategy implements ZipWriterStrategy {
 				CentralDirectoryFileHeader linked = fileHeader.getLinkedDirectoryFileHeader();
 				if (linked == null)
 					continue;
-				String name = linked.getFileName();
-				if (fileHeader.getFileData().length > 0) {
+				String name = linked.getFileNameAsString();
+				if (Buffers.length(fileHeader.getFileData()) > 0) {
 					// File, may need to patch things like traling '/' for '.class' files.
 					if (name.contains(".class/"))
 						name = name.substring(0, name.lastIndexOf('/'));
 					zos.putNextEntry(new ZipEntry(name));
-					zos.write(ZipCompressions.decompress(fileHeader));
+					zos.write(Buffers.toByteArray(ZipCompressions.decompress(fileHeader)));
 					zos.closeEntry();
 				} else {
 					// Directory, don't need to do any extra work

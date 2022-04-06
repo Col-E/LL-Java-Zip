@@ -25,8 +25,7 @@ public class PartParseTests {
 	})
 	public void testStandardCodeZip(String path) {
 		try {
-			byte[] data = Files.readAllBytes(Paths.get(path));
-			ZipArchive zip = ZipIO.readStandard(data);
+			ZipArchive zip = ZipIO.readStandard(Paths.get(path));
 			assertNotNull(zip);
 			// Each code zip contains these files
 			assertTrue(hasFile(zip, "ClassFile.java"));
@@ -43,8 +42,7 @@ public class PartParseTests {
 	@Test
 	public void testStandardJar() {
 		try {
-			byte[] data = Files.readAllBytes(Paths.get("src/test/resources/hello.jar"));
-			ZipArchive zip = ZipIO.readStandard(data);
+			ZipArchive zip = ZipIO.readStandard(Paths.get("src/test/resources/hello.jar"));
 			assertNotNull(zip);
 			// The 'hello' jar has a manifest and single class to run itself when invoked via 'java -jar'
 			assertTrue(hasFile(zip, "META-INF/MANIFEST.MF"));
@@ -57,9 +55,8 @@ public class PartParseTests {
 	@Test
 	public void testJvmStandardJar() {
 		try {
-			byte[] data = Files.readAllBytes(Paths.get("src/test/resources/hello.jar"));
 			// Even with edge case parsing being the focus, the JVM reader should be able to handle this jar fine.
-			ZipArchive zip = ZipIO.readJvm(data);
+			ZipArchive zip = ZipIO.readJvm(Paths.get("src/test/resources/hello.jar"));
 			assertNotNull(zip);
 			// The 'hello' jar has a manifest and single class to run itself when invoked via 'java -jar'
 			assertTrue(hasFile(zip, "META-INF/MANIFEST.MF"));
@@ -72,8 +69,7 @@ public class PartParseTests {
 	@Test
 	public void testJvmTrickJar() {
 		try {
-			byte[] data = Files.readAllBytes(Paths.get("src/test/resources/hello-trick.jar"));
-			ZipArchive zip = ZipIO.readJvm(data);
+			ZipArchive zip = ZipIO.readJvm(Paths.get("src/test/resources/hello-trick.jar"));
 			assertNotNull(zip);
 			// The 'hello' jar has a manifest and single class to run itself when invoked via 'java -jar'
 			assertTrue(hasFile(zip, "META-INF/MANIFEST.MF"));
@@ -90,6 +86,6 @@ public class PartParseTests {
 	private static boolean hasFile(ZipArchive zip, String name) {
 		return zip.getCentralDirectories().stream()
 				.anyMatch(cdfh -> cdfh.getLinkedFileHeader() != null &&
-						cdfh.getFileName().equals(name));
+						cdfh.getFileNameAsString().equals(name));
 	}
 }

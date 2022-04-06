@@ -3,6 +3,7 @@ package software.coley.llzip.strategy;
 import software.coley.llzip.part.LocalFileHeader;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /**
  * Outlines decompression of {@link LocalFileHeader#getFileData()}.
@@ -21,5 +22,5 @@ public interface Decompressor {
 	 * @throws IOException
 	 * 		Decompression failure.
 	 */
-	byte[] decompress(LocalFileHeader header, byte[] bytes) throws IOException;
+	ByteBuffer decompress(LocalFileHeader header, ByteBuffer bytes) throws IOException;
 }

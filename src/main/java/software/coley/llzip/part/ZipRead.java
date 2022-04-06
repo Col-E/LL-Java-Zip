@@ -1,5 +1,7 @@
 package software.coley.llzip.part;
 
+import java.nio.ByteBuffer;
+
 /**
  * IO operations for children of {@link ZipPart}.
  *
@@ -12,7 +14,7 @@ public interface ZipRead {
 	 * @param offset
 	 * 		Initial offset in data to start at.
 	 */
-	void read(byte[] data, int offset);
+	void read(ByteBuffer data, int offset);
 
 	// TODO: Write conventions, then rename to 'ZipReadWrite' and tie into a new ZipWriterStrategy
 	//        - similar to read, but with data-output-stream writes bytes to stream

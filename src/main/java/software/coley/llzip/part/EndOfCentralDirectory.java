@@ -1,7 +1,8 @@
 package software.coley.llzip.part;
 
-import software.coley.llzip.util.Array;
+import software.coley.llzip.util.Buffers;
 
+import java.nio.ByteBuffer;
 import java.util.Objects;
 
 
@@ -23,16 +24,16 @@ public class EndOfCentralDirectory implements ZipPart, ZipRead {
 	private String zipComment;
 
 	@Override
-	public void read(byte[] data, int offset) {
+	public void read(ByteBuffer data, int offset) {
 		this.offset = offset;
-		diskNumber = Array.readWord(data, offset + 4);
-		centralDirectoryStartDisk = Array.readWord(data, offset + 6);
-		centralDirectoryStartOffset = Array.readWord(data, offset + 8);
-		numEntries = Array.readWord(data, offset + 10);
-		centralDirectorySize = Array.readQuad(data, offset + 12);
-		centralDirectoryOffset = Array.readQuad(data, offset + 16);
-		zipCommentLength = Array.readWord(data, offset + 20);
-		zipComment = Array.readString(data, offset + 22, zipCommentLength);
+		diskNumber = Buffers.readWord(data, offset + 4);
+		centralDirectoryStartDisk = Buffers.readWord(data, offset + 6);
+		centralDirectoryStartOffset = Buffers.readWord(data, offset + 8);
+		numEntries = Buffers.readWord(data, offset + 10);
+		centralDirectorySize = Buffers.readQuad(data, offset + 12);
+		centralDirectoryOffset = Buffers.readQuad(data, offset + 16);
+		zipCommentLength = Buffers.readWord(data, offset + 20);
+		zipComment = Buffers.readString(data, offset + 22, zipCommentLength);
 	}
 
 	@Override

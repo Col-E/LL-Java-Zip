@@ -1,9 +1,9 @@
 package software.coley.llzip.part;
 
 import software.coley.llzip.ZipPatterns;
-import software.coley.llzip.util.Array;
+import software.coley.llzip.util.Buffers;
 
-import java.util.Arrays;
+import java.nio.ByteBuffer;
 
 /**
  * An extension of {@link LocalFileHeader} with adjustments to the file-data parse logic to support
@@ -14,15 +14,15 @@ import java.util.Arrays;
  */
 public class JvmLocalFileHeader extends LocalFileHeader {
 	@Override
-	public void read(byte[] data, int offset) {
+	public void read(ByteBuffer data, int offset) {
 		super.read(data, offset);
 		int start = offset + 30 + getFileNameLength() + getExtraFieldLength();
 		// JVM file data reading does NOT use the compressed/uncompressed fields.
 		// Instead, it scans data until the next header/EOF.
-		int nextPk = Array.indexOf(data, offset + 1, ZipPatterns.PK);
+		int nextPk = Buffers.indexOf(data, offset + 1, ZipPatterns.PK);
 		if (nextPk == -1)
-			nextPk = data.length;
-		byte[] fileData = Arrays.copyOfRange(data, start, nextPk);
-		setFileData(fileData);
+			nextPk = Buffers.length(data);
+		ByteBuffer slice = Buffers.sliceExact(data, start, nextPk);
+		setFileData(slice);
 	}
 }

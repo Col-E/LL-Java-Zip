@@ -4,6 +4,7 @@ import software.coley.llzip.part.LocalFileHeader;
 import software.coley.llzip.strategy.DeflateDecompressor;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /**
  * Constants for {@link LocalFileHeader#getCompressionMethod()}.
@@ -202,7 +203,7 @@ public interface ZipCompressions {
 	 * @throws IOException
 	 * 		When the decompression failed.
 	 */
-	static byte[] decompress(LocalFileHeader header) throws IOException {
+	static ByteBuffer decompress(LocalFileHeader header) throws IOException {
 		int method = header.getCompressionMethod();
 		switch (method) {
 			case STRORED:

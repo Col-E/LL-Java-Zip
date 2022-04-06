@@ -4,6 +4,9 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+import software.coley.llzip.util.Buffers;
+
+import java.nio.ByteBuffer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -38,5 +41,17 @@ public class Utils {
 			}
 		}, ClassReader.SKIP_FRAMES);
 		assertTrue(visited[0], "The entry did not visit any LDC constants");
+	}
+
+	/**
+	 * Asserts the string has been found and is the <b>ONLY</b> matching string in the class.
+	 *
+	 * @param code
+	 * 		Class bytecode.
+	 * @param target
+	 * 		String instance to look for.
+	 */
+	public static void assertDefinesString(ByteBuffer code, String target) {
+		assertDefinesString(Buffers.toByteArray(code), target);
 	}
 }

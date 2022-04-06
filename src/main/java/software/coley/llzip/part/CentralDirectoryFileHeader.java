@@ -2,9 +2,9 @@ package software.coley.llzip.part;
 
 import software.coley.llzip.ZipCompressions;
 import software.coley.llzip.strategy.Decompressor;
-import software.coley.llzip.util.Array;
+import software.coley.llzip.util.Buffers;
 
-import java.util.Arrays;
+import java.nio.ByteBuffer;
 import java.util.Objects;
 
 /**
@@ -32,37 +32,40 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 	private int internalFileAttributes;
 	private int externalFileAttributes;
 	private int relativeOffsetOfLocalHeader;
-	private String fileName;
-	private byte[] extraField;
-	private String fileComment;
+	private ByteBuffer fileName;
+	private ByteBuffer extraField;
+	private ByteBuffer fileComment;
+
+	private transient String fileNameCache;
+	private transient String fileCommentCache;
 
 	@Override
-	public void read(byte[] data, int offset) {
+	public void read(ByteBuffer data, int offset) {
 		this.offset = offset;
-		versionMadeBy = Array.readWord(data, offset + 4);
-		versionNeededToExtract = Array.readWord(data, offset + 6);
-		generalPurposeBitFlag = Array.readWord(data, offset + 8);
-		compressionMethod = Array.readWord(data, offset + 10);
-		lastModFileTime = Array.readWord(data, offset + 12);
-		lastModFileDate = Array.readWord(data, offset + 14);
-		crc32 = Array.readQuad(data, offset + 16);
-		compressedSize = Array.readQuad(data, offset + 20);
-		uncompressedSize = Array.readQuad(data, offset + 24);
-		fileNameLength = Array.readWord(data, offset + 28);
-		extraFieldLength = Array.readWord(data, offset + 30);
-		fileCommentLength = Array.readWord(data, offset + 32);
-		diskNumberStart = Array.readWord(data, offset + 34);
-		internalFileAttributes = Array.readWord(data, offset + 36);
-		externalFileAttributes = Array.readQuad(data, offset + 38);
-		relativeOffsetOfLocalHeader = Array.readQuad(data, offset + 42);
-		fileName = Array.readString(data, offset + 46, fileNameLength);
-		extraField = Array.readArray(data, offset + 46 + fileNameLength, extraFieldLength);
-		fileComment = Array.readString(data, offset + 46 + fileNameLength + extraFieldLength, fileCommentLength);
+		versionMadeBy = Buffers.readWord(data, offset + 4);
+		versionNeededToExtract = Buffers.readWord(data, offset + 6);
+		generalPurposeBitFlag = Buffers.readWord(data, offset + 8);
+		compressionMethod = Buffers.readWord(data, offset + 10);
+		lastModFileTime = Buffers.readWord(data, offset + 12);
+		lastModFileDate = Buffers.readWord(data, offset + 14);
+		crc32 = Buffers.readQuad(data, offset + 16);
+		compressedSize = Buffers.readQuad(data, offset + 20);
+		uncompressedSize = Buffers.readQuad(data, offset + 24);
+		fileNameLength = Buffers.readWord(data, offset + 28);
+		extraFieldLength = Buffers.readWord(data, offset + 30);
+		fileCommentLength = Buffers.readWord(data, offset + 32);
+		diskNumberStart = Buffers.readWord(data, offset + 34);
+		internalFileAttributes = Buffers.readWord(data, offset + 36);
+		externalFileAttributes = Buffers.readQuad(data, offset + 38);
+		relativeOffsetOfLocalHeader = Buffers.readQuad(data, offset + 42);
+		fileName = Buffers.slice(data, offset + 46, fileNameLength);
+		extraField = Buffers.slice(data, offset + 46 + fileNameLength, extraFieldLength);
+		fileComment = Buffers.slice(data, offset + 46 + fileNameLength + extraFieldLength, fileCommentLength);
 	}
 
 	@Override
 	public int length() {
-		return 46 + fileName.length() + extraField.length + fileComment.length();
+		return 46 + Buffers.length(fileName) + Buffers.length(extraField) + Buffers.length(fileComment);
 	}
 
 	@Override
@@ -363,7 +366,7 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 	 *
 	 * @return File name.
 	 */
-	public String getFileName() {
+	public ByteBuffer getFileName() {
 		return fileName;
 	}
 
@@ -371,15 +374,29 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 	 * @param fileName
 	 * 		File name.
 	 */
-	public void setFileName(String fileName) {
+	public void setFileName(ByteBuffer fileName) {
 		this.fileName = fileName;
+	}
+
+	/**
+	 * Should match {@link CentralDirectoryFileHeader#getFileName()} but is not a strict requirement.
+	 * If they do not match, the central directory file name should be trusted instead.
+	 *
+	 * @return File name.
+	 */
+	public String getFileNameAsString() {
+		String fileNameCache = this.fileNameCache;
+		if (fileNameCache == null) {
+			return this.fileNameCache = Buffers.toString(fileName);
+		}
+		return fileNameCache;
 	}
 
 	/**
 	 * @return May be used for extra compression information,
 	 * depending on the {@link #getCompressionMethod() compression method} used.
 	 */
-	public byte[] getExtraField() {
+	public ByteBuffer getExtraField() {
 		return extraField;
 	}
 
@@ -387,14 +404,14 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 	 * @param extraField
 	 * 		Extra field bytes.
 	 */
-	public void setExtraField(byte[] extraField) {
+	public void setExtraField(ByteBuffer extraField) {
 		this.extraField = extraField;
 	}
 
 	/**
 	 * @return File comment.
 	 */
-	public String getFileComment() {
+	public ByteBuffer getFileComment() {
 		return fileComment;
 	}
 
@@ -402,8 +419,19 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 	 * @param fileComment
 	 * 		File comment.
 	 */
-	public void setFileComment(String fileComment) {
+	public void setFileComment(ByteBuffer fileComment) {
 		this.fileComment = fileComment;
+	}
+
+	/**
+	 * @return File comment.
+	 */
+	public String getFileCommentAsString() {
+		String fileCommentCache = this.fileCommentCache;
+		if (fileCommentCache == null) {
+			return this.fileCommentCache = Buffers.toString(fileComment);
+		}
+		return fileCommentCache;
 	}
 
 	@Override
@@ -426,7 +454,7 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 				", externalFileAttributes=" + externalFileAttributes +
 				", relativeOffsetOfLocalHeader=" + relativeOffsetOfLocalHeader +
 				", fileName='" + fileName + '\'' +
-				", extraField=" + Arrays.toString(extraField) +
+				", extraField=" + Buffers.toString(extraField) +
 				", fileComment='" + fileComment + '\'' +
 				'}';
 	}
@@ -455,7 +483,7 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 				relativeOffsetOfLocalHeader == that.relativeOffsetOfLocalHeader &&
 				Objects.equals(linkedFileHeader, that.linkedFileHeader) &&
 				fileName.equals(that.fileName) &&
-				Arrays.equals(extraField, that.extraField) &&
+				Buffers.equals(extraField, that.extraField) &&
 				fileComment.equals(that.fileComment);
 	}
 
@@ -465,7 +493,7 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 				compressionMethod, lastModFileTime, lastModFileDate, crc32, compressedSize, uncompressedSize,
 				fileNameLength, extraFieldLength, fileCommentLength, diskNumberStart, internalFileAttributes,
 				externalFileAttributes, relativeOffsetOfLocalHeader, fileName, fileComment);
-		result = 31 * result + Arrays.hashCode(extraField);
+		result = 31 * result + extraField.hashCode();
 		return result;
 	}
 }
