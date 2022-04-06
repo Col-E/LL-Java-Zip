@@ -7,7 +7,6 @@ import software.coley.llzip.part.LocalFileHeader;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Optional;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -23,9 +22,10 @@ public class JavaZipWriterStategy implements ZipWriterStrategy {
 	public void write(ZipArchive archive, OutputStream os) throws IOException {
 		try (ZipOutputStream zos = new ZipOutputStream(os)) {
 			for (LocalFileHeader fileHeader : archive.getLocalFiles()) {
-				String name = Optional.ofNullable(fileHeader.getLinkedDirectoryFileHeader())
-						.map(CentralDirectoryFileHeader::getFileName)
-						.orElse(fileHeader.getFileName());
+				CentralDirectoryFileHeader linked = fileHeader.getLinkedDirectoryFileHeader();
+				if (linked == null)
+					continue;
+				String name = linked.getFileName();
 				zos.putNextEntry(new ZipEntry(name));
 				zos.write(ZipCompressions.decompress(fileHeader));
 				zos.closeEntry();
