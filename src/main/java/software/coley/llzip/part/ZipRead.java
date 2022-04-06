@@ -14,5 +14,6 @@ public interface ZipRead {
 	 */
 	void read(byte[] data, int offset);
 
-	// TODO: Write conventions, then rename to 'ZipReadWrite'
+	// TODO: Write conventions, then rename to 'ZipReadWrite' and tie into ZipWriterStrategy
+	//        - maybe transform primitive 'offset' to data type references and auto-compute offsets in output.
 }
