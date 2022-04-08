@@ -9,7 +9,6 @@ import java.nio.ByteOrder;
  * @author xDark
  */
 public final class BufferData implements ByteData {
-
 	private final ByteBuffer buffer;
 
 	private BufferData(ByteBuffer buffer) {
@@ -34,8 +33,10 @@ public final class BufferData implements ByteData {
 	@Override
 	public void get(long position, byte[] b, int off, int len) {
 		ByteBuffer buffer = this.buffer;
-		((ByteBuffer) buffer.slice().order(buffer.order()).position(validate(position)))
-						.get(b, off, len);
+		buffer.slice()
+				.order(buffer.order())
+				.position(validate(position))
+				.get(b, off, len);
 	}
 
 	@Override
@@ -52,9 +53,7 @@ public final class BufferData implements ByteData {
 	public boolean equals(Object o) {
 		if (this == o) return true;
 		if (!(o instanceof BufferData)) return false;
-
 		BufferData that = (BufferData) o;
-
 		return buffer.equals(that.buffer);
 	}
 

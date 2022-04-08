@@ -10,7 +10,6 @@ import java.lang.reflect.Field;
  * @author XDark
  */
 class UnsafeUtil {
-
 	private static final Unsafe UNSAFE;
 
 	/**

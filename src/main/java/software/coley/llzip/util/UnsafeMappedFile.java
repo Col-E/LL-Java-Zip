@@ -10,11 +10,11 @@ import java.nio.ByteOrder;
  * @author xDark
  */
 final class UnsafeMappedFile implements ByteData {
-
 	private static final boolean SWAP = ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN;
 	private static final Unsafe UNSAFE = UnsafeUtil.get();
 
-	private final long address, end;
+	private final long address;
+	private final long end;
 	private final Runnable deallocator;
 	private Object attachment;
 
@@ -89,12 +89,12 @@ final class UnsafeMappedFile implements ByteData {
 	@Override
 	protected void finalize() throws Throwable {
 		Runnable deallocator = this.deallocator;
-		if (deallocator != null)
-			try {
+		try {
+			if (deallocator != null)
 				deallocator.run();
-			} finally {
-				super.finalize();
-			}
+		} finally {
+			super.finalize();
+		}
 	}
 
 	private long validate(long position) {
