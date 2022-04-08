@@ -2,11 +2,12 @@ package software.coley.llzip.strategy;
 
 import software.coley.llzip.ZipCompressions;
 import software.coley.llzip.part.LocalFileHeader;
-import software.coley.llzip.util.BufferInputStream;
+import software.coley.llzip.util.BufferData;
+import software.coley.llzip.util.ByteData;
+import software.coley.llzip.util.ByteDataInputStream;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
@@ -17,13 +18,13 @@ import java.util.zip.InflaterInputStream;
  */
 public class DeflateDecompressor implements Decompressor {
 	@Override
-	public ByteBuffer decompress(LocalFileHeader header, ByteBuffer bytes) throws IOException {
+	public ByteData decompress(LocalFileHeader header, ByteData bytes) throws IOException {
 		if (header.getCompressionMethod() != ZipCompressions.DEFLATED)
 			throw new IOException("LocalFileHeader contents not using 'Deflated'!");
 		Inflater inflater = new Inflater(true);
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		try {
-			InflaterInputStream in = new InflaterInputStream(new BufferInputStream(bytes), inflater);
+			InflaterInputStream in = new InflaterInputStream(new ByteDataInputStream(bytes), inflater);
 			// We can't trust the uncompressed size, so we will keep going until the inflater stream says we're done.
 			byte[] buffer = new byte[1024];
 			int len;
@@ -32,6 +33,6 @@ public class DeflateDecompressor implements Decompressor {
 		} finally {
 			inflater.end();
 		}
-		return ByteBuffer.wrap(out.toByteArray());
+		return BufferData.wrap(out.toByteArray());
 	}
 }

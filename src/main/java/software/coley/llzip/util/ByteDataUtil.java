@@ -1,7 +1,6 @@
 package software.coley.llzip.util;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
@@ -10,7 +9,7 @@ import java.util.Objects;
  *
  * @author Matt Coley
  */
-public class Buffers {
+public class ByteDataUtil {
 	public static final int WILDCARD = Integer.MIN_VALUE;
 
 	/**
@@ -21,12 +20,12 @@ public class Buffers {
 	 *
 	 * @return First index of pattern in content, or {@code -1} for no match.
 	 */
-	public static int indexOf(ByteBuffer buffer, int[] pattern) {
+	public static long indexOf(ByteData buffer, int[] pattern) {
 		return indexOf(buffer, 0, pattern);
 	}
 
 	/**
-	 * @param buffer
+	 * @param data
 	 * 		Content to search.
 	 * @param offset
 	 * 		Offset to begin search at.
@@ -35,14 +34,14 @@ public class Buffers {
 	 *
 	 * @return First index of pattern in content, or {@code -1} for no match.
 	 */
-	public static int indexOf(ByteBuffer buffer, int offset, int[] pattern) {
+	public static long indexOf(ByteData data, long offset, int[] pattern) {
 		// Remaining data must be as long as pattern
-		int limit;
-		if (buffer == null || (limit = buffer.limit()) < pattern.length || offset >= buffer.limit())
+		long limit;
+		if (data == null || (limit = data.length()) < pattern.length || offset >= limit)
 			return -1;
 		// Search from offset going forwards
-		for (int i = offset; i < limit; i++)
-			if (startsWith(buffer, i, pattern))
+		for (long i = offset; i < limit; i++)
+			if (startsWith(data, i, pattern))
 				return i;
 		// Not found
 		return -1;
@@ -56,12 +55,12 @@ public class Buffers {
 	 *
 	 * @return Last index of pattern in content, or {@code -1} for no match.
 	 */
-	public static int lastIndexOf(ByteBuffer buffer, int[] pattern) {
-		return lastIndexOf(buffer, (buffer.limit() - pattern.length), pattern);
+	public static long lastIndexOf(ByteData buffer, int[] pattern) {
+		return lastIndexOf(buffer, (buffer.length() - pattern.length), pattern);
 	}
 
 	/**
-	 * @param buffer
+	 * @param data
 	 * 		Content to search.
 	 * @param offset
 	 * 		Offset to begin search at.
@@ -70,13 +69,13 @@ public class Buffers {
 	 *
 	 * @return Last index of pattern in content, or {@code -1} for no match.
 	 */
-	public static int lastIndexOf(ByteBuffer buffer, int offset, int[] pattern) {
+	public static long lastIndexOf(ByteData data, long offset, int[] pattern) {
 		// Remaining data must be as long as pattern
-		if (buffer == null || buffer.limit() < pattern.length)
+		if (data == null || data.length() < pattern.length)
 			return -1;
 		// Search from offset going backwards
-		for (int i = offset; i >= 0; i--)
-			if (startsWith(buffer, i, pattern))
+		for (long i = offset; i >= 0; i--)
+			if (startsWith(data, i, pattern))
 				return i;
 		// Not found
 		return -1;
@@ -92,9 +91,9 @@ public class Buffers {
 	 *
 	 * @return {@code true} when the content of the array at the offset matches the pattern.
 	 */
-	public static boolean startsWith(ByteBuffer array, int offset, int[] pattern) {
+	public static boolean startsWith(ByteData array, long offset, int[] pattern) {
 		// Remaining data must be as long as pattern and in the array bounds
-		if (array == null || (array.limit() - offset) < pattern.length || offset < 0 || offset >= array.limit())
+		if (array == null || (array.length() - offset) < pattern.length || offset < 0 || offset >= array.length())
 			return false;
 		// Check for mis-match
 		for (int i = 0; i < pattern.length; i++) {
@@ -116,7 +115,7 @@ public class Buffers {
 	 *
 	 * @return Value of word.
 	 */
-	public static int readWord(ByteBuffer data, int i) {
+	public static int readWord(ByteData data, long i) {
 		return data.getShort(i);
 	}
 
@@ -128,7 +127,7 @@ public class Buffers {
 	 *
 	 * @return Value of quad.
 	 */
-	public static int readQuad(ByteBuffer data, int i) {
+	public static int readQuad(ByteData data, long i) {
 		return data.getInt(i);
 	}
 
@@ -142,12 +141,11 @@ public class Buffers {
 	 *
 	 * @return Value of string.
 	 */
-	public static String readString(ByteBuffer data, int start, int len) {
+	public static String readString(ByteData data, long start, int len) {
 		if (len == 0)
 			return "";
-		ByteBuffer slice = slice(data, start, len);
 		byte[] bytes = new byte[len];
-		slice.get(bytes);
+		data.get(start, bytes, 0, len);
 		return new String(bytes, StandardCharsets.UTF_8);
 	}
 
@@ -161,10 +159,9 @@ public class Buffers {
 	 *
 	 * @return Copy of range.
 	 */
-	public static byte[] readArray(ByteBuffer data, int start, int len) {
-		ByteBuffer slice = slice(data, start, len);
+	public static byte[] readArray(ByteData data, int start, int len) {
 		byte[] bytes = new byte[len];
-		slice.get(bytes);
+		data.get(start, bytes, 0, len);
 		return bytes;
 	}
 
@@ -197,22 +194,8 @@ public class Buffers {
 	 *	
 	 * @return Buffer slice.
 	 */
-	public static ByteBuffer slice(ByteBuffer data, int start, int len) {
-		ByteBuffer slice = data.slice();
-		slice = ((ByteBuffer) slice.position(start)).slice();
-		slice.limit(len);
-		return slice.order(data.order());
-	}
-
-	/**
-	 *
-	 * @param data
-	 * 		Content to make slice of.
-	 *
-	 * @return Buffer slice.
-	 */
-	public static ByteBuffer slice(ByteBuffer data) {
-		return (ByteBuffer) data.slice().order(data.order());
+	public static ByteData slice(ByteData data, long start, long len) {
+		return data.slice(start, start + len);
 	}
 
 	/**
@@ -231,10 +214,13 @@ public class Buffers {
 	 *
 	 * @return Buffer as byte array.
 	 */
-	public static byte[] toByteArray(ByteBuffer data) {
-		ByteBuffer slice = slice(data);
-		byte[] bytes = new byte[length(slice)];
-		slice.get(bytes);
+	public static byte[] toByteArray(ByteData data) {
+		long length = data.length();
+		if (length > Integer.MAX_VALUE - 8) {
+			throw new IllegalStateException("Data too big!");
+		}
+		byte[] bytes = new byte[(int) length];
+		data.get(0L, bytes, 0, bytes.length);
 		return bytes;
 	}
 
@@ -244,7 +230,7 @@ public class Buffers {
 	 *
 	 * @return Buffer as a string.
 	 */
-	public static String toString(ByteBuffer data) {
+	public static String toString(ByteData data) {
 		return new String(toByteArray(data), StandardCharsets.UTF_8);
 	}
 
@@ -256,7 +242,7 @@ public class Buffers {
 	 *
 	 * @return {@code true} if buffers are equal.
 	 */
-	public static boolean equals(ByteBuffer a, ByteBuffer b) {
+	public static boolean equals(ByteData a, ByteData b) {
 		return Objects.equals(a, b);
 	}
 }

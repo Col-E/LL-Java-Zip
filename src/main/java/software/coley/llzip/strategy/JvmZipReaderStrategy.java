@@ -8,11 +8,11 @@ import software.coley.llzip.part.CentralDirectoryFileHeader;
 import software.coley.llzip.part.EndOfCentralDirectory;
 import software.coley.llzip.part.JvmLocalFileHeader;
 import software.coley.llzip.part.LocalFileHeader;
-import software.coley.llzip.util.Buffers;
+import software.coley.llzip.util.ByteData;
+import software.coley.llzip.util.ByteDataUtil;
 import software.coley.llzip.util.OffsetComparator;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -30,33 +30,33 @@ public class JvmZipReaderStrategy implements ZipReaderStrategy {
 	private static final Logger logger = LoggerFactory.getLogger(JvmZipReaderStrategy.class);
 
 	@Override
-	public void read(ZipArchive zip, ByteBuffer data) throws IOException {
+	public void read(ZipArchive zip, ByteData data) throws IOException {
 		// Read scanning backwards
-		int endOfCentralDirectoryOffset = Buffers.lastIndexOf(data, ZipPatterns.END_OF_CENTRAL_DIRECTORY);
-		if (endOfCentralDirectoryOffset < 0)
+		long endOfCentralDirectoryOffset = ByteDataUtil.lastIndexOf(data, ZipPatterns.END_OF_CENTRAL_DIRECTORY);
+		if (endOfCentralDirectoryOffset < 0L)
 			throw new IOException("No Central-Directory-File-Header found!");
 		// Determine base offset for computing file header locations with.
 		// - If there is a preceding block of another zip, start with that.
-		int jvmBaseOffset;
-		int precedingEndOfCentralDirectory = Buffers.lastIndexOf(data, endOfCentralDirectoryOffset - 1, ZipPatterns.END_OF_CENTRAL_DIRECTORY);
+		long jvmBaseOffset;
+		long precedingEndOfCentralDirectory = ByteDataUtil.lastIndexOf(data, endOfCentralDirectoryOffset - 1, ZipPatterns.END_OF_CENTRAL_DIRECTORY);
 		if (precedingEndOfCentralDirectory == endOfCentralDirectoryOffset) {
 			// The prior end part match is target end part, so we can't use it as a base offset.
 			jvmBaseOffset = 0;
 		} else if (precedingEndOfCentralDirectory == -1) {
 			// There was no match for a prior end part. We will seek forwards until finding a *VALID* PK starting header.
-			jvmBaseOffset = Buffers.indexOf(data, ZipPatterns.PK);
-			while (jvmBaseOffset >= 0) {
+			jvmBaseOffset = ByteDataUtil.indexOf(data, ZipPatterns.PK);
+			while (jvmBaseOffset >= 0L) {
 				// Check that the PK discovered represents a valid zip part
 				try {
-					if (Buffers.startsWith(data, jvmBaseOffset, ZipPatterns.LOCAL_FILE_HEADER))
+					if (ByteDataUtil.startsWith(data, jvmBaseOffset, ZipPatterns.LOCAL_FILE_HEADER))
 						new LocalFileHeader().read(data, jvmBaseOffset);
-					else if (Buffers.startsWith(data, jvmBaseOffset, ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER))
+					else if (ByteDataUtil.startsWith(data, jvmBaseOffset, ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER))
 						new CentralDirectoryFileHeader().read(data, jvmBaseOffset);
 					// Valid, we're good to go
 					break;
 				} catch (Exception ex) {
 					// Invalid, seek forward
-					jvmBaseOffset = Buffers.indexOf(data, jvmBaseOffset+1, ZipPatterns.PK);
+					jvmBaseOffset = ByteDataUtil.indexOf(data, jvmBaseOffset+1, ZipPatterns.PK);
 				}
 			}
 		} else {
@@ -69,10 +69,10 @@ public class JvmZipReaderStrategy implements ZipReaderStrategy {
 		end.read(data, endOfCentralDirectoryOffset);
 		zip.getParts().add(end);
 		// Read central directories
-		int len = Buffers.length(data);
-		int centralDirectoryOffset = len - ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER.length;
+		long len = data.length();
+		long centralDirectoryOffset = len - ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER.length;
 		while (centralDirectoryOffset > 0) {
-			centralDirectoryOffset = Buffers.lastIndexOf(data, centralDirectoryOffset - 1, ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER);
+			centralDirectoryOffset = ByteDataUtil.lastIndexOf(data, centralDirectoryOffset - 1, ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER);
 			if (centralDirectoryOffset >= 0) {
 				CentralDirectoryFileHeader directory = new CentralDirectoryFileHeader();
 				directory.read(data, centralDirectoryOffset);
@@ -81,10 +81,10 @@ public class JvmZipReaderStrategy implements ZipReaderStrategy {
 		}
 		// Read local files
 		// - Set to prevent duplicate file header entries for the same offset
-		Set<Integer> offsets = new HashSet<>();
+		Set<Long> offsets = new HashSet<>();
 		for (CentralDirectoryFileHeader directory : zip.getCentralDirectories()) {
-			int offset = jvmBaseOffset + directory.getRelativeOffsetOfLocalHeader();
-			if (!offsets.contains(offset) && Buffers.startsWith(data, offset, ZipPatterns.LOCAL_FILE_HEADER)) {
+			long offset = jvmBaseOffset + directory.getRelativeOffsetOfLocalHeader();
+			if (!offsets.contains(offset) && ByteDataUtil.startsWith(data, offset, ZipPatterns.LOCAL_FILE_HEADER)) {
 				// JVM local file header needs to be aware of where the NEXT entry is.
 				try {
 					JvmLocalFileHeader file = new JvmLocalFileHeader();

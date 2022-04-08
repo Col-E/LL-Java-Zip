@@ -4,9 +4,8 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
-import software.coley.llzip.util.Buffers;
-
-import java.nio.ByteBuffer;
+import software.coley.llzip.util.ByteData;
+import software.coley.llzip.util.ByteDataUtil;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -51,7 +50,7 @@ public class Utils {
 	 * @param target
 	 * 		String instance to look for.
 	 */
-	public static void assertDefinesString(ByteBuffer code, String target) {
-		assertDefinesString(Buffers.toByteArray(code), target);
+	public static void assertDefinesString(ByteData code, String target) {
+		assertDefinesString(ByteDataUtil.toByteArray(code), target);
 	}
 }

@@ -25,12 +25,12 @@ public interface ZipPart {
 	 * @return Offset of part in the ZIP file.
 	 * May be {@code -1} to indicate unknown offset.
 	 */
-	int offset();
+	long offset();
 
 	/**
 	 * @return {@code true} when {@link #offset()} information is present.
 	 */
 	default boolean hasOffset() {
-		return offset() >= 0;
+		return offset() >= 0L;
 	}
 }

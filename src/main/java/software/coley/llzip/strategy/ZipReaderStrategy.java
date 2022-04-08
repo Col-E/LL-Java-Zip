@@ -1,9 +1,9 @@
 package software.coley.llzip.strategy;
 
 import software.coley.llzip.ZipArchive;
+import software.coley.llzip.util.ByteData;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 /**
  * Outlines reading binary data into a ZIP data type.
@@ -20,5 +20,5 @@ public interface ZipReaderStrategy {
 	 * @throws IOException
 	 * 		When the data cannot be read <i>(EOF, not matching expectations, etc)</i>
 	 */
-	void read(ZipArchive zip, ByteBuffer buffer) throws IOException;
+	void read(ZipArchive zip, ByteData buffer) throws IOException;
 }

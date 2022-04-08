@@ -1,8 +1,9 @@
 package software.coley.llzip.part;
 
-import software.coley.llzip.util.Buffers;
+import software.coley.llzip.util.BufferData;
+import software.coley.llzip.util.ByteData;
+import software.coley.llzip.util.ByteDataUtil;
 
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
 
@@ -12,7 +13,7 @@ import java.util.Objects;
  * @author Matt Coley
  */
 public class EndOfCentralDirectory implements ZipPart, ZipRead {
-	private transient int offset = -1;
+	private transient long offset = -1L;
 	// Zip spec elements
 	private int diskNumber;
 	private int centralDirectoryStartDisk;
@@ -21,24 +22,25 @@ public class EndOfCentralDirectory implements ZipPart, ZipRead {
 	private int centralDirectorySize;
 	private int centralDirectoryOffset;
 	private int zipCommentLength;
-	private String zipComment;
+	private ByteData zipComment;
+	private transient String zipCommentCache;
 
 	@Override
-	public void read(ByteBuffer data, int offset) {
+	public void read(ByteData data, long offset) {
 		this.offset = offset;
-		diskNumber = Buffers.readWord(data, offset + 4);
-		centralDirectoryStartDisk = Buffers.readWord(data, offset + 6);
-		centralDirectoryStartOffset = Buffers.readWord(data, offset + 8);
-		numEntries = Buffers.readWord(data, offset + 10);
-		centralDirectorySize = Buffers.readQuad(data, offset + 12);
-		centralDirectoryOffset = Buffers.readQuad(data, offset + 16);
-		zipCommentLength = Buffers.readWord(data, offset + 20);
-		zipComment = Buffers.readString(data, offset + 22, zipCommentLength);
+		diskNumber = ByteDataUtil.readWord(data, offset + 4);
+		centralDirectoryStartDisk = ByteDataUtil.readWord(data, offset + 6);
+		centralDirectoryStartOffset = ByteDataUtil.readWord(data, offset + 8);
+		numEntries = ByteDataUtil.readWord(data, offset + 10);
+		centralDirectorySize = ByteDataUtil.readQuad(data, offset + 12);
+		centralDirectoryOffset = ByteDataUtil.readQuad(data, offset + 16);
+		zipCommentLength = ByteDataUtil.readWord(data, offset + 20);
+		zipComment = data.sliceOf(offset + 22, zipCommentLength);
 	}
 
 	@Override
 	public int length() {
-		return 22 + zipComment.length();
+		return 22 + (int) zipComment.length();
 	}
 
 	@Override
@@ -47,7 +49,7 @@ public class EndOfCentralDirectory implements ZipPart, ZipRead {
 	}
 
 	@Override
-	public int offset() {
+	public long offset() {
 		return offset;
 	}
 
@@ -161,7 +163,7 @@ public class EndOfCentralDirectory implements ZipPart, ZipRead {
 	/**
 	 * @return Optional comment, or empty string.
 	 */
-	public String getZipComment() {
+	public ByteData getZipComment() {
 		return zipComment;
 	}
 
@@ -169,10 +171,18 @@ public class EndOfCentralDirectory implements ZipPart, ZipRead {
 	 * @param zipComment
 	 * 		Optional comment, or empty string.
 	 */
-	public void setZipComment(String zipComment) {
+	public void setZipComment(ByteData zipComment) {
 		if (zipComment == null)
-			zipComment = "";
+			zipComment = BufferData.wrap(new byte[0]);
 		this.zipComment = zipComment;
+	}
+	
+	public String getZipCommentAsString() {
+		String zipCommentCache = this.zipCommentCache;
+		if (zipCommentCache == null) {
+			return this.zipCommentCache = ByteDataUtil.toString(zipComment);
+		}
+		return zipCommentCache;
 	}
 
 	@Override
@@ -186,7 +196,7 @@ public class EndOfCentralDirectory implements ZipPart, ZipRead {
 				", centralDirectorySize=" + centralDirectorySize +
 				", centralDirectoryOffset=" + centralDirectoryOffset +
 				", zipCommentLength=" + zipCommentLength +
-				", zipComment='" + zipComment + '\'' +
+				", zipComment='" + getZipCommentAsString() + '\'' +
 				'}';
 	}
 

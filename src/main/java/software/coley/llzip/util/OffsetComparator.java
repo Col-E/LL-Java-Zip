@@ -12,6 +12,6 @@ import java.util.Comparator;
 public class OffsetComparator implements Comparator<ZipPart> {
 	@Override
 	public int compare(ZipPart o1, ZipPart o2) {
-		return Integer.compare(o1.offset(), o2.offset());
+		return Long.compare(o1.offset(), o2.offset());
 	}
 }

@@ -3,10 +3,10 @@ package software.coley.llzip;
 import software.coley.llzip.part.CentralDirectoryFileHeader;
 import software.coley.llzip.part.EndOfCentralDirectory;
 import software.coley.llzip.part.LocalFileHeader;
-import software.coley.llzip.util.Buffers;
+import software.coley.llzip.util.ByteDataUtil;
 
 /**
- * Patterns for usage in {@link Buffers} methods.
+ * Patterns for usage in {@link ByteDataUtil} methods.
  *
  * @author Matt Coley
  */

@@ -7,11 +7,11 @@ import software.coley.llzip.ZipPatterns;
 import software.coley.llzip.part.CentralDirectoryFileHeader;
 import software.coley.llzip.part.EndOfCentralDirectory;
 import software.coley.llzip.part.LocalFileHeader;
-import software.coley.llzip.util.Buffers;
+import software.coley.llzip.util.ByteDataUtil;
+import software.coley.llzip.util.ByteData;
 import software.coley.llzip.util.OffsetComparator;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -24,19 +24,19 @@ public class DefaultZipReaderStrategy implements ZipReaderStrategy {
 	private static final Logger logger = LoggerFactory.getLogger(DefaultZipReaderStrategy.class);
 
 	@Override
-	public void read(ZipArchive zip, ByteBuffer data) throws IOException {
+	public void read(ZipArchive zip, ByteData data) throws IOException {
 		// Read scanning forwards
-		int endOfCentralDirectoryOffset = Buffers.indexOf(data, ZipPatterns.END_OF_CENTRAL_DIRECTORY);
-		if (endOfCentralDirectoryOffset < 0)
+		long endOfCentralDirectoryOffset = ByteDataUtil.indexOf(data, ZipPatterns.END_OF_CENTRAL_DIRECTORY);
+		if (endOfCentralDirectoryOffset < 0L)
 			throw new IOException("No Central-Directory-File-Header found!");
 		// Read end header
 		EndOfCentralDirectory end = new EndOfCentralDirectory();
 		end.read(data, endOfCentralDirectoryOffset);
 		zip.getParts().add(end);
 		// Read central directories
-		int len = Buffers.length(data);
+		long len = data.length();
 		int centralDirectoryOffset = end.getCentralDirectoryOffset();
-		while (centralDirectoryOffset < len && Buffers.startsWith(data, centralDirectoryOffset, ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER)) {
+		while (centralDirectoryOffset < len && ByteDataUtil.startsWith(data, centralDirectoryOffset, ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER)) {
 			CentralDirectoryFileHeader directory = new CentralDirectoryFileHeader();
 			directory.read(data, centralDirectoryOffset);
 			centralDirectoryOffset += directory.length();
@@ -47,7 +47,7 @@ public class DefaultZipReaderStrategy implements ZipReaderStrategy {
 		Set<Integer> offsets = new HashSet<>();
 		for (CentralDirectoryFileHeader directory : zip.getCentralDirectories()) {
 			int offset = directory.getRelativeOffsetOfLocalHeader();
-			if (!offsets.contains(offset) && Buffers.startsWith(data, offset, ZipPatterns.LOCAL_FILE_HEADER)) {
+			if (!offsets.contains(offset) && ByteDataUtil.startsWith(data, offset, ZipPatterns.LOCAL_FILE_HEADER)) {
 				LocalFileHeader file = new LocalFileHeader();
 				file.read(data, offset);
 				zip.getParts().add(file);
