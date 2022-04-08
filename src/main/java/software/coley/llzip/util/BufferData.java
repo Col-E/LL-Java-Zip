@@ -33,9 +33,9 @@ public final class BufferData implements ByteData {
 	@Override
 	public void get(long position, byte[] b, int off, int len) {
 		ByteBuffer buffer = this.buffer;
-		buffer.slice()
+		((ByteBuffer) buffer.slice()
 				.order(buffer.order())
-				.position(validate(position))
+				.position(validate(position)))
 				.get(b, off, len);
 	}
 
