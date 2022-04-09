@@ -134,7 +134,7 @@ public interface ZipCompressions {
 	static String getName(int method) {
 		switch (method) {
 			case STORED:
-				return "STRORED";
+				return "STORED";
 			case SHRUNK:
 				return "SHRUNK";
 			case REDUCED_F1:
