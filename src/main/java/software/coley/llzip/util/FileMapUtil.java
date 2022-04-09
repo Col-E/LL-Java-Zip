@@ -17,6 +17,17 @@ public class FileMapUtil {
 	private static final Method UNMAP;
 	private static final boolean OLD_MAP;
 
+	/**
+	 * Maps file into memory.
+	 *
+	 * @param path
+	 * 		Path to a file to map.
+	 *
+	 * @return Mapped file.
+	 *
+	 * @throws IOException
+	 * 		If any I/O error occurs.
+	 */
 	public static ByteData map(Path path) throws IOException {
 		try (FileChannel fc = FileChannel.open(path, StandardOpenOption.READ)) {
 			long length = fc.size();
@@ -52,7 +63,9 @@ public class FileMapUtil {
 				map = c.getDeclaredMethod("map0", int.class, long.class, long.class);
 				oldMap = true;
 			}
+			map.setAccessible(true);
 			Method unmap = c.getDeclaredMethod("unmap0", long.class, long.class);
+			unmap.setAccessible(true);
 			MAP = map;
 			UNMAP = unmap;
 			OLD_MAP = oldMap;

@@ -5,7 +5,6 @@ import software.coley.llzip.strategy.DeflateDecompressor;
 import software.coley.llzip.util.ByteData;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 /**
  * Constants for {@link LocalFileHeader#getCompressionMethod()}.
@@ -16,7 +15,7 @@ public interface ZipCompressions {
 	/**
 	 * The file is stored <i>(no compression)</i>.
 	 */
-	int STRORED = 0;
+	int STORED = 0;
 	/**
 	 * The file is Shrunk.
 	 */
@@ -134,7 +133,7 @@ public interface ZipCompressions {
 	 */
 	static String getName(int method) {
 		switch (method) {
-			case STRORED:
+			case STORED:
 				return "STRORED";
 			case SHRUNK:
 				return "SHRUNK";
@@ -207,7 +206,7 @@ public interface ZipCompressions {
 	static ByteData decompress(LocalFileHeader header) throws IOException {
 		int method = header.getCompressionMethod();
 		switch (method) {
-			case STRORED:
+			case STORED:
 				return header.getFileData();
 			case DEFLATED:
 				return header.decompress(new DeflateDecompressor());

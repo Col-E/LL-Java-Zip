@@ -82,7 +82,7 @@ public class ByteDataUtil {
 	}
 
 	/**
-	 * @param array
+	 * @param data
 	 * 		Content to search.
 	 * @param offset
 	 * 		Offset to begin check at.
@@ -91,16 +91,16 @@ public class ByteDataUtil {
 	 *
 	 * @return {@code true} when the content of the array at the offset matches the pattern.
 	 */
-	public static boolean startsWith(ByteData array, long offset, int[] pattern) {
+	public static boolean startsWith(ByteData data, long offset, int[] pattern) {
 		// Remaining data must be as long as pattern and in the array bounds
-		if (array == null || (array.length() - offset) < pattern.length || offset < 0 || offset >= array.length())
+		if (data == null || (data.length() - offset) < pattern.length || offset < 0 || offset >= data.length())
 			return false;
 		// Check for mis-match
 		for (int i = 0; i < pattern.length; i++) {
 			int p = pattern[i];
 			if (p == WILDCARD)
 				continue;
-			if (array.get(offset + i) != p)
+			if (data.get(offset + i) != p)
 				return false;
 		}
 		// No mis-match, array starts with pattern

@@ -1,5 +1,7 @@
 package software.coley.llzip.util;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
@@ -40,6 +42,25 @@ public final class BufferData implements ByteData {
 	}
 
 	@Override
+	public void transferTo(OutputStream out, byte[] buf) throws IOException {
+		ByteBuffer buffer = this.buffer;
+		int remaining = buffer.remaining();
+		if (buffer.hasArray()) {
+			out.write(buffer.array(), buffer.arrayOffset(), remaining);
+		} else {
+			buffer.mark();
+			int copyThreshold = buf.length;
+			while (remaining != 0) {
+				int length = Math.min(copyThreshold, remaining);
+				buffer.get(buf, 0, length);
+				out.write(buf, 0, length);
+				remaining -= length;
+			}
+			buffer.reset();
+		}
+	}
+
+	@Override
 	public ByteData slice(long startIndex, long endIndex) {
 		return new BufferData(ByteDataUtil.sliceExact(buffer, validate(startIndex), validate(endIndex)));
 	}
@@ -67,6 +88,16 @@ public final class BufferData implements ByteData {
 			throw new IllegalArgumentException(Long.toString(v));
 		}
 		return (int) v;
+	}
+
+	/**
+	 * @param buffer
+	 * 		Byte buffer to wrap.
+	 *
+	 * @return Buffer data.
+	 */
+	public static BufferData wrap(ByteBuffer buffer) {
+		return new BufferData(buffer);
 	}
 
 	/**

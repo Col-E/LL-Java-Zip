@@ -6,7 +6,8 @@ import software.coley.llzip.util.ByteData;
 import software.coley.llzip.util.ByteDataUtil;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
+
+import static software.coley.llzip.ZipCompressions.*;
 
 /**
  * ZIP LocalFileHeader structure.
@@ -48,7 +49,13 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 		extraFieldLength = ByteDataUtil.readWord(data, offset + 28);
 		fileName = data.sliceOf(offset + 30, fileNameLength);
 		extraField = data.sliceOf(offset + 30 + fileNameLength, extraFieldLength);
-		fileData = data.sliceOf(offset + 30 + fileNameLength + extraFieldLength, compressedSize);
+		int fileDataLength;
+		if (compressionMethod == STORED) {
+			fileDataLength = uncompressedSize;
+		} else {
+			fileDataLength = compressedSize;
+		}
+		fileData = data.sliceOf(offset + 30 + fileNameLength + extraFieldLength, fileDataLength);
 	}
 
 	@Override

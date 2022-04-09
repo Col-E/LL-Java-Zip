@@ -2,6 +2,8 @@ package software.coley.llzip.util;
 
 import sun.misc.Unsafe;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.ByteOrder;
 
 /**
@@ -49,9 +51,23 @@ final class UnsafeMappedFile implements ByteData {
 	@Override
 	public void get(long position, byte[] b, int off, int len) {
 		long address = validate(position);
-		if (address + len >= end)
+		if (address + len > end)
 			throw new IllegalArgumentException();
 		UNSAFE.copyMemory(null, address, b, Unsafe.ARRAY_BYTE_BASE_OFFSET + off, len);
+	}
+
+	@Override
+	public void transferTo(OutputStream out, byte[] buf) throws IOException {
+		int copyThreshold = buf.length;
+		long address = this.address;
+		long remaining = end - address;
+		while (remaining != 0L) {
+			int length = (int) Math.min(copyThreshold, remaining);
+			UNSAFE.copyMemory(null, address, buf, Unsafe.ARRAY_BYTE_BASE_OFFSET, length);
+			remaining -= length;
+			address += length;
+			out.write(buf, 0, length);
+		}
 	}
 
 	@Override
@@ -101,16 +117,17 @@ final class UnsafeMappedFile implements ByteData {
 		if (position < 0L) {
 			throw new IllegalArgumentException();
 		}
-		if (position >= end) {
+		position += address;
+		if (position > end) {
 			throw new IllegalArgumentException(Long.toString(position));
 		}
-		return address + position;
+		return position;
 	}
 
-	private static int swap(int ч) {
+	private static int swap(int x) {
 		if (SWAP)
-			return Integer.reverseBytes(ч);
-		return ч;
+			return Integer.reverseBytes(x);
+		return x;
 	}
 
 	private static short swap(short x) {

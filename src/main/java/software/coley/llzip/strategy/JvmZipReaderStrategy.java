@@ -15,6 +15,7 @@ import software.coley.llzip.util.OffsetComparator;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * The JVM has some edge cases in how it parses zip/jar files.
@@ -41,8 +42,8 @@ public class JvmZipReaderStrategy implements ZipReaderStrategy {
 		long precedingEndOfCentralDirectory = ByteDataUtil.lastIndexOf(data, endOfCentralDirectoryOffset - 1, ZipPatterns.END_OF_CENTRAL_DIRECTORY);
 		if (precedingEndOfCentralDirectory == endOfCentralDirectoryOffset) {
 			// The prior end part match is target end part, so we can't use it as a base offset.
-			jvmBaseOffset = 0;
-		} else if (precedingEndOfCentralDirectory == -1) {
+			jvmBaseOffset = 0L;
+		} else if (precedingEndOfCentralDirectory == -1L) {
 			// There was no match for a prior end part. We will seek forwards until finding a *VALID* PK starting header.
 			jvmBaseOffset = ByteDataUtil.indexOf(data, ZipPatterns.PK);
 			while (jvmBaseOffset >= 0L) {
@@ -56,13 +57,13 @@ public class JvmZipReaderStrategy implements ZipReaderStrategy {
 					break;
 				} catch (Exception ex) {
 					// Invalid, seek forward
-					jvmBaseOffset = ByteDataUtil.indexOf(data, jvmBaseOffset+1, ZipPatterns.PK);
+					jvmBaseOffset = ByteDataUtil.indexOf(data, jvmBaseOffset+1L, ZipPatterns.PK);
 				}
 			}
 		} else {
 			// There was a prior end part, so we will seek past it's length and use that as the base offset.
 			// 22 is the minimum possible size of an end part. It can be longer with comments applied, but there are almost never comments.
-			jvmBaseOffset = precedingEndOfCentralDirectory + 22;
+			jvmBaseOffset = precedingEndOfCentralDirectory + 22L;
 		}
 		// Read end header
 		EndOfCentralDirectory end = new EndOfCentralDirectory();
@@ -71,9 +72,9 @@ public class JvmZipReaderStrategy implements ZipReaderStrategy {
 		// Read central directories
 		long len = data.length();
 		long centralDirectoryOffset = len - ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER.length;
-		while (centralDirectoryOffset > 0) {
-			centralDirectoryOffset = ByteDataUtil.lastIndexOf(data, centralDirectoryOffset - 1, ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER);
-			if (centralDirectoryOffset >= 0) {
+		while (centralDirectoryOffset > 0L) {
+			centralDirectoryOffset = ByteDataUtil.lastIndexOf(data, centralDirectoryOffset - 1L, ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER);
+			if (centralDirectoryOffset >= 0L) {
 				CentralDirectoryFileHeader directory = new CentralDirectoryFileHeader();
 				directory.read(data, centralDirectoryOffset);
 				zip.getParts().add(directory);
@@ -82,12 +83,15 @@ public class JvmZipReaderStrategy implements ZipReaderStrategy {
 		// Read local files
 		// - Set to prevent duplicate file header entries for the same offset
 		Set<Long> offsets = new HashSet<>();
+		TreeSet<Long> lfhOffsets = new TreeSet<>();
+		for (CentralDirectoryFileHeader directory : zip.getCentralDirectories()) {
+			lfhOffsets.add(jvmBaseOffset + directory.getRelativeOffsetOfLocalHeader());
+		}
 		for (CentralDirectoryFileHeader directory : zip.getCentralDirectories()) {
 			long offset = jvmBaseOffset + directory.getRelativeOffsetOfLocalHeader();
 			if (!offsets.contains(offset) && ByteDataUtil.startsWith(data, offset, ZipPatterns.LOCAL_FILE_HEADER)) {
-				// JVM local file header needs to be aware of where the NEXT entry is.
 				try {
-					JvmLocalFileHeader file = new JvmLocalFileHeader();
+					JvmLocalFileHeader file = new JvmLocalFileHeader(lfhOffsets);
 					file.read(data, offset);
 					zip.getParts().add(file);
 					directory.link(file);
