@@ -46,7 +46,7 @@ public final class BufferData implements ByteData {
 		ByteBuffer buffer = this.buffer;
 		int remaining = buffer.remaining();
 		if (buffer.hasArray()) {
-			out.write(buffer.array(), buffer.arrayOffset(), remaining);
+			out.write(buffer.array(), buffer.arrayOffset() + buffer.position(), remaining);
 		} else {
 			buffer.mark();
 			int copyThreshold = buf.length;
