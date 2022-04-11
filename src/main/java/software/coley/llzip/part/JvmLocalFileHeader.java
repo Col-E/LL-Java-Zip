@@ -13,7 +13,6 @@ import java.util.NavigableSet;
  * @author Wolfie / win32kbase <i>(Reverse engineering JVM specific zip handling)</i>
  */
 public class JvmLocalFileHeader extends LocalFileHeader {
-	
 	private final NavigableSet<Long> offsets;
 
 	/**
@@ -29,11 +28,11 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 		super.read(data, offset);
 		// JVM file data reading does NOT use the compressed/uncompressed fields.
 		// Instead, it scans data until the next header/EOF.
-		offset += 30 + getFileNameLength() + getExtraFieldLength();
+		offset += MIN_FIXED_SIZE + getFileNameLength() + getExtraFieldLength();
 		Long nextOffset = offsets.ceiling(offset);
 		if (nextOffset != null)
 			setFileData(data.slice(offset, nextOffset));
-		else 
+		else
 			setFileData(data.slice(offset, data.length()));
 	}
 }

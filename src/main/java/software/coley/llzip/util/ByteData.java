@@ -9,7 +9,6 @@ import java.io.OutputStream;
  * @author xDark
  */
 public interface ByteData {
-
 	/**
 	 * Gets int at specific position.
 	 *

@@ -15,6 +15,7 @@ import static software.coley.llzip.ZipCompressions.*;
  * @author Matt Coley
  */
 public class LocalFileHeader implements ZipPart, ZipRead {
+	protected static final int MIN_FIXED_SIZE = 30;
 	private transient long offset = -1L;
 	private transient CentralDirectoryFileHeader linkedDirectoryFileHeader;
 	// Zip spec elements
@@ -60,7 +61,7 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 
 	@Override
 	public int length() {
-		return 30 + (int) fileName.length() + (int) extraField.length() + (int) fileData.length();
+		return MIN_FIXED_SIZE + (int) fileName.length() + (int) extraField.length() + (int) fileData.length();
 	}
 
 	@Override
