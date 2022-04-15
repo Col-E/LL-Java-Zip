@@ -85,7 +85,10 @@ public class JvmZipReaderStrategy implements ZipReaderStrategy {
 		Set<Long> offsets = new HashSet<>();
 		TreeSet<Long> lfhOffsets = new TreeSet<>();
 		for (CentralDirectoryFileHeader directory : zip.getCentralDirectories()) {
-			lfhOffsets.add(jvmBaseOffset + directory.getRelativeOffsetOfLocalHeader());
+			long offset = jvmBaseOffset + directory.getRelativeOffsetOfLocalHeader();
+			if (ByteDataUtil.startsWith(data, offset, ZipPatterns.LOCAL_FILE_HEADER)) {
+				lfhOffsets.add(offset);
+			}
 		}
 		for (CentralDirectoryFileHeader directory : zip.getCentralDirectories()) {
 			long offset = jvmBaseOffset + directory.getRelativeOffsetOfLocalHeader();
