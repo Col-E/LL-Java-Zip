@@ -28,27 +28,22 @@ public class DeflateDecompressor implements Decompressor {
 			byte[] buffer = new byte[1024];
 			long position = 0L;
 			long length = bytes.length();
-			boolean eof;
 			do {
-				eof = false;
 				if (inflater.needsInput()) {
 					int remaining = (int) Math.min(buffer.length, length);
 					if (remaining == 0) {
-						buffer[0] = 0;
-						inflater.setInput(buffer, 0, 1);
-						eof = true;
-					} else {
-						bytes.get(position, buffer, 0, remaining);
-						length -= remaining;
-						position += remaining;
-						inflater.setInput(buffer, 0, remaining);
+						break;
 					}
+					bytes.get(position, buffer, 0, remaining);
+					length -= remaining;
+					position += remaining;
+					inflater.setInput(buffer, 0, remaining);
 				}
 				int count = inflater.inflate(output);
 				if (count != 0) {
 					out.write(output, 0, count);
 				}
-			} while (!eof && !inflater.finished() && !inflater.needsDictionary());
+			} while (!inflater.finished() && !inflater.needsDictionary());
 		}catch (DataFormatException e) {
 			String s = e.getMessage();
 			throw (ZipException) new ZipException(s != null ? null : "Invalid ZLIB data format").initCause(e);

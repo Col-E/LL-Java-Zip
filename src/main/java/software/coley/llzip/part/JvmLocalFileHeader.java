@@ -1,5 +1,6 @@
 package software.coley.llzip.part;
 
+import software.coley.llzip.ZipCompressions;
 import software.coley.llzip.util.ByteData;
 
 import java.util.NavigableSet;
@@ -14,6 +15,9 @@ import java.util.NavigableSet;
  */
 public class JvmLocalFileHeader extends LocalFileHeader {
 	private final NavigableSet<Long> offsets;
+	private long offset;
+	private boolean foundPk;
+	private ByteData data;
 
 	/**
 	 * @param offsets
@@ -27,12 +31,30 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 	public void read(ByteData data, long offset) {
 		super.read(data, offset);
 		// JVM file data reading does NOT use the compressed/uncompressed fields.
-		// Instead, it scans data until the next header/EOF.
+		// Instead, it scans data until the next header.
 		offset += MIN_FIXED_SIZE + getFileNameLength() + getExtraFieldLength();
+		this.offset = offset;
 		Long nextOffset = offsets.ceiling(offset);
-		if (nextOffset != null)
+		if (nextOffset != null) {
 			setFileData(data.slice(offset, nextOffset));
-		else
-			setFileData(data.slice(offset, data.length()));
+			foundPk = true;
+		} else {
+			this.data = data;
+		}
+	}
+
+	@Override
+	public void link(CentralDirectoryFileHeader directoryFileHeader) {
+		super.link(directoryFileHeader);
+		if (!foundPk) {
+			int fileDataLength;
+			if (getCompressionMethod() == ZipCompressions.STORED) {
+				fileDataLength = directoryFileHeader.getUncompressedSize();
+			} else {
+				fileDataLength = directoryFileHeader.getCompressedSize();
+			}
+			setFileData(data.sliceOf(offset, fileDataLength));
+			data = null;
+		}
 	}
 }
