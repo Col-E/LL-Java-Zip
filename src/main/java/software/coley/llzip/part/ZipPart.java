@@ -12,7 +12,7 @@ public interface ZipPart {
 	/**
 	 * @return Length of current content.
 	 */
-	int length();
+	long length();
 
 	/**
 	 * @return Implementation type.

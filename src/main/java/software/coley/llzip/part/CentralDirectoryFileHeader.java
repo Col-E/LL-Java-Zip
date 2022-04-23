@@ -23,15 +23,15 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 	private int lastModFileTime;
 	private int lastModFileDate;
 	private int crc32;
-	private int compressedSize;
-	private int uncompressedSize;
+	private long compressedSize;
+	private long uncompressedSize;
 	private int fileNameLength;
 	private int extraFieldLength;
 	private int fileCommentLength;
 	private int diskNumberStart;
 	private int internalFileAttributes;
 	private int externalFileAttributes;
-	private int relativeOffsetOfLocalHeader;
+	private long relativeOffsetOfLocalHeader;
 	private ByteData fileName;
 	private ByteData extraField;
 	private ByteData fileComment;
@@ -49,23 +49,23 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 		lastModFileTime = ByteDataUtil.readWord(data, offset + 12);
 		lastModFileDate = ByteDataUtil.readWord(data, offset + 14);
 		crc32 = ByteDataUtil.readQuad(data, offset + 16);
-		compressedSize = ByteDataUtil.readQuad(data, offset + 20);
-		uncompressedSize = ByteDataUtil.readQuad(data, offset + 24);
+		setCompressedSize(ByteDataUtil.readQuad(data, offset + 20));
+		setUncompressedSize(ByteDataUtil.readQuad(data, offset + 24));
 		setFileNameLength(ByteDataUtil.readWord(data, offset + 28));
 		setExtraFieldLength(ByteDataUtil.readWord(data, offset + 30));
 		setFileCommentLength(ByteDataUtil.readWord(data, offset + 32));
 		diskNumberStart = ByteDataUtil.readWord(data, offset + 34);
 		internalFileAttributes = ByteDataUtil.readWord(data, offset + 36);
 		externalFileAttributes = ByteDataUtil.readQuad(data, offset + 38);
-		relativeOffsetOfLocalHeader = ByteDataUtil.readQuad(data, offset + 42);
+		setRelativeOffsetOfLocalHeader(ByteDataUtil.readQuad(data, offset + 42));
 		fileName = data.sliceOf(offset + 46, fileNameLength);
 		extraField = data.sliceOf(offset + 46 + fileNameLength, extraFieldLength);
 		fileComment = data.sliceOf(offset + 46 + fileNameLength + extraFieldLength, fileCommentLength);
 	}
 
 	@Override
-	public int length() {
-		return 46 + (int) fileName.length() + (int) extraField.length() + (int) fileComment.length();
+	public long length() {
+		return 46L + fileName.length() + extraField.length() + fileComment.length();
 	}
 
 	@Override
@@ -211,7 +211,7 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 	 *
 	 * @return Compressed size of {@link LocalFileHeader#getFileData()}.
 	 */
-	public int getCompressedSize() {
+	public long getCompressedSize() {
 		return compressedSize;
 	}
 
@@ -219,8 +219,8 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 	 * @param compressedSize
 	 * 		Compressed size of {@link LocalFileHeader#getFileData()}.
 	 */
-	public void setCompressedSize(int compressedSize) {
-		this.compressedSize = compressedSize;
+	public void setCompressedSize(long compressedSize) {
+		this.compressedSize = compressedSize & 0xffffffffL;
 	}
 
 	/**
@@ -230,7 +230,7 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 	 *
 	 * @return Uncompressed size after {@link LocalFileHeader#decompress(Decompressor)} is used on {@link LocalFileHeader#getFileData()}.
 	 */
-	public int getUncompressedSize() {
+	public long getUncompressedSize() {
 		return uncompressedSize;
 	}
 
@@ -238,8 +238,8 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 	 * @param uncompressedSize
 	 * 		Uncompressed size after {@link LocalFileHeader#decompress(Decompressor)} is used on {@link LocalFileHeader#getFileData()}.
 	 */
-	public void setUncompressedSize(int uncompressedSize) {
-		this.uncompressedSize = uncompressedSize;
+	public void setUncompressedSize(long uncompressedSize) {
+		this.uncompressedSize = uncompressedSize & 0xffffffffL;
 	}
 
 	/**
@@ -347,7 +347,7 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 	 * @return Offset from the start of the {@link #getDiskNumberStart() first disk} where the file appears.
 	 * This should also be where the {@link LocalFileHeader} is located.  Or {@code 0xFFFFFFFF} for ZIP64.
 	 */
-	public int getRelativeOffsetOfLocalHeader() {
+	public long getRelativeOffsetOfLocalHeader() {
 		return relativeOffsetOfLocalHeader;
 	}
 
@@ -356,8 +356,8 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 	 * 		Offset from the start of the {@link #getDiskNumberStart() first disk} where the file appears.
 	 * 		This should also be where the {@link LocalFileHeader} is located.  Or {@code 0xFFFFFFFF} for ZIP64.
 	 */
-	public void setRelativeOffsetOfLocalHeader(int relativeOffsetOfLocalHeader) {
-		this.relativeOffsetOfLocalHeader = relativeOffsetOfLocalHeader;
+	public void setRelativeOffsetOfLocalHeader(long relativeOffsetOfLocalHeader) {
+		this.relativeOffsetOfLocalHeader = relativeOffsetOfLocalHeader & 0xffffffffL;
 	}
 
 	/**

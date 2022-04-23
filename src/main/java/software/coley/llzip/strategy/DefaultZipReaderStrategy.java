@@ -39,14 +39,14 @@ public class DefaultZipReaderStrategy implements ZipReaderStrategy {
 		while (centralDirectoryOffset < len && ByteDataUtil.startsWith(data, centralDirectoryOffset, ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER)) {
 			CentralDirectoryFileHeader directory = new CentralDirectoryFileHeader();
 			directory.read(data, centralDirectoryOffset);
-			centralDirectoryOffset += directory.length() & 0xffffffffL; // FIXME: Could still be a lossy cast
+			centralDirectoryOffset += directory.length();
 			zip.getParts().add(directory);
 		}
 		// Read local files
 		// - Set to prevent duplicate file header entries for the same offset
-		Set<Integer> offsets = new HashSet<>();
+		Set<Long> offsets = new HashSet<>();
 		for (CentralDirectoryFileHeader directory : zip.getCentralDirectories()) {
-			int offset = directory.getRelativeOffsetOfLocalHeader();
+			long offset = directory.getRelativeOffsetOfLocalHeader();
 			if (!offsets.contains(offset) && ByteDataUtil.startsWith(data, offset, ZipPatterns.LOCAL_FILE_HEADER)) {
 				LocalFileHeader file = new LocalFileHeader();
 				file.read(data, offset);

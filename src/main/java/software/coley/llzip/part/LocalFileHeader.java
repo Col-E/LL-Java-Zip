@@ -25,8 +25,8 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 	private int lastModFileTime;
 	private int lastModFileDate;
 	private int crc32;
-	private int compressedSize;
-	private int uncompressedSize;
+	private long compressedSize;
+	private long uncompressedSize;
 	private int fileNameLength;
 	private int extraFieldLength;
 	private ByteData fileName;
@@ -44,25 +44,24 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 		lastModFileTime = ByteDataUtil.readWord(data, offset + 10);
 		lastModFileDate = ByteDataUtil.readWord(data, offset + 12);
 		crc32 = ByteDataUtil.readQuad(data, offset + 14);
-		compressedSize = ByteDataUtil.readQuad(data, offset + 18);
-		uncompressedSize = ByteDataUtil.readQuad(data, offset + 22);
-		// Reading these to ints so ensure they act as unsigned shorts
+		setCompressedSize(ByteDataUtil.readQuad(data, offset + 18));
+		setUncompressedSize(ByteDataUtil.readQuad(data, offset + 22));
 		setFileNameLength(ByteDataUtil.readWord(data, offset + 26));
 		setExtraFieldLength(ByteDataUtil.readWord(data, offset + 28));
 		fileName = data.sliceOf(offset + 30, fileNameLength);
 		extraField = data.sliceOf(offset + 30 + fileNameLength, extraFieldLength);
 		long fileDataLength;
 		if (compressionMethod == STORED) {
-			fileDataLength = uncompressedSize & 0xffffffffL;
+			fileDataLength = uncompressedSize;
 		} else {
-			fileDataLength = compressedSize & 0xffffffffL;
+			fileDataLength = compressedSize;
 		}
 		fileData = data.sliceOf(offset + 30 + fileNameLength + extraFieldLength, fileDataLength);
 	}
 
 	@Override
-	public int length() {
-		return MIN_FIXED_SIZE + (int) fileName.length() + (int) extraField.length() + (int) fileData.length();
+	public long length() {
+		return MIN_FIXED_SIZE + fileName.length() + extraField.length() + fileData.length();
 	}
 
 	@Override
@@ -199,7 +198,7 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 	 *
 	 * @return Compressed size of {@link #getFileData()}.
 	 */
-	public int getCompressedSize() {
+	public long getCompressedSize() {
 		return compressedSize;
 	}
 
@@ -207,8 +206,8 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 	 * @param compressedSize
 	 * 		Compressed size of {@link #getFileData()}.
 	 */
-	public void setCompressedSize(int compressedSize) {
-		this.compressedSize = compressedSize;
+	public void setCompressedSize(long compressedSize) {
+		this.compressedSize = compressedSize & 0xffffffffL;
 	}
 
 	/**
@@ -218,7 +217,7 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 	 *
 	 * @return Uncompressed size after {@link #decompress(Decompressor)} is used on {@link #getFileData()}.
 	 */
-	public int getUncompressedSize() {
+	public long getUncompressedSize() {
 		return uncompressedSize;
 	}
 
@@ -226,8 +225,8 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 	 * @param uncompressedSize
 	 * 		Uncompressed size after {@link #decompress(Decompressor)} is used on {@link #getFileData()}.
 	 */
-	public void setUncompressedSize(int uncompressedSize) {
-		this.uncompressedSize = uncompressedSize;
+	public void setUncompressedSize(long uncompressedSize) {
+		this.uncompressedSize = uncompressedSize & 0xffffffffL;
 	}
 
 	/**
