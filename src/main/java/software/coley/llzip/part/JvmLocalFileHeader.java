@@ -47,11 +47,11 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 	public void link(CentralDirectoryFileHeader directoryFileHeader) {
 		super.link(directoryFileHeader);
 		if (!foundPk) {
-			int fileDataLength;
+			long fileDataLength;
 			if (getCompressionMethod() == ZipCompressions.STORED) {
-				fileDataLength = directoryFileHeader.getUncompressedSize();
+				fileDataLength = directoryFileHeader.getUncompressedSize() & 0xffffffffL;
 			} else {
-				fileDataLength = directoryFileHeader.getCompressedSize();
+				fileDataLength = directoryFileHeader.getCompressedSize() & 0xffffffffL;
 			}
 			setFileData(data.sliceOf(offset, fileDataLength));
 			data = null;

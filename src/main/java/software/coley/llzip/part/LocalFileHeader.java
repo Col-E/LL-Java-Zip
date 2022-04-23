@@ -46,15 +46,16 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 		crc32 = ByteDataUtil.readQuad(data, offset + 14);
 		compressedSize = ByteDataUtil.readQuad(data, offset + 18);
 		uncompressedSize = ByteDataUtil.readQuad(data, offset + 22);
-		fileNameLength = ByteDataUtil.readWord(data, offset + 26);
-		extraFieldLength = ByteDataUtil.readWord(data, offset + 28);
+		// Reading these to ints so ensure they act as unsigned shorts
+		setFileNameLength(ByteDataUtil.readWord(data, offset + 26));
+		setExtraFieldLength(ByteDataUtil.readWord(data, offset + 28));
 		fileName = data.sliceOf(offset + 30, fileNameLength);
 		extraField = data.sliceOf(offset + 30 + fileNameLength, extraFieldLength);
-		int fileDataLength;
+		long fileDataLength;
 		if (compressionMethod == STORED) {
-			fileDataLength = uncompressedSize;
+			fileDataLength = uncompressedSize & 0xffffffffL;
 		} else {
-			fileDataLength = compressedSize;
+			fileDataLength = compressedSize & 0xffffffffL;
 		}
 		fileData = data.sliceOf(offset + 30 + fileNameLength + extraFieldLength, fileDataLength);
 	}
@@ -241,7 +242,7 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 	 * 		Length of {@link #getFileName()}.
 	 */
 	public void setFileNameLength(int fileNameLength) {
-		this.fileNameLength = fileNameLength;
+		this.fileNameLength = fileNameLength & 0xffff;
 	}
 
 	/**
@@ -256,7 +257,7 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 	 * 		Length of {@link #getExtraField()}
 	 */
 	public void setExtraFieldLength(int extraFieldLength) {
-		this.extraFieldLength = extraFieldLength;
+		this.extraFieldLength = extraFieldLength & 0xffff;
 	}
 
 	/**

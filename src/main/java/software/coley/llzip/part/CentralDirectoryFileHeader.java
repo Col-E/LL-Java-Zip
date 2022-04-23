@@ -51,9 +51,9 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 		crc32 = ByteDataUtil.readQuad(data, offset + 16);
 		compressedSize = ByteDataUtil.readQuad(data, offset + 20);
 		uncompressedSize = ByteDataUtil.readQuad(data, offset + 24);
-		fileNameLength = ByteDataUtil.readWord(data, offset + 28);
-		extraFieldLength = ByteDataUtil.readWord(data, offset + 30);
-		fileCommentLength = ByteDataUtil.readWord(data, offset + 32);
+		setFileNameLength(ByteDataUtil.readWord(data, offset + 28));
+		setExtraFieldLength(ByteDataUtil.readWord(data, offset + 30));
+		setFileCommentLength(ByteDataUtil.readWord(data, offset + 32));
 		diskNumberStart = ByteDataUtil.readWord(data, offset + 34);
 		internalFileAttributes = ByteDataUtil.readWord(data, offset + 36);
 		externalFileAttributes = ByteDataUtil.readQuad(data, offset + 38);
@@ -254,7 +254,7 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 	 * 		Length of {@link #getFileName()}.
 	 */
 	public void setFileNameLength(int fileNameLength) {
-		this.fileNameLength = fileNameLength;
+		this.fileNameLength = fileNameLength & 0xffff;
 	}
 
 	/**
@@ -269,7 +269,7 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 	 * 		Length of {@link #getExtraField()}
 	 */
 	public void setExtraFieldLength(int extraFieldLength) {
-		this.extraFieldLength = extraFieldLength;
+		this.extraFieldLength = extraFieldLength & 0xffff;
 	}
 
 	/**
@@ -284,7 +284,7 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 	 * 		Length of {@link #getFileComment()}.
 	 */
 	public void setFileCommentLength(int fileCommentLength) {
-		this.fileCommentLength = fileCommentLength;
+		this.fileCommentLength = fileCommentLength & 0xffff;
 	}
 
 	/**

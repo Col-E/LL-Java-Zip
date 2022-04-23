@@ -35,11 +35,11 @@ public class DefaultZipReaderStrategy implements ZipReaderStrategy {
 		zip.getParts().add(end);
 		// Read central directories
 		long len = data.length();
-		int centralDirectoryOffset = end.getCentralDirectoryOffset();
+		long centralDirectoryOffset = end.getCentralDirectoryOffset();
 		while (centralDirectoryOffset < len && ByteDataUtil.startsWith(data, centralDirectoryOffset, ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER)) {
 			CentralDirectoryFileHeader directory = new CentralDirectoryFileHeader();
 			directory.read(data, centralDirectoryOffset);
-			centralDirectoryOffset += directory.length();
+			centralDirectoryOffset += directory.length() & 0xffffffffL; // FIXME: Could still be a lossy cast
 			zip.getParts().add(directory);
 		}
 		// Read local files

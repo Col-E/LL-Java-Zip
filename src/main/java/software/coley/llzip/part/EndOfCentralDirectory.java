@@ -34,7 +34,7 @@ public class EndOfCentralDirectory implements ZipPart, ZipRead {
 		numEntries = ByteDataUtil.readWord(data, offset + 10);
 		centralDirectorySize = ByteDataUtil.readQuad(data, offset + 12);
 		centralDirectoryOffset = ByteDataUtil.readQuad(data, offset + 16);
-		zipCommentLength = ByteDataUtil.readWord(data, offset + 20);
+		setZipCommentLength(ByteDataUtil.readWord(data, offset + 20));
 		zipComment = data.sliceOf(offset + 22, zipCommentLength);
 	}
 
@@ -157,7 +157,7 @@ public class EndOfCentralDirectory implements ZipPart, ZipRead {
 	 *        {@link #getZipComment() Comment} length.
 	 */
 	public void setZipCommentLength(int zipCommentLength) {
-		this.zipCommentLength = zipCommentLength;
+		this.zipCommentLength = zipCommentLength & 0xffff;
 	}
 
 	/**
