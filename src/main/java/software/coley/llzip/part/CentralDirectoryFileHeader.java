@@ -220,7 +220,7 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 	 * 		Compressed size of {@link LocalFileHeader#getFileData()}.
 	 */
 	public void setCompressedSize(long compressedSize) {
-		this.compressedSize = compressedSize & 0xffffffffL;
+		this.compressedSize = compressedSize & 0xFFFFFFFFL;
 	}
 
 	/**
@@ -239,7 +239,7 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 	 * 		Uncompressed size after {@link LocalFileHeader#decompress(Decompressor)} is used on {@link LocalFileHeader#getFileData()}.
 	 */
 	public void setUncompressedSize(long uncompressedSize) {
-		this.uncompressedSize = uncompressedSize & 0xffffffffL;
+		this.uncompressedSize = uncompressedSize & 0xFFFFFFFFL;
 	}
 
 	/**
@@ -254,7 +254,7 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 	 * 		Length of {@link #getFileName()}.
 	 */
 	public void setFileNameLength(int fileNameLength) {
-		this.fileNameLength = fileNameLength & 0xffff;
+		this.fileNameLength = fileNameLength & 0xFFFF;
 	}
 
 	/**
@@ -269,7 +269,7 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 	 * 		Length of {@link #getExtraField()}
 	 */
 	public void setExtraFieldLength(int extraFieldLength) {
-		this.extraFieldLength = extraFieldLength & 0xffff;
+		this.extraFieldLength = extraFieldLength & 0xFFFF;
 	}
 
 	/**
@@ -284,7 +284,7 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 	 * 		Length of {@link #getFileComment()}.
 	 */
 	public void setFileCommentLength(int fileCommentLength) {
-		this.fileCommentLength = fileCommentLength & 0xffff;
+		this.fileCommentLength = fileCommentLength & 0xFFFF;
 	}
 
 	/**
@@ -357,7 +357,7 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 	 * 		This should also be where the {@link LocalFileHeader} is located.  Or {@code 0xFFFFFFFF} for ZIP64.
 	 */
 	public void setRelativeOffsetOfLocalHeader(long relativeOffsetOfLocalHeader) {
-		this.relativeOffsetOfLocalHeader = relativeOffsetOfLocalHeader & 0xffffffffL;
+		this.relativeOffsetOfLocalHeader = relativeOffsetOfLocalHeader & 0xFFFFFFFFL;
 	}
 
 	/**

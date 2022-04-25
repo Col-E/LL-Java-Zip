@@ -207,7 +207,7 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 	 * 		Compressed size of {@link #getFileData()}.
 	 */
 	public void setCompressedSize(long compressedSize) {
-		this.compressedSize = compressedSize & 0xffffffffL;
+		this.compressedSize = compressedSize & 0xFFFFFFFFL;
 	}
 
 	/**
@@ -226,7 +226,7 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 	 * 		Uncompressed size after {@link #decompress(Decompressor)} is used on {@link #getFileData()}.
 	 */
 	public void setUncompressedSize(long uncompressedSize) {
-		this.uncompressedSize = uncompressedSize & 0xffffffffL;
+		this.uncompressedSize = uncompressedSize & 0xFFFFFFFFL;
 	}
 
 	/**
@@ -241,7 +241,7 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 	 * 		Length of {@link #getFileName()}.
 	 */
 	public void setFileNameLength(int fileNameLength) {
-		this.fileNameLength = fileNameLength & 0xffff;
+		this.fileNameLength = fileNameLength & 0xFFFF;
 	}
 
 	/**
@@ -256,7 +256,7 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 	 * 		Length of {@link #getExtraField()}
 	 */
 	public void setExtraFieldLength(int extraFieldLength) {
-		this.extraFieldLength = extraFieldLength & 0xffff;
+		this.extraFieldLength = extraFieldLength & 0xFFFF;
 	}
 
 	/**
