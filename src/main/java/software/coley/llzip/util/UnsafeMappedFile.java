@@ -19,7 +19,8 @@ final class UnsafeMappedFile implements ByteData {
 	private final long address;
 	private final long end;
 	private final Runnable deallocator;
-	private Object attachment;
+	@SuppressWarnings("unused")
+	private final Object attachment;
 
 	private UnsafeMappedFile(Object attachment, long address, long end) {
 		this.attachment = attachment;
@@ -32,6 +33,7 @@ final class UnsafeMappedFile implements ByteData {
 		this.address = address;
 		this.end = address + length;
 		this.deallocator = deallocator;
+		attachment = null;
 	}
 
 	@Override

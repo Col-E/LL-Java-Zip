@@ -14,11 +14,6 @@ public final class BufferData implements ByteData {
 	private final ByteBuffer buffer;
 	private volatile boolean cleaned;
 
-	private BufferData(ByteBuffer buffer, Void slice) {
-		this.buffer = buffer;
-		cleaned = true;
-	}
-
 	private BufferData(ByteBuffer buffer) {
 		this.buffer = buffer;
 	}
@@ -74,7 +69,7 @@ public final class BufferData implements ByteData {
 	@Override
 	public ByteData slice(long startIndex, long endIndex) {
 		ensureOpen();
-		return new BufferData(ByteDataUtil.sliceExact(buffer, validate(startIndex), validate(endIndex)), null);
+		return new BufferData(ByteDataUtil.sliceExact(buffer, validate(startIndex), validate(endIndex)));
 	}
 
 	@Override
