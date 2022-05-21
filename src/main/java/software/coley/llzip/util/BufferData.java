@@ -6,12 +6,13 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 /**
- * Mapped file that is backed by byte buffer.
+ * File that is backed by a byte buffer.
  *
  * @author xDark
  */
 public final class BufferData implements ByteData {
 	private final ByteBuffer buffer;
+	private volatile boolean cleaned;
 
 	private BufferData(ByteBuffer buffer) {
 		this.buffer = buffer;
@@ -19,21 +20,25 @@ public final class BufferData implements ByteData {
 
 	@Override
 	public int getInt(long position) {
+		ensureOpen();
 		return buffer.getInt(validate(position));
 	}
 
 	@Override
 	public short getShort(long position) {
+		ensureOpen();
 		return buffer.getShort(validate(position));
 	}
 
 	@Override
 	public byte get(long position) {
+		ensureOpen();
 		return buffer.get(validate(position));
 	}
 
 	@Override
 	public void get(long position, byte[] b, int off, int len) {
+		ensureOpen();
 		ByteBuffer buffer = this.buffer;
 		((ByteBuffer) buffer.slice()
 				.order(buffer.order())
@@ -43,6 +48,7 @@ public final class BufferData implements ByteData {
 
 	@Override
 	public void transferTo(OutputStream out, byte[] buf) throws IOException {
+		ensureOpen();
 		ByteBuffer buffer = this.buffer;
 		int remaining = buffer.remaining();
 		if (buffer.hasArray()) {
@@ -62,11 +68,13 @@ public final class BufferData implements ByteData {
 
 	@Override
 	public ByteData slice(long startIndex, long endIndex) {
+		ensureOpen();
 		return new BufferData(ByteDataUtil.sliceExact(buffer, validate(startIndex), validate(endIndex)));
 	}
 
 	@Override
 	public long length() {
+		ensureOpen();
 		return ByteDataUtil.length(buffer);
 	}
 
@@ -81,6 +89,35 @@ public final class BufferData implements ByteData {
 	@Override
 	public int hashCode() {
 		return buffer.hashCode();
+	}
+
+	@Override
+	public void close() {
+		if (!cleaned) {
+			synchronized (this) {
+				if (cleaned)
+					return;
+				cleaned = true;
+				ByteBuffer buffer = this.buffer;
+				if (buffer.isDirect()) {
+					CleanerUtil.invokeCleaner(buffer);
+				}
+			}
+		}
+	}
+
+	@Override
+	protected void finalize() throws Throwable {
+		try {
+			close();
+		} finally {
+			super.finalize();
+		}
+	}
+
+	private void ensureOpen() {
+		if (cleaned)
+			throw new IllegalStateException("Cannot access data after close");
 	}
 
 	private static int validate(long v) {

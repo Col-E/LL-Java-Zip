@@ -1,5 +1,6 @@
 package software.coley.llzip.util;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -8,7 +9,7 @@ import java.io.OutputStream;
  *
  * @author xDark
  */
-public interface ByteData {
+public interface ByteData extends Closeable {
 	/**
 	 * Gets int at specific position.
 	 *
