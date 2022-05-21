@@ -15,6 +15,7 @@ final class UnsafeMappedFile implements ByteData {
 	private static final boolean SWAP = ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN;
 	private static final Unsafe UNSAFE = UnsafeUtil.get();
 
+	private volatile boolean closed;
 	private final long address;
 	private final long end;
 	private final Runnable deallocator;
@@ -101,13 +102,25 @@ final class UnsafeMappedFile implements ByteData {
 		return result;
 	}
 
+	@Override
+	public void close() {
+		if (!closed) {
+			synchronized (this) {
+				if (closed)
+					return;
+				closed = true;
+			}
+		}
+		Runnable deallocator = this.deallocator;
+		if (deallocator != null)
+			deallocator.run();
+	}
+
 	@SuppressWarnings("deprecation")
 	@Override
 	protected void finalize() throws Throwable {
-		Runnable deallocator = this.deallocator;
 		try {
-			if (deallocator != null)
-				deallocator.run();
+			close();
 		} finally {
 			super.finalize();
 		}

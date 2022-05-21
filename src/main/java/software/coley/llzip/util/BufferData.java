@@ -6,12 +6,18 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 /**
- * Mapped file that is backed by byte buffer.
+ * File that is backed by a byte buffer.
  *
  * @author xDark
  */
 public final class BufferData implements ByteData {
 	private final ByteBuffer buffer;
+	private volatile boolean cleaned;
+
+	private BufferData(ByteBuffer buffer, Void slice) {
+		this.buffer = buffer;
+		cleaned = true;
+	}
 
 	private BufferData(ByteBuffer buffer) {
 		this.buffer = buffer;
@@ -62,7 +68,7 @@ public final class BufferData implements ByteData {
 
 	@Override
 	public ByteData slice(long startIndex, long endIndex) {
-		return new BufferData(ByteDataUtil.sliceExact(buffer, validate(startIndex), validate(endIndex)));
+		return new BufferData(ByteDataUtil.sliceExact(buffer, validate(startIndex), validate(endIndex)), null);
 	}
 
 	@Override
@@ -81,6 +87,30 @@ public final class BufferData implements ByteData {
 	@Override
 	public int hashCode() {
 		return buffer.hashCode();
+	}
+
+	@Override
+	public void close() {
+		if (!cleaned) {
+			synchronized (this) {
+				if (cleaned)
+					return;
+				cleaned = true;
+			}
+			ByteBuffer buffer = this.buffer;
+			if (buffer.isDirect()) {
+				CleanerUtil.invokeCleaner(buffer);
+			}
+		}
+	}
+
+	@Override
+	protected void finalize() throws Throwable {
+		try {
+			close();
+		} finally {
+			super.finalize();
+		}
 	}
 
 	private static int validate(long v) {
