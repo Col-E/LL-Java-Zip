@@ -116,11 +116,11 @@ final class UnsafeMappedFile implements ByteData {
 				if (cleaned)
 					return;
 				cleaned = true;
+				Runnable deallocator = this.deallocator;
+				if (deallocator != null)
+					deallocator.run();
 			}
 		}
-		Runnable deallocator = this.deallocator;
-		if (deallocator != null)
-			deallocator.run();
 	}
 
 	private void ensureOpen() {

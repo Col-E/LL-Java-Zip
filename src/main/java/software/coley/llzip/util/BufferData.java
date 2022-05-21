@@ -103,10 +103,10 @@ public final class BufferData implements ByteData {
 				if (cleaned)
 					return;
 				cleaned = true;
-			}
-			ByteBuffer buffer = this.buffer;
-			if (buffer.isDirect()) {
-				CleanerUtil.invokeCleaner(buffer);
+				ByteBuffer buffer = this.buffer;
+				if (buffer.isDirect()) {
+					CleanerUtil.invokeCleaner(buffer);
+				}
 			}
 		}
 	}
