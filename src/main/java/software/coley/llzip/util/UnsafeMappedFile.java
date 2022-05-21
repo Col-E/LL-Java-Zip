@@ -15,7 +15,7 @@ final class UnsafeMappedFile implements ByteData {
 	private static final boolean SWAP = ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN;
 	private static final Unsafe UNSAFE = UnsafeUtil.get();
 
-	private volatile boolean closed;
+	private volatile boolean cleaned;
 	private final long address;
 	private final long end;
 	private final Runnable deallocator;
@@ -36,21 +36,25 @@ final class UnsafeMappedFile implements ByteData {
 
 	@Override
 	public int getInt(long position) {
+		ensureOpen();
 		return swap(UNSAFE.getInt(validate(position)));
 	}
 
 	@Override
 	public short getShort(long position) {
+		ensureOpen();
 		return swap(UNSAFE.getShort(validate(position)));
 	}
 
 	@Override
 	public byte get(long position) {
+		ensureOpen();
 		return UNSAFE.getByte(validate(position));
 	}
 
 	@Override
 	public void get(long position, byte[] b, int off, int len) {
+		ensureOpen();
 		long address = validate(position);
 		if (address + len > end)
 			throw new IllegalArgumentException();
@@ -59,6 +63,7 @@ final class UnsafeMappedFile implements ByteData {
 
 	@Override
 	public void transferTo(OutputStream out, byte[] buf) throws IOException {
+		ensureOpen();
 		int copyThreshold = buf.length;
 		long address = this.address;
 		long remaining = end - address;
@@ -73,6 +78,7 @@ final class UnsafeMappedFile implements ByteData {
 
 	@Override
 	public ByteData slice(long startIndex, long endIndex) {
+		ensureOpen();
 		if (startIndex > endIndex)
 			throw new IllegalArgumentException();
 		return new UnsafeMappedFile(this, validate(startIndex), validate(endIndex));
@@ -80,6 +86,7 @@ final class UnsafeMappedFile implements ByteData {
 
 	@Override
 	public long length() {
+		ensureOpen();
 		return end - address;
 	}
 
@@ -104,16 +111,21 @@ final class UnsafeMappedFile implements ByteData {
 
 	@Override
 	public void close() {
-		if (!closed) {
+		if (!cleaned) {
 			synchronized (this) {
-				if (closed)
+				if (cleaned)
 					return;
-				closed = true;
+				cleaned = true;
 			}
 		}
 		Runnable deallocator = this.deallocator;
 		if (deallocator != null)
 			deallocator.run();
+	}
+
+	private void ensureOpen() {
+		if (cleaned)
+			throw new IllegalStateException("Cannot access data after close");
 	}
 
 	@SuppressWarnings("deprecation")

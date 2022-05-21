@@ -25,21 +25,25 @@ public final class BufferData implements ByteData {
 
 	@Override
 	public int getInt(long position) {
+		ensureOpen();
 		return buffer.getInt(validate(position));
 	}
 
 	@Override
 	public short getShort(long position) {
+		ensureOpen();
 		return buffer.getShort(validate(position));
 	}
 
 	@Override
 	public byte get(long position) {
+		ensureOpen();
 		return buffer.get(validate(position));
 	}
 
 	@Override
 	public void get(long position, byte[] b, int off, int len) {
+		ensureOpen();
 		ByteBuffer buffer = this.buffer;
 		((ByteBuffer) buffer.slice()
 				.order(buffer.order())
@@ -49,6 +53,7 @@ public final class BufferData implements ByteData {
 
 	@Override
 	public void transferTo(OutputStream out, byte[] buf) throws IOException {
+		ensureOpen();
 		ByteBuffer buffer = this.buffer;
 		int remaining = buffer.remaining();
 		if (buffer.hasArray()) {
@@ -68,11 +73,13 @@ public final class BufferData implements ByteData {
 
 	@Override
 	public ByteData slice(long startIndex, long endIndex) {
+		ensureOpen();
 		return new BufferData(ByteDataUtil.sliceExact(buffer, validate(startIndex), validate(endIndex)), null);
 	}
 
 	@Override
 	public long length() {
+		ensureOpen();
 		return ByteDataUtil.length(buffer);
 	}
 
@@ -111,6 +118,11 @@ public final class BufferData implements ByteData {
 		} finally {
 			super.finalize();
 		}
+	}
+
+	private void ensureOpen() {
+		if (cleaned)
+			throw new IllegalStateException("Cannot access data after close");
 	}
 
 	private static int validate(long v) {
