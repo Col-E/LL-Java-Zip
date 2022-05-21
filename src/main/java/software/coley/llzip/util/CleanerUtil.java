@@ -79,6 +79,7 @@ public final class CleanerUtil {
 			} catch(Exception ignored1) {
 				invokeCleaner = null;
 				getCleaner = null;
+				supported = false;
 			}
 		} catch(Exception ex) {
 			invokeCleaner = null;
