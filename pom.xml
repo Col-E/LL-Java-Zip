@@ -6,7 +6,7 @@
 
     <groupId>software.coley</groupId>
     <artifactId>lljzip</artifactId>
-    <version>1.1.5</version>
+    <version>1.1.6</version>
 
     <properties>
         <junit.version>5.8.2</junit.version>

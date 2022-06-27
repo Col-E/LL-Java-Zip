@@ -453,9 +453,9 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 				", internalFileAttributes=" + internalFileAttributes +
 				", externalFileAttributes=" + externalFileAttributes +
 				", relativeOffsetOfLocalHeader=" + relativeOffsetOfLocalHeader +
-				", fileName='" + fileName + '\'' +
+				", fileName='" + ByteDataUtil.toString(fileName) + '\'' +
 				", extraField=" + ByteDataUtil.toString(extraField) +
-				", fileComment='" + fileComment + '\'' +
+				", fileComment='" + ByteDataUtil.toString(fileComment) + '\'' +
 				'}';
 	}
 

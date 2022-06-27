@@ -36,35 +36,6 @@ public class JvmZipReaderStrategy implements ZipReaderStrategy {
 		long endOfCentralDirectoryOffset = ByteDataUtil.lastIndexOf(data, ZipPatterns.END_OF_CENTRAL_DIRECTORY);
 		if (endOfCentralDirectoryOffset < 0L)
 			throw new IOException("No Central-Directory-File-Header found!");
-		// Determine base offset for computing file header locations with.
-		// - If there is a preceding block of another zip, start with that.
-		long jvmBaseOffset;
-		long precedingEndOfCentralDirectory = ByteDataUtil.lastIndexOf(data, endOfCentralDirectoryOffset - 1, ZipPatterns.END_OF_CENTRAL_DIRECTORY);
-		if (precedingEndOfCentralDirectory == endOfCentralDirectoryOffset) {
-			// The prior end part match is target end part, so we can't use it as a base offset.
-			jvmBaseOffset = 0L;
-		} else if (precedingEndOfCentralDirectory == -1L) {
-			// There was no match for a prior end part. We will seek forwards until finding a *VALID* PK starting header.
-			jvmBaseOffset = ByteDataUtil.indexOf(data, ZipPatterns.PK);
-			while (jvmBaseOffset >= 0L) {
-				// Check that the PK discovered represents a valid zip part
-				try {
-					if (ByteDataUtil.startsWith(data, jvmBaseOffset, ZipPatterns.LOCAL_FILE_HEADER))
-						new LocalFileHeader().read(data, jvmBaseOffset);
-					else if (ByteDataUtil.startsWith(data, jvmBaseOffset, ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER))
-						new CentralDirectoryFileHeader().read(data, jvmBaseOffset);
-					// Valid, we're good to go
-					break;
-				} catch (Exception ex) {
-					// Invalid, seek forward
-					jvmBaseOffset = ByteDataUtil.indexOf(data, jvmBaseOffset+1L, ZipPatterns.PK);
-				}
-			}
-		} else {
-			// There was a prior end part, so we will seek past it's length and use that as the base offset.
-			// 22 is the minimum possible size of an end part. It can be longer with comments applied, but there are almost never comments.
-			jvmBaseOffset = precedingEndOfCentralDirectory + 22L;
-		}
 		// Read end header
 		EndOfCentralDirectory end = new EndOfCentralDirectory();
 		end.read(data, endOfCentralDirectoryOffset);
@@ -80,18 +51,60 @@ public class JvmZipReaderStrategy implements ZipReaderStrategy {
 				zip.getParts().add(directory);
 			}
 		}
+		// Determine base offset for computing file header locations with.
+		// - If there is a preceding block of another zip, start with that.
+		long jvmBaseFileOffset;
+		long precedingEndOfCentralDirectory = ByteDataUtil.lastIndexOf(data, endOfCentralDirectoryOffset - 1, ZipPatterns.END_OF_CENTRAL_DIRECTORY);
+		if (precedingEndOfCentralDirectory == endOfCentralDirectoryOffset) {
+			// The prior end part match is target end part, so we can't use it as a base offset.
+			jvmBaseFileOffset = 0L;
+		} else if (precedingEndOfCentralDirectory == -1L) {
+			// There was no match for a prior end part. We will seek forwards until finding a *VALID* PK starting header.
+			jvmBaseFileOffset = ByteDataUtil.indexOf(data, ZipPatterns.PK);
+			while (jvmBaseFileOffset >= 0L) {
+				// Check that the PK discovered represents a valid zip part
+				try {
+					if (ByteDataUtil.startsWith(data, jvmBaseFileOffset, ZipPatterns.LOCAL_FILE_HEADER))
+						new LocalFileHeader().read(data, jvmBaseFileOffset);
+					else if (ByteDataUtil.startsWith(data, jvmBaseFileOffset, ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER))
+						new CentralDirectoryFileHeader().read(data, jvmBaseFileOffset);
+					else
+						throw new IllegalStateException("No match for LocalFileHeader/CentralDirectoryFileHeader");
+					// Valid, we're good to go
+					break;
+				} catch (Exception ex) {
+					// Invalid, seek forward
+					jvmBaseFileOffset = ByteDataUtil.indexOf(data, jvmBaseFileOffset + 1L, ZipPatterns.PK);
+				}
+			}
+		} else {
+			// TODO: Double check 'precedingEndOfCentralDirectory' points to a EndOfCentralDirectory that isn't bogus
+			//  like some shit defined as a fake comment in another ZipPart
+
+			// There was a prior end part, so we will seek past it's length and use that as the base offset.
+			try {
+				// Make sure it isn't bogus before we use it as a reference point
+				EndOfCentralDirectory tempEnd = new EndOfCentralDirectory();
+				tempEnd.read(data, precedingEndOfCentralDirectory);
+				jvmBaseFileOffset = precedingEndOfCentralDirectory + tempEnd.length();
+			} catch (Exception ex) {
+				// It's bogus and the sig-match was a coincidence. Zero out the offset.
+				jvmBaseFileOffset = 0;
+			}
+		}
 		// Read local files
 		// - Set to prevent duplicate file header entries for the same offset
 		Set<Long> offsets = new HashSet<>();
 		TreeSet<Long> lfhOffsets = new TreeSet<>();
 		for (CentralDirectoryFileHeader directory : zip.getCentralDirectories()) {
-			long offset = jvmBaseOffset + directory.getRelativeOffsetOfLocalHeader();
+			long offset = jvmBaseFileOffset + directory.getRelativeOffsetOfLocalHeader();
 			if (ByteDataUtil.startsWith(data, offset, ZipPatterns.LOCAL_FILE_HEADER)) {
 				lfhOffsets.add(offset);
 			}
 		}
 		for (CentralDirectoryFileHeader directory : zip.getCentralDirectories()) {
-			long offset = jvmBaseOffset + directory.getRelativeOffsetOfLocalHeader();
+			long relative = directory.getRelativeOffsetOfLocalHeader();
+			long offset = jvmBaseFileOffset + relative;
 			if (!offsets.contains(offset) && ByteDataUtil.startsWith(data, offset, ZipPatterns.LOCAL_FILE_HEADER)) {
 				try {
 					JvmLocalFileHeader file = new JvmLocalFileHeader(lfhOffsets);
