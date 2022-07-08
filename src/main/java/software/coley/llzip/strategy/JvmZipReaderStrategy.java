@@ -43,12 +43,15 @@ public class JvmZipReaderStrategy implements ZipReaderStrategy {
 		// Read central directories
 		long len = data.length();
 		long centralDirectoryOffset = len - ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER.length;
+		long maxRelativeOffset = 0;
 		while (centralDirectoryOffset > 0L) {
 			centralDirectoryOffset = ByteDataUtil.lastIndexOf(data, centralDirectoryOffset - 1L, ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER);
 			if (centralDirectoryOffset >= 0L) {
 				CentralDirectoryFileHeader directory = new CentralDirectoryFileHeader();
 				directory.read(data, centralDirectoryOffset);
 				zip.getParts().add(directory);
+				if (directory.getRelativeOffsetOfLocalHeader() > maxRelativeOffset)
+					maxRelativeOffset = directory.getRelativeOffsetOfLocalHeader();
 			}
 		}
 		// Determine base offset for computing file header locations with.
@@ -83,20 +86,14 @@ public class JvmZipReaderStrategy implements ZipReaderStrategy {
 				// Make sure it isn't bogus before we use it as a reference point
 				EndOfCentralDirectory tempEnd = new EndOfCentralDirectory();
 				tempEnd.read(data, precedingEndOfCentralDirectory);
-
-
+				// If we use this as a point of reference there must be enough data remaining
+				// to read the largest offset specified by our central directories.
+				long hypotheticalJvmBaseOffset = precedingEndOfCentralDirectory + tempEnd.length();
+				if (len <= hypotheticalJvmBaseOffset + maxRelativeOffset)
+					throw new IllegalStateException();
 				// TODO: Double check 'precedingEndOfCentralDirectory' points to a EndOfCentralDirectory that isn't bogus
 				//  like some shit defined as a fake comment in another ZipPart.
 				//   - Needs to be done in such a way where we do not get tricked by the '-trick.jar' samples
-				//  This is a quick hack.
-				if (tempEnd.getCentralDirectorySize() > len)
-					throw new IllegalStateException();
-				if (tempEnd.getCentralDirectoryOffset() > tempEnd.getNumEntries())
-					throw new IllegalStateException();
-				if (tempEnd.getDiskNumber() == 0 && tempEnd.getNumEntries() != tempEnd.getCentralDirectoryOffset())
-					throw new IllegalStateException();
-
-
 				jvmBaseFileOffset = precedingEndOfCentralDirectory + tempEnd.length();
 			} catch (Exception ex) {
 				// It's bogus and the sig-match was a coincidence. Zero out the offset.
