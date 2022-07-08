@@ -78,14 +78,25 @@ public class JvmZipReaderStrategy implements ZipReaderStrategy {
 				}
 			}
 		} else {
-			// TODO: Double check 'precedingEndOfCentralDirectory' points to a EndOfCentralDirectory that isn't bogus
-			//  like some shit defined as a fake comment in another ZipPart
-
 			// There was a prior end part, so we will seek past it's length and use that as the base offset.
 			try {
 				// Make sure it isn't bogus before we use it as a reference point
 				EndOfCentralDirectory tempEnd = new EndOfCentralDirectory();
 				tempEnd.read(data, precedingEndOfCentralDirectory);
+
+
+				// TODO: Double check 'precedingEndOfCentralDirectory' points to a EndOfCentralDirectory that isn't bogus
+				//  like some shit defined as a fake comment in another ZipPart.
+				//   - Needs to be done in such a way where we do not get tricked by the '-trick.jar' samples
+				//  This is a quick hack.
+				if (tempEnd.getCentralDirectorySize() > len)
+					throw new IllegalStateException();
+				if (tempEnd.getCentralDirectoryOffset() > tempEnd.getNumEntries())
+					throw new IllegalStateException();
+				if (tempEnd.getDiskNumber() == 0 && tempEnd.getNumEntries() != tempEnd.getCentralDirectoryOffset())
+					throw new IllegalStateException();
+
+
 				jvmBaseFileOffset = precedingEndOfCentralDirectory + tempEnd.length();
 			} catch (Exception ex) {
 				// It's bogus and the sig-match was a coincidence. Zero out the offset.
