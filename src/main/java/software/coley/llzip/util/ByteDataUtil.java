@@ -116,7 +116,7 @@ public class ByteDataUtil {
 	 * @return Value of word.
 	 */
 	public static int readWord(ByteData data, long i) {
-		return data.getShort(i);
+		return data.getShort(i) & 0xFFFF;
 	}
 
 	/**
