@@ -1,4 +1,5 @@
-# LLJ-ZIP
+# LLJ-ZIP [![](https://jitpack.io/v/Col-E/LL-Java-Zip.svg)](https://jitpack.io/#Col-E/LL-Java-Zip) ![](https://github.com/Col-E/LL-Java-Zip/actions/workflows/display_test_results.yml/badge.svg)
+
 
 A closer to the spec implementation of ZIP parsing for Java.
 
