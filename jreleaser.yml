@@ -1,0 +1,31 @@
+project:
+  name: lljzip
+  description: Lower level ZIP support for Java.
+  longDescription: Lower level ZIP support for Java, for when abstraction is not desired.
+  links:
+    homepage: https://github.com/Col-E/LL-Java-Zip
+  authors:
+    - Matt Coley
+  license: MIT
+  inceptionYear: 2022
+  stereotype: none
+  java:
+    version: 11
+    groupId: software.coley
+    artifactId: lljzip
+
+release:
+  github:
+    overwrite: true
+    tagName: '{{projectVersion}}'
+    changelog:
+      formatted: ALWAYS
+      preset: conventional-commits
+      contributors:
+        format: '- {{contributorName}}{{#contributorUsernameAsLink}} ({{.}}){{/contributorUsernameAsLink}}'
+
+distributions:
+  dist:
+    type: SINGLE_JAR
+    artifacts:
+      - path: target/{{projectName}}-{{projectVersion}}.jar
