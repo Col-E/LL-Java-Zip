@@ -8,6 +8,10 @@
     <artifactId>lljzip</artifactId>
     <version>1.1.8</version>
 
+    <name>LL Java ZIP</name>
+    <description>Lower level ZIP support for Java</description>
+    <url>https://github.com/Col-E/LL-Java-Zip</url>
+
     <licenses>
         <license>
             <name>The MIT License (MIT)</name>
