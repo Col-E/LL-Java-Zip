@@ -8,8 +8,26 @@
     <artifactId>lljzip</artifactId>
     <version>1.1.8</version>
 
+    <licenses>
+        <license>
+            <name>The MIT License (MIT)</name>
+            <url>https://spdx.org/licenses/MIT.html</url>
+        </license>
+    </licenses>
+    <scm>
+        <connection>scm:git:git://github.com/Col-E/LL-Java-Zip.git</connection>
+        <developerConnection>scm:git:ssh://github.com:Col-E/LL-Java-Zip.git</developerConnection>
+        <url>https://github.com/Col-E/LL-Java-Zip</url>
+    </scm>
+    <developers>
+        <developer>
+            <name>Matt Coley</name>
+            <email>mcoley2@gmu.edu</email>
+        </developer>
+    </developers>
+
     <properties>
-        <junit.version>5.8.2</junit.version>
+        <junit.version>5.9.2</junit.version>
     </properties>
 
     <dependencies>
@@ -58,7 +76,7 @@
         <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm-tree</artifactId>
-            <version>9.2</version>
+            <version>9.5</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
