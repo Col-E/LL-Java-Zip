@@ -37,17 +37,17 @@ jobs:
           java-version: ${{ matrix.java-version }}
 
       # Set environment variable for the project version: "var_to_set=$(command_to_run)" >> sink
-      #  - For maven:  echo "PROJECT_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
-      #  - For gradle: echo "PROJECT_VERSION=$(./gradlew properties | grep -Po '(?<=version: ).*')" >> $GITHUB_ENV
+      #  - For maven:  echo "JRELEASER_PROJECT_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
+      #  - For gradle: echo "JRELEASER_PROJECT_VERSION=$(./gradlew properties | grep -Po '(?<=version: ).*')" >> $GITHUB_ENV
       - name: Extract project version to environment variable
-        run: echo "PROJECT_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
+        run: echo "JRELEASER_PROJECT_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
 
       # Check if a tag exists that matches the current project version.
       # Write the existence state to the step output 'tagExists'.
       - name: 'Check: package version has corresponding git tag'
         id: tagged
         shell: bash
-        run: git show-ref --tags --verify --quiet -- "refs/tags/${{ env.PROJECT_VERSION }}" && echo "tagExists=1" >> $GITHUB_OUTPUT || echo "tagExists=0" >> $GITHUB_OUTPUT
+        run: git show-ref --tags --verify --quiet -- "refs/tags/${{ env.JRELEASER_PROJECT_VERSION }}" && echo "tagExists=1" >> $GITHUB_OUTPUT || echo "tagExists=0" >> $GITHUB_OUTPUT
 
       # Run tests & build artifact
       - name: Build
@@ -75,7 +75,7 @@ jobs:
         with:
           arguments: full-release
         env:
-          JRELEASER_PROJECT_VERSION: ${{ env.PROJECT_VERSION }}
+          JRELEASER_PROJECT_VERSION: ${{ env.JRELEASER_PROJECT_VERSION }}
           JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           JRELEASER_GPG_PASSPHRASE: ${{ secrets.JRELEASER_GPG_PASSPHRASE }}
           JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.JRELEASER_GPG_PUBLIC_KEY }}
