@@ -1,6 +1,7 @@
 name: CI
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - master
@@ -54,12 +55,15 @@ jobs:
         shell: bash
         run: git show-ref --tags --verify --quiet -- "refs/tags/${{ env.PROJECT_VERSION }}" && echo "tagExists=1" >> $GITHUB_OUTPUT || echo "tagExists=0" >> $GITHUB_OUTPUT
 
-      # Run tests & build artifact
+      # Run build.
+      # Either the tag exists, or the trigger was not a manual one.
+      # Without explicit intent we do not want to publish a release.
       - name: Build
-        if: steps.tagged.outputs.tagExists == 1
+        if: steps.tagged.outputs.tagExists == 1 || github.event_name != 'workflow_dispatch'
         run: ./mvnw test
+      # Tag does not exist AND trigger was manual. Deploy release artifacts!
       - name: Build release
-        if: steps.tagged.outputs.tagExists == 0
+        if: steps.tagged.outputs.tagExists == 0 && github.event_name == 'workflow_dispatch'
         run: ./mvnw deploy -Prelease -DaltDeploymentRepository=local::default::file:./target/staging-deploy
 
       # Upload test results
@@ -75,7 +79,7 @@ jobs:
 
       # Make release with JReleaser, only running when the project version does not exist as a tag on the repository.
       - name: Release
-        if: steps.tagged.outputs.tagExists == 0
+        if: steps.tagged.outputs.tagExists == 0 && github.event_name == 'workflow_dispatch'
         uses: jreleaser/release-action@v2
         with:
           arguments: full-release
