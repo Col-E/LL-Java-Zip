@@ -12,7 +12,6 @@ import java.nio.ByteBuffer;
  * @author xDark
  */
 public final class CleanerUtil {
-
 	private static final Method INVOKE_CLEANER;
 	private static final Method GET_CLEANER;
 	private static final boolean SUPPORTED;
