@@ -48,5 +48,5 @@ deploy:
         applyMavenCentralRules: true
         stagingRepositories:
           - target/staging-deploy
-        closeRepository: true
-        releaseRepository: true
+        closeRepository: false
+        releaseRepository: false
