@@ -38,7 +38,7 @@ jobs:
       
       # Run tests & build artifact
       - name: Run tests & build release
-        run: ./mvnw package
+        run: ./mvnw install -Prelease
       
       # Upload test results
       - name: Upload Test Results
@@ -73,7 +73,12 @@ jobs:
         env:
           JRELEASER_PROJECT_VERSION: ${{ env.JRELEASER_PROJECT_VERSION }}
           JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
+          JRELEASER_GPG_PASSPHRASE: ${{ secrets.JRELEASER_GPG_PASSPHRASE }}
+          JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.JRELEASER_GPG_PUBLIC_KEY }}
+          JRELEASER_GPG_SECRET_KEY: ${{ secrets.JRELEASER_GPG_SECRET_KEY }}
+          JRELEASER_NEXUS2_MAVEN_CENTRAL_USERNAME: ${{ secrets.JRELEASER_DEPLOY_MAVEN_NEXUS2_USERNAME }}
+          JRELEASER_NEXUS2_MAVEN_CENTRAL_PASSWORD: ${{ secrets.JRELEASER_DEPLOY_MAVEN_NEXUS2_PASSWORD }}
+
       # Upload JRelease debug log
       - name: JReleaser output
         if: steps.tagged.outputs.tagExists == 0
