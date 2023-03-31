@@ -49,8 +49,8 @@ jobs:
         run: ./mvnw test
       - name: Build release
         if: steps.tagged.outputs.tagExists == 0
-        run: ./mvnw install -Prelease
-      
+        run: ./mvnw deploy -Prelease -DaltDeploymentRepository=local::default::file:./target/staging-deploy
+
       # Upload test results
       - name: Upload Test Results
         uses: actions/upload-artifact@v2.3.1
