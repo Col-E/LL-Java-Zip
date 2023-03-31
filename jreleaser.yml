@@ -42,11 +42,11 @@ signing:
 deploy:
   maven:
     nexus2:
-      app:
+      maven-central:
         active: RELEASE
         url: https://s01.oss.sonatype.org/service/local
         applyMavenCentralRules: true
         stagingRepositories:
           - target/staging-deploy
-        closeRepository: false
-        releaseRepository: false
+        closeRepository: true
+        releaseRepository: true
