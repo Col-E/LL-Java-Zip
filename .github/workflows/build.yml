@@ -36,7 +36,9 @@ jobs:
           distribution: adopt-hotspot
           java-version: ${{ matrix.java-version }}
 
-      - name: Testing to see if Maven wrapper needs to be run first before the step after this one
+      # The project version extract NEEDS to have the maven wrapper already downloaded.
+      # So we have a dummy step here just to initialize it.
+      - name: Download maven wrapper
         run: ./mvnw --version
 
       # Set environment variable for the project version: "var_to_set=$(command_to_run)" >> sink
