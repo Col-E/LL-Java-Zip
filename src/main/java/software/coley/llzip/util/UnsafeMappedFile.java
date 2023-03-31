@@ -55,26 +55,26 @@ final class UnsafeMappedFile implements ByteData {
 	}
 
 	@Override
-	public void get(long position, byte[] b, int off, int len) {
+	public void get(long position, byte[] buffer, int off, int len) {
 		ensureOpen();
 		long address = validate(position);
 		if (address + len > end)
 			throw new IllegalArgumentException();
-		UNSAFE.copyMemory(null, address, b, Unsafe.ARRAY_BYTE_BASE_OFFSET + off, len);
+		UNSAFE.copyMemory(null, address, buffer, Unsafe.ARRAY_BYTE_BASE_OFFSET + off, len);
 	}
 
 	@Override
-	public void transferTo(OutputStream out, byte[] buf) throws IOException {
+	public void transferTo(OutputStream out, byte[] buffer) throws IOException {
 		ensureOpen();
-		int copyThreshold = buf.length;
+		int copyThreshold = buffer.length;
 		long address = this.address;
 		long remaining = end - address;
 		while (remaining != 0L) {
 			int length = (int) Math.min(copyThreshold, remaining);
-			UNSAFE.copyMemory(null, address, buf, Unsafe.ARRAY_BYTE_BASE_OFFSET, length);
+			UNSAFE.copyMemory(null, address, buffer, Unsafe.ARRAY_BYTE_BASE_OFFSET, length);
 			remaining -= length;
 			address += length;
-			out.write(buf, 0, length);
+			out.write(buffer, 0, length);
 		}
 	}
 

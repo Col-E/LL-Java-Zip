@@ -194,7 +194,7 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 	 * Different zip-parsing programs treat the files differently
 	 * and may not adhere to what you expect from the zip specification.
 	 * <br>
-	 * When in doubt, trust {@link byte[]#length()} from {@link #getFileData()}.
+	 * When in doubt, trust {@code data.length()} from {@link #getFileData()}.
 	 *
 	 * @return Compressed size of {@link #getFileData()}.
 	 */

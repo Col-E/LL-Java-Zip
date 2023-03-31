@@ -207,7 +207,7 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 	 * Different zip-parsing programs treat the files differently
 	 * and may not adhere to what you expect from the zip specification.
 	 * <br>
-	 * When in doubt, trust {@link byte[]#length()} from {@link LocalFileHeader#getFileData()}.
+	 * When in doubt, trust {@code data.length()} from {@link LocalFileHeader#getFileData()}.
 	 *
 	 * @return Compressed size of {@link LocalFileHeader#getFileData()}.
 	 */
@@ -288,7 +288,7 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 	}
 
 	/**
-	 * @return Disk number where the archive starts from, or {@link 0xFFFF} for ZIP64.
+	 * @return Disk number where the archive starts from, or {@code 0xFFFF} for ZIP64.
 	 */
 	public int getDiskNumberStart() {
 		return diskNumberStart;
@@ -296,7 +296,7 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 
 	/**
 	 * @param diskNumberStart
-	 * 		Disk number where the archive starts from, or {@link 0xFFFF} for ZIP64.
+	 * 		Disk number where the archive starts from, or {@code 0xFFFF} for ZIP64.
 	 */
 	public void setDiskNumberStart(int diskNumberStart) {
 		this.diskNumberStart = diskNumberStart;

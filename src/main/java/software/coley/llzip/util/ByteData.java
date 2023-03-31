@@ -45,21 +45,27 @@ public interface ByteData extends Closeable {
 	 *
 	 * @param position
 	 * 		Position to copy from.
+	 * @param buffer
+	 * 		Buffer to store contents in.
+	 * @param off
+	 * 		Offset in buffer to start from.
+	 * @param len
+	 * 		Length of content.
 	 */
-	void get(long position, byte[] b, int off, int len);
+	void get(long position, byte[] buffer, int off, int len);
 
 	/**
 	 * Transfers data to target output stream.
 	 *
 	 * @param out
 	 * 		Stream to transfer data to.
-	 * @param buf
+	 * @param buffer
 	 * 		Buffer to use for transferring.
 	 *
 	 * @throws IOException
 	 * 		If any I/O error occurs.
 	 */
-	void transferTo(OutputStream out, byte[] buf) throws IOException;
+	void transferTo(OutputStream out, byte[] buffer) throws IOException;
 
 	/**
 	 * Makes a slice of data.
