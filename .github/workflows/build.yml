@@ -35,9 +35,20 @@ jobs:
         with:
           distribution: adopt-hotspot
           java-version: ${{ matrix.java-version }}
-      
+
+      # Check if a tag exists that matches the current project version.
+      # Write the existence state to the step output 'tagExists'.
+      - name: 'Check: package version has corresponding git tag'
+        id: tagged
+        shell: bash
+        run: git show-ref --tags --verify --quiet -- "refs/tags/${{ env.JRELEASER_PROJECT_VERSION }}" && echo "tagExists=1" >> $GITHUB_OUTPUT || echo "tagExists=0" >> $GITHUB_OUTPUT
+
       # Run tests & build artifact
-      - name: Run tests & build release
+      - name: Build
+        if: steps.tagged.outputs.tagExists == 1
+        run: ./mvnw test
+      - name: Build release
+        if: steps.tagged.outputs.tagExists == 0
         run: ./mvnw install -Prelease
       
       # Upload test results
@@ -57,13 +68,6 @@ jobs:
       - name: Extract project version to environment variable
         run: echo "JRELEASER_PROJECT_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
 
-      # Check if a tag exists that matches the current project version.
-      # Write the existence state to the step output 'tagExists'.
-      - name: 'Check: package version has corrosponding git tag'
-        id: tagged
-        shell: bash
-        run: git show-ref --tags --verify --quiet -- "refs/tags/${{ env.JRELEASER_PROJECT_VERSION }}" && echo "tagExists=1" >> $GITHUB_OUTPUT || echo "tagExists=0" >> $GITHUB_OUTPUT
-      
       # Make release with JReleaser, only running when the project version does not exist as a tag on the repository.
       - name: Release
         if: steps.tagged.outputs.tagExists == 0
