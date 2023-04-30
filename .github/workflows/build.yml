@@ -13,7 +13,8 @@ on:
         description: Publish release? (Only works on master, and for untagged versions)
         type: boolean
 
-permissions: {}
+permissions:
+  contents: write
 
 jobs:
   test:
