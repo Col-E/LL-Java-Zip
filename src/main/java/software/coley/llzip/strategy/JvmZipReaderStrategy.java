@@ -120,6 +120,8 @@ public class JvmZipReaderStrategy implements ZipReaderStrategy {
 					zip.getParts().add(file);
 					directory.link(file);
 					file.link(directory);
+					postProcessLocalFileHeader(file);
+					file.freeze();
 					offsets.add(offset);
 				} catch (Exception ex) {
 					logger.warn("Failed to read 'local file header' at offset[{}]", offset, ex);
@@ -130,5 +132,9 @@ public class JvmZipReaderStrategy implements ZipReaderStrategy {
 		}
 		// Sort based on order
 		zip.getParts().sort(new OffsetComparator());
+	}
+
+	protected void postProcessLocalFileHeader(LocalFileHeader file) {
+		// no-op
 	}
 }

@@ -53,6 +53,8 @@ public class DefaultZipReaderStrategy implements ZipReaderStrategy {
 				zip.getParts().add(file);
 				directory.link(file);
 				file.link(directory);
+				postProcessLocalFileHeader(file);
+				file.freeze();
 				offsets.add(offset);
 			} else {
 				logger.warn("Central-Directory-File-Header's offset[{}] to Local-File-Header does not match the Local-File-Header magic!", offset);
@@ -60,5 +62,9 @@ public class DefaultZipReaderStrategy implements ZipReaderStrategy {
 		}
 		// Sort based on order
 		zip.getParts().sort(new OffsetComparator());
+	}
+
+	protected void postProcessLocalFileHeader(LocalFileHeader file) {
+		// no-op
 	}
 }

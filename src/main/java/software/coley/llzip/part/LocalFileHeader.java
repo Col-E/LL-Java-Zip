@@ -7,7 +7,7 @@ import software.coley.llzip.util.ByteDataUtil;
 
 import java.io.IOException;
 
-import static software.coley.llzip.ZipCompressions.*;
+import static software.coley.llzip.ZipCompressions.STORED;
 
 /**
  * ZIP LocalFileHeader structure.
@@ -35,8 +35,11 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 
 	private transient String fileNameCache;
 
+	private ByteData data;
+
 	@Override
 	public void read(ByteData data, long offset) {
+		this.data = data;
 		this.offset = offset;
 		versionNeededToExtract = ByteDataUtil.readWord(data, offset + 4);
 		generalPurposeBitFlag = ByteDataUtil.readWord(data, offset + 6);
@@ -57,6 +60,43 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 			fileDataLength = compressedSize;
 		}
 		fileData = data.sliceOf(offset + 30 + fileNameLength + extraFieldLength, fileDataLength);
+	}
+
+	/**
+	 * When called before being {@link #freeze() frozen} values can be adopted from the linked
+	 * {@link #getLinkedDirectoryFileHeader() CentralDirectoryFileHeader}.
+	 * <br>
+	 * In some cases the {@link LocalFileHeader} file size may be 0, but the authoritative CEN states a non-0 value,
+	 * which you may want to adopt.
+	 */
+	public void adoptLinkedCentralDirectoryValues() {
+		if (data != null && linkedDirectoryFileHeader != null) {
+			versionNeededToExtract = linkedDirectoryFileHeader.getVersionNeededToExtract();
+			generalPurposeBitFlag = linkedDirectoryFileHeader.getGeneralPurposeBitFlag();
+			setCompressionMethod(linkedDirectoryFileHeader.getCompressionMethod());
+			lastModFileTime = linkedDirectoryFileHeader.getLastModFileTime();
+			lastModFileDate = linkedDirectoryFileHeader.getLastModFileDate();
+			setCrc32(linkedDirectoryFileHeader.getCrc32());
+			setCompressedSize(linkedDirectoryFileHeader.getCompressedSize());
+			setUncompressedSize(linkedDirectoryFileHeader.getUncompressedSize());
+			setFileNameLength(linkedDirectoryFileHeader.getFileNameLength());
+			setFileName(data.sliceOf(offset + 30, fileNameLength));
+			extraField = data.sliceOf(offset + 30 + fileNameLength, extraFieldLength);
+			long fileDataLength;
+			if (compressionMethod == STORED) {
+				fileDataLength = uncompressedSize;
+			} else {
+				fileDataLength = compressedSize;
+			}
+			fileData = data.sliceOf(offset + 30 + fileNameLength + extraFieldLength, fileDataLength);
+		}
+	}
+
+	/**
+	 * Clears the reference to the source {@link ByteData}, preventing further modification.
+	 */
+	public void freeze() {
+		data = null;
 	}
 
 	@Override
