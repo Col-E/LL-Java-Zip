@@ -139,6 +139,7 @@ jobs:
       # Upload JRelease debug log
       - name: JReleaser output
         uses: actions/upload-artifact@v3
+        if: always()
         with:
           name: jreleaser-release
           path: |
