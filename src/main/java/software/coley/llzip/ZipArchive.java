@@ -55,4 +55,19 @@ public class ZipArchive {
 				.map(part -> (EndOfCentralDirectory) part)
 				.findFirst().orElse(null);
 	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+
+		ZipArchive that = (ZipArchive) o;
+
+		return parts.equals(that.parts);
+	}
+
+	@Override
+	public int hashCode() {
+		return parts.hashCode();
+	}
 }

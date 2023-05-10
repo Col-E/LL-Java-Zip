@@ -464,8 +464,7 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 		CentralDirectoryFileHeader that = (CentralDirectoryFileHeader) o;
-		return offset == that.offset &&
-				versionMadeBy == that.versionMadeBy &&
+		return versionMadeBy == that.versionMadeBy &&
 				versionNeededToExtract == that.versionNeededToExtract &&
 				generalPurposeBitFlag == that.generalPurposeBitFlag &&
 				compressionMethod == that.compressionMethod &&
@@ -489,11 +488,9 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 
 	@Override
 	public int hashCode() {
-		int result = Objects.hash(offset, linkedFileHeader, versionMadeBy, versionNeededToExtract, generalPurposeBitFlag,
+		return Objects.hash(linkedFileHeader, versionMadeBy, versionNeededToExtract, generalPurposeBitFlag,
 				compressionMethod, lastModFileTime, lastModFileDate, crc32, compressedSize, uncompressedSize,
 				fileNameLength, extraFieldLength, fileCommentLength, diskNumberStart, internalFileAttributes,
-				externalFileAttributes, relativeOffsetOfLocalHeader, fileName, fileComment);
-		result = 31 * result + extraField.hashCode();
-		return result;
+				externalFileAttributes, relativeOffsetOfLocalHeader, extraField, fileName, fileComment);
 	}
 }

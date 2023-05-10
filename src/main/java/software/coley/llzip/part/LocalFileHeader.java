@@ -6,6 +6,7 @@ import software.coley.llzip.util.ByteData;
 import software.coley.llzip.util.ByteDataUtil;
 
 import java.io.IOException;
+import java.util.Objects;
 
 import static software.coley.llzip.ZipCompressions.STORED;
 
@@ -363,5 +364,46 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 	 */
 	public void setFileData(ByteData fileData) {
 		this.fileData = fileData;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+
+		LocalFileHeader that = (LocalFileHeader) o;
+
+		if (versionNeededToExtract != that.versionNeededToExtract) return false;
+		if (generalPurposeBitFlag != that.generalPurposeBitFlag) return false;
+		if (compressionMethod != that.compressionMethod) return false;
+		if (lastModFileTime != that.lastModFileTime) return false;
+		if (lastModFileDate != that.lastModFileDate) return false;
+		if (crc32 != that.crc32) return false;
+		if (compressedSize != that.compressedSize) return false;
+		if (uncompressedSize != that.uncompressedSize) return false;
+		if (fileNameLength != that.fileNameLength) return false;
+		if (extraFieldLength != that.extraFieldLength) return false;
+		if (!Objects.equals(fileName, that.fileName)) return false;
+		if (!Objects.equals(extraField, that.extraField)) return false;
+		if (!Objects.equals(fileData, that.fileData)) return false;
+		return Objects.equals(data, that.data);
+	}
+
+	@Override
+	public int hashCode() {
+		int result = versionNeededToExtract;
+		result = 31 * result + generalPurposeBitFlag;
+		result = 31 * result + compressionMethod;
+		result = 31 * result + lastModFileTime;
+		result = 31 * result + lastModFileDate;
+		result = 31 * result + crc32;
+		result = 31 * result + (int) (compressedSize ^ (compressedSize >>> 32));
+		result = 31 * result + (int) (uncompressedSize ^ (uncompressedSize >>> 32));
+		result = 31 * result + fileNameLength;
+		result = 31 * result + extraFieldLength;
+		result = 31 * result + fileName.hashCode();
+		result = 31 * result + extraField.hashCode();
+		result = 31 * result + fileData.hashCode();
+		return result;
 	}
 }

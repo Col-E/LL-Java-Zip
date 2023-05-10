@@ -205,8 +205,7 @@ public class EndOfCentralDirectory implements ZipPart, ZipRead {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 		EndOfCentralDirectory that = (EndOfCentralDirectory) o;
-		return offset == that.offset &&
-				diskNumber == that.diskNumber &&
+		return diskNumber == that.diskNumber &&
 				centralDirectoryStartDisk == that.centralDirectoryStartDisk &&
 				centralDirectoryStartOffset == that.centralDirectoryStartOffset &&
 				numEntries == that.numEntries &&
@@ -218,7 +217,7 @@ public class EndOfCentralDirectory implements ZipPart, ZipRead {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(offset, diskNumber, centralDirectoryStartDisk, centralDirectoryStartOffset,
+		return Objects.hash(diskNumber, centralDirectoryStartDisk, centralDirectoryStartOffset,
 				numEntries, centralDirectorySize, centralDirectoryOffset, zipCommentLength, zipComment);
 	}
 }
