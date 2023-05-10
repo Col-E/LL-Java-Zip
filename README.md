@@ -22,3 +22,22 @@ But that's not all it does. That's just what that one comment says. Some other f
 - The central directory values are authoritative. Names/values defined by the local file headers are ignored.
 - The file data of local file headers is not size bound by the file header's compressed size field. Instead, it uses the central directory header's declared size.
 - Class names are allowed to end in trailing `/` which most tools interpret as directories.
+
+## Usage
+
+Maven dependency:
+```xml
+<dependency>
+    <groupId>software.coley</groupId>
+    <artifactId>lljzip</artifactId>
+    <version>${zipVersion}</version> <!-- See release page for latest version -->
+</dependency>
+```
+
+Gradle dependency:
+```groovy
+implementation group: 'software.coley', name: 'lljzip', version: zipVersion
+implementation "software.coley:lljzip:${zipVersion}"
+```
+
+For example usage see the [tests](src/test/java/software/coley/llzip).
