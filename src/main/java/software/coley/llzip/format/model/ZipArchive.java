@@ -1,5 +1,7 @@
 package software.coley.llzip.format.model;
 
+import software.coley.llzip.util.OffsetComparator;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -45,6 +47,7 @@ public class ZipArchive {
 	public EndOfCentralDirectory getEnd() {
 		return parts.stream()
 				.filter(part -> part.type() == PartType.END_OF_CENTRAL_DIRECTORY)
+				.sorted(new OffsetComparator().reversed()) // Yield the LAST entry
 				.limit(1)
 				.map(part -> (EndOfCentralDirectory) part)
 				.findFirst().orElse(null);
