@@ -4,6 +4,7 @@ import software.coley.llzip.util.OffsetComparator;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -19,6 +20,47 @@ public class ZipArchive {
 	 */
 	public List<ZipPart> getParts() {
 		return parts;
+	}
+
+	/**
+	 * @param nameFilter
+	 * 		Filter to limit entries with by file path name.
+	 *
+	 * @return Central directory header entries matching the given file path filter.
+	 */
+	public List<CentralDirectoryFileHeader> getNameFilteredCentralDirectories(Predicate<String> nameFilter) {
+		return getCentralDirectories().stream()
+				.filter(c -> nameFilter.test(c.getFileNameAsString()))
+				.collect(Collectors.toList());
+	}
+
+	/**
+	 * @param nameFilter
+	 * 		Filter to limit entries with by file path name.
+	 *
+	 * @return Local file header entries matching the given file path filter.
+	 */
+	public List<LocalFileHeader> getNameFilteredLocalFiles(Predicate<String> nameFilter) {
+		return getCentralDirectories().stream()
+				.filter(c -> nameFilter.test(c.getFileNameAsString())) // Use central names, as they are authoritative
+				.map(CentralDirectoryFileHeader::getLinkedFileHeader)
+				.collect(Collectors.toList());
+	}
+
+	/**
+	 * Searches for a local file entry for the given name.
+	 * The authoritative {@link CentralDirectoryFileHeader#getFileName()} is used,
+	 * not the {@link LocalFileHeader#getFileName()}.
+	 *
+	 * @param name
+	 * 		Name to fetch contents of.
+	 *
+	 * @return Local file header for the path, or {@code null} if no such entry for the name exists.
+	 */
+	public LocalFileHeader getLocalFileByName(String name) {
+		List<LocalFileHeader> matches = getNameFilteredLocalFiles(name::equals);
+		if (matches.isEmpty()) return null;
+		return matches.get(0);
 	}
 
 	/**
