@@ -14,7 +14,7 @@ public class LargeZipTests {
 	@Test
 	public void testLargeStrings() {
 		try {
-			ZipIO.readStandard(Paths.get("src/test/resources/large-strings.zip"));
+			ZipIO.readStandard(Paths.get("src/test/resources/sample-long-name.zip"));
 		} catch (IOException error) {
 			Assertions.fail(error);
 		}

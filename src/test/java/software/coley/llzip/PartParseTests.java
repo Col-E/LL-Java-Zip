@@ -3,9 +3,15 @@ package software.coley.llzip;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import software.coley.llzip.part.ZipPart;
+import software.coley.llzip.format.compression.ZipCompressions;
+import software.coley.llzip.format.model.LocalFileHeader;
+import software.coley.llzip.format.model.ZipArchive;
+import software.coley.llzip.format.model.ZipPart;
+import software.coley.llzip.format.read.JvmZipReaderStrategy;
+import software.coley.llzip.util.ByteDataUtil;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -19,13 +25,14 @@ import static org.junit.jupiter.api.Assertions.*;
 public class PartParseTests {
 	@ParameterizedTest
 	@ValueSource(strings = {
-			"src/test/resources/code-windows.zip",
-			"src/test/resources/code-7z.zip",
+			"src/test/resources/sample-code-7z.zip", // ZIP made from 7z
+			"src/test/resources/sample-code-windows.zip", // ZIP made from windows built in 'send to zip'
 	})
 	public void testStandardCodeZip(String path) {
 		try {
 			ZipArchive zip = ZipIO.readStandard(Paths.get(path));
 			assertNotNull(zip);
+
 			// Each code zip contains these files
 			assertTrue(hasFile(zip, "ClassFile.java"));
 			assertTrue(hasFile(zip, "ClassMember.java"));
@@ -38,53 +45,100 @@ public class PartParseTests {
 		}
 	}
 
-	@Test
-	public void testStandardJar() {
+	@ParameterizedTest
+	@ValueSource(strings = {
+			"hello.jar",
+			"hello-secret.jar",
+			"hello-secret-0-length-locals.jar",
+			"hello-secret-junkheader.jar",
+	})
+	public void testHello(String name) {
 		try {
-			ZipArchive zip = ZipIO.readStandard(Paths.get("src/test/resources/hello.jar"));
-			assertNotNull(zip);
-			// The 'hello' jar has a manifest and single class to run itself when invoked via 'java -jar'
-			assertTrue(hasFile(zip, "META-INF/MANIFEST.MF"));
-			assertTrue(hasFile(zip, "Hello.class"));
+			Path data = Paths.get("src/test/resources/" + name);
+			ZipArchive zipStd = ZipIO.readStandard(data);
+			ZipArchive zipJvm = ZipIO.readJvm(data);
+			assertNotNull(zipStd);
+			assertNotNull(zipJvm);
+			assertEquals(zipJvm, zipJvm);
+
+			// The 'hello' jars has a manifest and single class to run itself when invoked via 'java -jar'
+			assertTrue(hasFile(zipStd, "META-INF/MANIFEST.MF"));
+			assertTrue(hasFile(zipStd, "Hello.class"));
+		} catch (IOException ex) {
+			fail(ex);
+		}
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = {
+			"hello-concat.jar",
+			"hello-concat-junkheader.jar",
+			"hello-merged.jar",
+			"hello-merged-junkheader.jar",
+	})
+	public void testConcatAndMerged(String name) {
+		try {
+			Path path = Paths.get("src/test/resources/" + name);
+			ZipArchive zipStd = ZipIO.readStandard(path);
+			ZipArchive zipJvm = ZipIO.readJvm(path);
+			assertNotNull(zipStd);
+			assertNotNull(zipJvm);
+			assertNotEquals(zipJvm, zipStd);
+			assertNotEquals(zipJvm.getEnd(), zipStd.getEnd());
+			assertTrue(hasFile(zipJvm, "META-INF/MANIFEST.MF"));
+			assertTrue(hasFile(zipJvm, "Hello.class"));
+			LocalFileHeader stdHello = zipStd.getLocalFileByName("Hello.class");
+			LocalFileHeader jvmHello = zipJvm.getLocalFileByName("Hello.class");
+			String stdHelloRaw = ByteDataUtil.toString(ZipCompressions.decompress(stdHello));
+			String jvmHelloRaw = ByteDataUtil.toString(ZipCompressions.decompress(jvmHello));
+			assertTrue(stdHelloRaw.contains("Hello world"));
+			assertTrue(jvmHelloRaw.contains("The secret code is: ROSE"));
 		} catch (IOException ex) {
 			fail(ex);
 		}
 	}
 
 	@Test
-	public void testJvmStandardJar() {
+	public void testLocalHeaderDetectMismatch() {
+		Path path = Paths.get("src/test/resources/hello-secret-0-length-locals.jar");
+
 		try {
-			// Even with edge case parsing being the focus, the JVM reader should be able to handle this jar fine.
-			ZipArchive zip = ZipIO.readJvm(Paths.get("src/test/resources/hello.jar"));
-			assertNotNull(zip);
-			// The 'hello' jar has a manifest and single class to run itself when invoked via 'java -jar'
-			assertTrue(hasFile(zip, "META-INF/MANIFEST.MF"));
-			assertTrue(hasFile(zip, "Hello.class"));
+			ZipArchive zipJvm = ZipIO.readJvm(path);
+			assertNotNull(zipJvm);
+
+			LocalFileHeader hello = zipJvm.getLocalFileByName("Hello.class");
+			assertNotNull(hello);
+
+			// The local file header says the contents are 0 bytes, but the central header has the real length
+			assertTrue(hello.hasDifferentValuesThanCentralDirectoryHeader());
+
+			// The solution to differing values is to adopt values in the reader strategy
+			zipJvm = ZipIO.read(path, new JvmZipReaderStrategy() {
+				@Override
+				public void postProcessLocalFileHeader(LocalFileHeader file) {
+					file.adoptLinkedCentralDirectoryValues();
+				}
+			});
+			hello = zipJvm.getLocalFileByName("Hello.class");
+			assertFalse(hello.hasDifferentValuesThanCentralDirectoryHeader());
 		} catch (IOException ex) {
 			fail(ex);
 		}
 	}
 
 	@Test
-	public void testJvmTrickJar() {
+	public void testMergedFakeEmpty() {
 		try {
-			ZipArchive zip = ZipIO.readJvm(Paths.get("src/test/resources/hello-trick.jar"));
-			assertNotNull(zip);
-			// The 'hello' jar has a manifest and single class to run itself when invoked via 'java -jar'
-			assertTrue(hasFile(zip, "META-INF/MANIFEST.MF"));
-			// There are two classes with deceiving names in the trick jar
-			//  - The central directory names are authoritative in Java.
-			//  - The local file names are ignored, so they can be anything, even `\0`
-			assertTrue(hasFile(zip, "Hello.class/"));
-			assertTrue(hasFile(zip, "Hello.class\1"));
+			ZipArchive zipJvm = ZipIO.readJvm(Paths.get("src/test/resources/hello-merged-fake-empty.jar"));
+			assertNotNull(zipJvm);
+			assertTrue(hasFile(zipJvm, "META-INF/MANIFEST.MF"));
+			assertTrue(hasFile(zipJvm, "Hello.class/")); // has trailing slash in class name
 		} catch (IOException ex) {
 			fail(ex);
 		}
 	}
 
 	private static boolean hasFile(ZipArchive zip, String name) {
-		return zip.getCentralDirectories().stream()
-				.anyMatch(cdfh -> cdfh.getLinkedFileHeader() != null &&
-						cdfh.getFileNameAsString().equals(name));
+		return !zip.getNameFilteredLocalFiles(name::equals).isEmpty();
 	}
 }

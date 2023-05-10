@@ -1,7 +1,9 @@
 package software.coley.llzip;
 
-import org.junit.jupiter.api.Test;
-import software.coley.llzip.strategy.JavaZipWriterStrategy;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import software.coley.llzip.format.model.ZipArchive;
+import software.coley.llzip.format.write.JavaZipWriterStrategy;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -18,15 +20,23 @@ import static org.junit.jupiter.api.Assertions.fail;
  * @author Matt Coley
  */
 public class PatchingTests {
-	@Test
-	public void testTrickJarPatched() {
+	@ParameterizedTest
+	@ValueSource(strings = {
+			"hello-concat.jar",
+			"hello-concat-junkheader.jar",
+			"hello-merged.jar",
+			"hello-merged-fake-empty.jar",
+			"hello-merged-junkheader.jar",
+	})
+	public void testTrickJarPatched(String name) {
 		try {
 			// Parse the zip with LL-Java zip, then write back using std java apis
 			// in order to create a std java complaint jar.
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			ZipArchive zip = ZipIO.readJvm(Paths.get("src/test/resources/hello-trick-garbagehead.jar"));
+			ZipArchive zip = ZipIO.readJvm(Paths.get("src/test/resources/" + name));
 			new JavaZipWriterStrategy().write(zip, baos);
 			byte[] fixed = baos.toByteArray();
+
 			// Validate the new jar bytes can be read and show the true file contents.
 			try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(fixed))) {
 				ZipEntry entry;
@@ -37,6 +47,7 @@ public class PatchingTests {
 						int len = 0;
 						while ((len = zis.read(buffer)) > 0)
 							baos.write(buffer, 0, len);
+
 						// Now check if the secret code is found.
 						// If not, we extracted the wrong class.
 						Utils.assertDefinesString(baos.toByteArray(), "The secret code is: ROSE");
