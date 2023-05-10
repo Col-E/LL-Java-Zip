@@ -166,7 +166,6 @@ public class ByteDataUtil {
 	}
 
 	/**
-	 *
 	 * @param data
 	 * 		Content to make slice of.
 	 * @param start
@@ -184,14 +183,13 @@ public class ByteDataUtil {
 	}
 
 	/**
-	 *
 	 * @param data
 	 * 		Content to make slice of.
 	 * @param start
 	 * 		Start index.
 	 * @param len
 	 * 		Length of content to make slice of.
-	 *	
+	 *
 	 * @return Buffer slice.
 	 */
 	public static ByteData slice(ByteData data, long start, long len) {
@@ -201,7 +199,7 @@ public class ByteDataUtil {
 	/**
 	 * @param data
 	 * 		Content to get length of.
-	 *	
+	 *
 	 * @return Buffer length.
 	 */
 	public static int length(ByteBuffer data) {

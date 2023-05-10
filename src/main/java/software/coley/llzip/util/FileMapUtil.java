@@ -38,7 +38,7 @@ public class FileMapUtil {
 		if (MAP == null) {
 			long size = Files.size(path);
 			if (size <= Integer.MAX_VALUE) {
-				try(FileChannel fc = FileChannel.open(path, StandardOpenOption.READ)) {
+				try (FileChannel fc = FileChannel.open(path, StandardOpenOption.READ)) {
 					long length = fc.size();
 					MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, 0L, length);
 					buffer.order(ByteOrder.LITTLE_ENDIAN);
@@ -47,7 +47,7 @@ public class FileMapUtil {
 			}
 			throw new IllegalStateException("Cannot map more than 2GB of data in locked up environment");
 		}
-		try(FileChannel fc = FileChannel.open(path, StandardOpenOption.READ)) {
+		try (FileChannel fc = FileChannel.open(path, StandardOpenOption.READ)) {
 			long length = fc.size();
 			long address;
 			try {
@@ -56,13 +56,13 @@ public class FileMapUtil {
 				} else {
 					address = (long) MAP.invoke(fc, 0, 0L, length, false);
 				}
-			} catch(InvocationTargetException | IllegalAccessException ex) {
+			} catch (InvocationTargetException | IllegalAccessException ex) {
 				throw new IllegalStateException("Could not invoke map0", ex);
 			}
 			ByteData mappedFile = new UnsafeMappedFile(address, length, () -> {
 				try {
 					UNMAP.invoke(null, address, length);
-				} catch(IllegalAccessException | InvocationTargetException ex) {
+				} catch (IllegalAccessException | InvocationTargetException ex) {
 					throw new InternalError(ex);
 				}
 			});
@@ -79,16 +79,16 @@ public class FileMapUtil {
 			Class<?> c;
 			try {
 				c = Class.forName("sun.nio.ch.FileChannelImpl");
-			} catch(ClassNotFoundException ignored) {
+			} catch (ClassNotFoundException ignored) {
 				break get;
 			}
 			try {
 				map = c.getDeclaredMethod("map0", int.class, long.class, long.class, boolean.class);
-			} catch(NoSuchMethodException ex) {
+			} catch (NoSuchMethodException ex) {
 				try {
 					map = c.getDeclaredMethod("map0", int.class, long.class, long.class);
 					oldMap = true;
-				} catch(NoSuchMethodException ignored) {
+				} catch (NoSuchMethodException ignored) {
 					break get;
 				}
 			}
@@ -96,7 +96,7 @@ public class FileMapUtil {
 				map.setAccessible(true);
 				unmap = c.getDeclaredMethod("unmap0", long.class, long.class);
 				unmap.setAccessible(true);
-			} catch(Exception ex) {
+			} catch (Exception ex) {
 				// Locked up environment, probably threw InaccessibleObjectException
 				map = null;
 				unmap = null;

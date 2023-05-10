@@ -48,9 +48,9 @@ public final class CleanerUtil {
 			} else {
 				invokeCleaner.invoke(UnsafeUtil.get(), buffer);
 			}
-		} catch(InvocationTargetException ex) {
+		} catch (InvocationTargetException ex) {
 			throw new IllegalStateException("Failed to invoke clean method", ex.getTargetException());
-		} catch(IllegalAccessException ex) {
+		} catch (IllegalAccessException ex) {
 			throw new IllegalStateException("cleaner became inaccessible", ex);
 		}
 	}
@@ -65,7 +65,7 @@ public final class CleanerUtil {
 			ByteBuffer tmp = ByteBuffer.allocateDirect(1);
 			invokeCleaner.invoke(UnsafeUtil.get(), tmp);
 			supported = true;
-		} catch(NoSuchMethodException ignored) {
+		} catch (NoSuchMethodException ignored) {
 			supported = true;
 			ByteBuffer tmp = ByteBuffer.allocateDirect(1);
 			try {
@@ -75,12 +75,12 @@ public final class CleanerUtil {
 				invokeCleaner.setAccessible(true);
 				getCleaner.setAccessible(true);
 				invokeCleaner.invoke(getCleaner.invoke(tmp));
-			} catch(Exception ignored1) {
+			} catch (Exception ignored1) {
 				invokeCleaner = null;
 				getCleaner = null;
 				supported = false;
 			}
-		} catch(Exception ex) {
+		} catch (Exception ex) {
 			invokeCleaner = null;
 		}
 		INVOKE_CLEANER = invokeCleaner;

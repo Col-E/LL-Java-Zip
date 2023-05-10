@@ -7,6 +7,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
@@ -40,7 +41,7 @@ public interface ZipWriterStrategy {
 	 * 		When writing the archive failed, or the given path cannot be written to.
 	 */
 	default void writeToDisk(ZipArchive archive, Path path) throws IOException {
-		try (OutputStream fos = new BufferedOutputStream(new FileOutputStream(path.toFile()))) {
+		try (OutputStream fos = new BufferedOutputStream(Files.newOutputStream(path))) {
 			write(archive, fos);
 		}
 	}
