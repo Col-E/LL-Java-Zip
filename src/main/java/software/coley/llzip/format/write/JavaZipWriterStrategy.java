@@ -1,9 +1,9 @@
 package software.coley.llzip.format.write;
 
-import software.coley.llzip.format.model.ZipArchive;
 import software.coley.llzip.format.compression.ZipCompressions;
 import software.coley.llzip.format.model.CentralDirectoryFileHeader;
 import software.coley.llzip.format.model.LocalFileHeader;
+import software.coley.llzip.format.model.ZipArchive;
 import software.coley.llzip.util.ByteDataUtil;
 
 import java.io.IOException;
@@ -24,9 +24,7 @@ public class JavaZipWriterStrategy implements ZipWriterStrategy {
 		try (ZipOutputStream zos = new ZipOutputStream(os)) {
 			for (LocalFileHeader fileHeader : archive.getLocalFiles()) {
 				CentralDirectoryFileHeader linked = fileHeader.getLinkedDirectoryFileHeader();
-				if (linked == null)
-					continue;
-				String name = linked.getFileNameAsString();
+				String name = linked == null ? fileHeader.getFileNameAsString() : linked.getFileNameAsString();
 				if (fileHeader.getFileData().length() > 0L) {
 					// File, may need to patch things like trailing '/' for '.class' files.
 					if (name.endsWith(".class/"))
