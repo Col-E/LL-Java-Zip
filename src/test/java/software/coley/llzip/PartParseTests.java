@@ -87,8 +87,12 @@ public class PartParseTests {
 			assertNotEquals(zipJvm.getEnd(), zipStd.getEnd());
 			assertTrue(hasFile(zipJvm, "META-INF/MANIFEST.MF"));
 			assertTrue(hasFile(zipJvm, "Hello.class"));
+
+			// Assert that the standard ZIP reader read the 'first' version of the class
+			// and the JVM reader read the 'second' version of the class.
 			LocalFileHeader stdHello = zipStd.getLocalFileByName("Hello.class");
 			LocalFileHeader jvmHello = zipJvm.getLocalFileByName("Hello.class");
+			assertNotEquals(stdHello, jvmHello);
 			String stdHelloRaw = ByteDataUtil.toString(ZipCompressions.decompress(stdHello));
 			String jvmHelloRaw = ByteDataUtil.toString(ZipCompressions.decompress(jvmHello));
 			assertTrue(stdHelloRaw.contains("Hello world"));
