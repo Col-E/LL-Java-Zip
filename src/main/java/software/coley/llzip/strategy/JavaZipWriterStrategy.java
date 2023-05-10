@@ -28,9 +28,9 @@ public class JavaZipWriterStrategy implements ZipWriterStrategy {
 					continue;
 				String name = linked.getFileNameAsString();
 				if (fileHeader.getFileData().length() > 0L) {
-					// File, may need to patch things like traling '/' for '.class' files.
-					if (name.contains(".class/"))
-						name = name.substring(0, name.lastIndexOf('/'));
+					// File, may need to patch things like trailing '/' for '.class' files.
+					if (name.endsWith(".class/"))
+						name = name.substring(0, name.length() - 1);
 					zos.putNextEntry(new ZipEntry(name));
 					zos.write(ByteDataUtil.toByteArray(ZipCompressions.decompress(fileHeader)));
 					zos.closeEntry();
