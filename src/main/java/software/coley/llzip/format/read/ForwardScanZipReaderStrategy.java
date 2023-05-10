@@ -70,8 +70,4 @@ public class ForwardScanZipReaderStrategy implements ZipReaderStrategy {
 		// Sort based on order
 		zip.getParts().sort(new OffsetComparator());
 	}
-
-	protected void postProcessLocalFileHeader(LocalFileHeader file) {
-		// no-op
-	}
 }

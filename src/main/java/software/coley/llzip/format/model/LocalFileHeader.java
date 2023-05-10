@@ -1,7 +1,8 @@
 package software.coley.llzip.format.model;
 
-import software.coley.llzip.format.compression.ZipCompressions;
 import software.coley.llzip.format.compression.Decompressor;
+import software.coley.llzip.format.compression.ZipCompressions;
+import software.coley.llzip.format.read.ZipReaderStrategy;
 import software.coley.llzip.util.ByteData;
 import software.coley.llzip.util.ByteDataUtil;
 
@@ -64,9 +65,34 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 	}
 
 	/**
+	 * Checks if the contents do not match those described in {@link CentralDirectoryFileHeader}.
+	 * If this is the case you will probably want to change your ZIP reading configuration.
+	 * <p>
+	 * You can override the {@link ZipReaderStrategy#postProcessLocalFileHeader(LocalFileHeader)}
+	 * to call {@link #adoptLinkedCentralDirectoryValues()}. The implementations of {@link ZipReaderStrategy}
+	 * are non-final, so you can extend them to add the override.
+	 *
+	 * @return {@code true} when the contents of this file header do not match those outlined by the associated
+	 * {@link CentralDirectoryFileHeader}.
+	 */
+	public boolean hasDifferentValuesThanCentralDirectoryHeader() {
+		if (linkedDirectoryFileHeader == null) return false;
+		if (versionNeededToExtract != linkedDirectoryFileHeader.getVersionNeededToExtract()) return true;
+		if (generalPurposeBitFlag != linkedDirectoryFileHeader.getGeneralPurposeBitFlag()) return true;
+		if (compressionMethod != linkedDirectoryFileHeader.getCompressionMethod()) return true;
+		if (lastModFileTime != linkedDirectoryFileHeader.getLastModFileTime()) return true;
+		if (lastModFileDate != linkedDirectoryFileHeader.getLastModFileDate()) return true;
+		if (crc32 != linkedDirectoryFileHeader.getCrc32()) return true;
+		if (compressedSize != linkedDirectoryFileHeader.getCompressedSize()) return true;
+		if (uncompressedSize != linkedDirectoryFileHeader.getUncompressedSize()) return true;
+		if (fileNameLength != linkedDirectoryFileHeader.getFileNameLength()) return true;
+		return !Objects.equals(getFileNameAsString(), linkedDirectoryFileHeader.getFileNameAsString());
+	}
+
+	/**
 	 * When called before being {@link #freeze() frozen} values can be adopted from the linked
 	 * {@link #getLinkedDirectoryFileHeader() CentralDirectoryFileHeader}.
-	 * <br>
+	 * <p>
 	 * In some cases the {@link LocalFileHeader} file size may be 0, but the authoritative CEN states a non-0 value,
 	 * which you may want to adopt.
 	 */
@@ -95,7 +121,7 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 
 	/**
 	 * Clears the reference to the source {@link ByteData}, preventing further modification.
-	 * <br>
+	 * <p>
 	 * Prevents usage of {@link #adoptLinkedCentralDirectoryValues()}.
 	 */
 	public void freeze() {
@@ -236,8 +262,8 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 	 * Be aware that these attributes can be falsified.
 	 * Different zip-parsing programs treat the files differently
 	 * and may not adhere to what you expect from the zip specification.
-	 * <br>
-	 * When in doubt, trust {@code data.length()} from {@link #getFileData()}.
+	 * <p>
+	 * When in doubt, trust the length provided by the {@link #getLinkedDirectoryFileHeader()}.
 	 *
 	 * @return Compressed size of {@link #getFileData()}.
 	 */
@@ -257,6 +283,9 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 	 * Be aware that these attributes can be falsified.
 	 * Different zip-parsing programs treat the files differently
 	 * and may not adhere to what you expect from the zip specification.
+	 * <p>
+	 * When in doubt, trust the length provided by the {@link #getLinkedDirectoryFileHeader()} or
+	 * {@code data.length()} from {@link #getFileData()}.
 	 *
 	 * @return Uncompressed size after {@link #decompress(Decompressor)} is used on {@link #getFileData()}.
 	 */

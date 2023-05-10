@@ -20,7 +20,7 @@ import java.util.TreeSet;
 /**
  * The JVM has some edge cases in how it parses zip/jar files.
  * It allows for some tricks that most tools do not support/expect.
- * <br>
+ * <p>
  * The primary difference from {@link ForwardScanZipReaderStrategy} is that the {@link EndOfCentralDirectory}
  * is scanned from the back, rather than from the front.
  *
@@ -139,9 +139,5 @@ public class JvmZipReaderStrategy implements ZipReaderStrategy {
 
 		// Sort based on order
 		zip.getParts().sort(new OffsetComparator());
-	}
-
-	protected void postProcessLocalFileHeader(LocalFileHeader file) {
-		// no-op
 	}
 }

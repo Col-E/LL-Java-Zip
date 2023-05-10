@@ -206,7 +206,7 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 	 * Be aware that these attributes can be falsified.
 	 * Different zip-parsing programs treat the files differently
 	 * and may not adhere to what you expect from the zip specification.
-	 * <br>
+	 * <p>
 	 * When in doubt, trust {@code data.length()} from {@link LocalFileHeader#getFileData()}.
 	 *
 	 * @return Compressed size of {@link LocalFileHeader#getFileData()}.
