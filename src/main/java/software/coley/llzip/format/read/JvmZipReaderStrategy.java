@@ -2,12 +2,8 @@ package software.coley.llzip.format.read;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import software.coley.llzip.format.model.ZipArchive;
 import software.coley.llzip.format.ZipPatterns;
-import software.coley.llzip.format.model.CentralDirectoryFileHeader;
-import software.coley.llzip.format.model.EndOfCentralDirectory;
-import software.coley.llzip.format.model.JvmLocalFileHeader;
-import software.coley.llzip.format.model.LocalFileHeader;
+import software.coley.llzip.format.model.*;
 import software.coley.llzip.util.ByteData;
 import software.coley.llzip.util.ByteDataUtil;
 import software.coley.llzip.util.OffsetComparator;
@@ -37,16 +33,20 @@ public class JvmZipReaderStrategy implements ZipReaderStrategy {
 		if (endOfCentralDirectoryOffset < 0L)
 			throw new IOException("No Central-Directory-File-Header found!");
 
+		// Check for a prior end, indicating a preceding ZIP file.
+		long precedingEndOfCentralDirectory = ByteDataUtil.lastIndexOf(data, endOfCentralDirectoryOffset - 1, ZipPatterns.END_OF_CENTRAL_DIRECTORY);
+
 		// Read end header
 		EndOfCentralDirectory end = new EndOfCentralDirectory();
 		end.read(data, endOfCentralDirectoryOffset);
 		zip.getParts().add(end);
 
-		// Read central directories
+		// Read central directories (going from the back to the front) up until the preceding ZIP file (if any)
 		long len = data.length();
 		long centralDirectoryOffset = len - ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER.length;
 		long maxRelativeOffset = 0;
-		while (centralDirectoryOffset > 0L) {
+		long centralDirectoryOffsetScanEnd = Math.max(precedingEndOfCentralDirectory, 0);
+		while (centralDirectoryOffset > centralDirectoryOffsetScanEnd) {
 			centralDirectoryOffset = ByteDataUtil.lastIndexOf(data, centralDirectoryOffset - 1L, ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER);
 			if (centralDirectoryOffset >= 0L) {
 				CentralDirectoryFileHeader directory = new CentralDirectoryFileHeader();
@@ -60,7 +60,6 @@ public class JvmZipReaderStrategy implements ZipReaderStrategy {
 		// Determine base offset for computing file header locations with.
 		// - If there is a preceding block of another zip, start with that.
 		long jvmBaseFileOffset;
-		long precedingEndOfCentralDirectory = ByteDataUtil.lastIndexOf(data, endOfCentralDirectoryOffset - 1, ZipPatterns.END_OF_CENTRAL_DIRECTORY);
 		if (precedingEndOfCentralDirectory == endOfCentralDirectoryOffset) {
 			// The prior end part match is target end part, so we can't use it as a base offset.
 			jvmBaseFileOffset = 0L;
