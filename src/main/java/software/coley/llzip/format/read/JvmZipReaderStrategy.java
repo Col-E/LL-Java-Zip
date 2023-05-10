@@ -58,28 +58,11 @@ public class JvmZipReaderStrategy implements ZipReaderStrategy {
 		}
 
 		// Determine base offset for computing file header locations with.
-		// - If there is a preceding block of another zip, start with that.
-		long jvmBaseFileOffset;
-		if (precedingEndOfCentralDirectory == -1L) {
-			// There was no match for a prior end part. We will seek forwards until finding a *VALID* PK starting header.
-			jvmBaseFileOffset = ByteDataUtil.indexOf(data, ZipPatterns.PK);
-			while (jvmBaseFileOffset >= 0L) {
-				// Check that the PK discovered represents a valid zip part
-				try {
-					if (ByteDataUtil.startsWith(data, jvmBaseFileOffset, ZipPatterns.LOCAL_FILE_HEADER))
-						new LocalFileHeader().read(data, jvmBaseFileOffset);
-					else if (ByteDataUtil.startsWith(data, jvmBaseFileOffset, ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER))
-						new CentralDirectoryFileHeader().read(data, jvmBaseFileOffset);
-					else
-						throw new IllegalStateException("No match for LocalFileHeader/CentralDirectoryFileHeader");
-					// Valid, we're good to go
-					break;
-				} catch (Exception ex) {
-					// Invalid, seek forward
-					jvmBaseFileOffset = ByteDataUtil.indexOf(data, jvmBaseFileOffset + 1L, ZipPatterns.PK);
-				}
-			}
-		} else {
+		long jvmBaseFileOffset = 0;
+		boolean priorZipEndWasBogus = false;
+
+		// If there is a preceding block of another zip, start with that.
+		if (precedingEndOfCentralDirectory != -1) {
 			// There was a prior end part, so we will seek past it's length and use that as the base offset.
 			try {
 				// Make sure it isn't bogus before we use it as a reference point
@@ -97,8 +80,31 @@ public class JvmZipReaderStrategy implements ZipReaderStrategy {
 				//   - Needs to be done in such a way where we do not get tricked by the '-trick.jar' samples
 				jvmBaseFileOffset = precedingEndOfCentralDirectory + tempEnd.length();
 			} catch (Exception ex) {
-				// It's bogus and the sig-match was a coincidence. Use the first PK match instead.
-				jvmBaseFileOffset = ByteDataUtil.indexOf(data, ZipPatterns.PK);
+				// It's bogus and the sig-match was a coincidence.
+				priorZipEndWasBogus = true;
+			}
+		}
+
+		// Search for the first valid PK header if there was either no prior ZIP file
+		// or if the prior ZIP detection was bogus.
+		if (priorZipEndWasBogus || precedingEndOfCentralDirectory == -1L) {
+			// There was no match for a prior end part. We will seek forwards until finding a *VALID* PK starting header.
+			jvmBaseFileOffset = ByteDataUtil.indexOf(data, ZipPatterns.PK);
+			while (jvmBaseFileOffset >= 0L) {
+				// Check that the PK discovered represents a valid zip part
+				try {
+					if (ByteDataUtil.startsWith(data, jvmBaseFileOffset, ZipPatterns.LOCAL_FILE_HEADER))
+						new LocalFileHeader().read(data, jvmBaseFileOffset);
+					else if (ByteDataUtil.startsWith(data, jvmBaseFileOffset, ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER))
+						new CentralDirectoryFileHeader().read(data, jvmBaseFileOffset);
+					else
+						throw new IllegalStateException("No match for LocalFileHeader/CentralDirectoryFileHeader");
+					// Valid, we're good to go
+					break;
+				} catch (Exception ex) {
+					// Invalid, seek forward
+					jvmBaseFileOffset = ByteDataUtil.indexOf(data, jvmBaseFileOffset + 1L, ZipPatterns.PK);
+				}
 			}
 		}
 
