@@ -60,10 +60,7 @@ public class JvmZipReaderStrategy implements ZipReaderStrategy {
 		// Determine base offset for computing file header locations with.
 		// - If there is a preceding block of another zip, start with that.
 		long jvmBaseFileOffset;
-		if (precedingEndOfCentralDirectory == endOfCentralDirectoryOffset) {
-			// The prior end part match is target end part, so we can't use it as a base offset.
-			jvmBaseFileOffset = 0L;
-		} else if (precedingEndOfCentralDirectory == -1L) {
+		if (precedingEndOfCentralDirectory == -1L) {
 			// There was no match for a prior end part. We will seek forwards until finding a *VALID* PK starting header.
 			jvmBaseFileOffset = ByteDataUtil.indexOf(data, ZipPatterns.PK);
 			while (jvmBaseFileOffset >= 0L) {
@@ -100,8 +97,8 @@ public class JvmZipReaderStrategy implements ZipReaderStrategy {
 				//   - Needs to be done in such a way where we do not get tricked by the '-trick.jar' samples
 				jvmBaseFileOffset = precedingEndOfCentralDirectory + tempEnd.length();
 			} catch (Exception ex) {
-				// It's bogus and the sig-match was a coincidence. Zero out the offset.
-				jvmBaseFileOffset = 0;
+				// It's bogus and the sig-match was a coincidence. Use the first PK match instead.
+				jvmBaseFileOffset = ByteDataUtil.indexOf(data, ZipPatterns.PK);
 			}
 		}
 
