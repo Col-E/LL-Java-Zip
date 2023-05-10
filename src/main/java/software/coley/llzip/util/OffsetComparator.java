@@ -1,6 +1,6 @@
 package software.coley.llzip.util;
 
-import software.coley.llzip.part.ZipPart;
+import software.coley.llzip.format.model.ZipPart;
 
 import java.util.Comparator;
 

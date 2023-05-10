@@ -1,13 +1,13 @@
-package software.coley.llzip.strategy;
+package software.coley.llzip.format.read;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import software.coley.llzip.ZipArchive;
-import software.coley.llzip.ZipPatterns;
-import software.coley.llzip.part.CentralDirectoryFileHeader;
-import software.coley.llzip.part.EndOfCentralDirectory;
-import software.coley.llzip.part.JvmLocalFileHeader;
-import software.coley.llzip.part.LocalFileHeader;
+import software.coley.llzip.format.model.ZipArchive;
+import software.coley.llzip.format.ZipPatterns;
+import software.coley.llzip.format.model.CentralDirectoryFileHeader;
+import software.coley.llzip.format.model.EndOfCentralDirectory;
+import software.coley.llzip.format.model.JvmLocalFileHeader;
+import software.coley.llzip.format.model.LocalFileHeader;
 import software.coley.llzip.util.ByteData;
 import software.coley.llzip.util.ByteDataUtil;
 import software.coley.llzip.util.OffsetComparator;

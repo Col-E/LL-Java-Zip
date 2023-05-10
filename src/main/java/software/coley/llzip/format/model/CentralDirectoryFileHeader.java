@@ -1,7 +1,7 @@
-package software.coley.llzip.part;
+package software.coley.llzip.format.model;
 
-import software.coley.llzip.ZipCompressions;
-import software.coley.llzip.strategy.Decompressor;
+import software.coley.llzip.format.compression.ZipCompressions;
+import software.coley.llzip.format.compression.Decompressor;
 import software.coley.llzip.util.ByteData;
 import software.coley.llzip.util.ByteDataUtil;
 

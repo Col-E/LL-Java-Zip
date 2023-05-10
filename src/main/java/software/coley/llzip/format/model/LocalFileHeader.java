@@ -1,14 +1,14 @@
-package software.coley.llzip.part;
+package software.coley.llzip.format.model;
 
-import software.coley.llzip.ZipCompressions;
-import software.coley.llzip.strategy.Decompressor;
+import software.coley.llzip.format.compression.ZipCompressions;
+import software.coley.llzip.format.compression.Decompressor;
 import software.coley.llzip.util.ByteData;
 import software.coley.llzip.util.ByteDataUtil;
 
 import java.io.IOException;
 import java.util.Objects;
 
-import static software.coley.llzip.ZipCompressions.STORED;
+import static software.coley.llzip.format.compression.ZipCompressions.STORED;
 
 /**
  * ZIP LocalFileHeader structure.

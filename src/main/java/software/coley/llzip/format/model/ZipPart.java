@@ -1,4 +1,4 @@
-package software.coley.llzip.part;
+package software.coley.llzip.format.model;
 
 /**
  * Outline of a zip section.

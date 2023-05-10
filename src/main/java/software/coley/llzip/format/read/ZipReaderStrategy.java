@@ -1,6 +1,6 @@
-package software.coley.llzip.strategy;
+package software.coley.llzip.format.read;
 
-import software.coley.llzip.ZipArchive;
+import software.coley.llzip.format.model.ZipArchive;
 import software.coley.llzip.util.ByteData;
 
 import java.io.IOException;

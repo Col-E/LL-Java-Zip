@@ -1,7 +1,6 @@
-package software.coley.llzip;
+package software.coley.llzip.format.compression;
 
-import software.coley.llzip.part.LocalFileHeader;
-import software.coley.llzip.strategy.DeflateDecompressor;
+import software.coley.llzip.format.model.LocalFileHeader;
 import software.coley.llzip.util.ByteData;
 
 import java.io.IOException;

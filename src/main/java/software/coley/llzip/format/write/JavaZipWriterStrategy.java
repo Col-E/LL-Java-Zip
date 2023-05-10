@@ -1,9 +1,9 @@
-package software.coley.llzip.strategy;
+package software.coley.llzip.format.write;
 
-import software.coley.llzip.ZipArchive;
-import software.coley.llzip.ZipCompressions;
-import software.coley.llzip.part.CentralDirectoryFileHeader;
-import software.coley.llzip.part.LocalFileHeader;
+import software.coley.llzip.format.model.ZipArchive;
+import software.coley.llzip.format.compression.ZipCompressions;
+import software.coley.llzip.format.model.CentralDirectoryFileHeader;
+import software.coley.llzip.format.model.LocalFileHeader;
 import software.coley.llzip.util.ByteDataUtil;
 
 import java.io.IOException;

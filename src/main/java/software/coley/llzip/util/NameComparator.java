@@ -1,9 +1,9 @@
 package software.coley.llzip.util;
 
-import software.coley.llzip.part.CentralDirectoryFileHeader;
-import software.coley.llzip.part.LocalFileHeader;
-import software.coley.llzip.part.ZipPart;
-import software.coley.llzip.strategy.JavaZipWriterStrategy;
+import software.coley.llzip.format.model.CentralDirectoryFileHeader;
+import software.coley.llzip.format.model.LocalFileHeader;
+import software.coley.llzip.format.model.ZipPart;
+import software.coley.llzip.format.write.JavaZipWriterStrategy;
 
 import java.util.Comparator;
 import java.util.Optional;

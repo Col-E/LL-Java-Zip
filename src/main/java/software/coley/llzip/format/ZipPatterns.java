@@ -1,8 +1,8 @@
-package software.coley.llzip;
+package software.coley.llzip.format;
 
-import software.coley.llzip.part.CentralDirectoryFileHeader;
-import software.coley.llzip.part.EndOfCentralDirectory;
-import software.coley.llzip.part.LocalFileHeader;
+import software.coley.llzip.format.model.CentralDirectoryFileHeader;
+import software.coley.llzip.format.model.EndOfCentralDirectory;
+import software.coley.llzip.format.model.LocalFileHeader;
 import software.coley.llzip.util.ByteDataUtil;
 
 /**

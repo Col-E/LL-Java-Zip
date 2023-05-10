@@ -1,6 +1,6 @@
-package software.coley.llzip.part;
+package software.coley.llzip.format.model;
 
-import software.coley.llzip.ZipCompressions;
+import software.coley.llzip.format.compression.ZipCompressions;
 import software.coley.llzip.util.ByteData;
 
 import java.util.NavigableSet;
@@ -30,6 +30,7 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 	@Override
 	public void read(ByteData data, long offset) {
 		super.read(data, offset);
+
 		// JVM file data reading does NOT use the compressed/uncompressed fields.
 		// Instead, it scans data until the next header.
 		offset += MIN_FIXED_SIZE + getFileNameLength() + getExtraFieldLength();

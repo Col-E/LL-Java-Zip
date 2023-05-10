@@ -1,10 +1,4 @@
-package software.coley.llzip;
-
-import software.coley.llzip.part.CentralDirectoryFileHeader;
-import software.coley.llzip.part.EndOfCentralDirectory;
-import software.coley.llzip.part.LocalFileHeader;
-import software.coley.llzip.part.PartType;
-import software.coley.llzip.part.ZipPart;
+package software.coley.llzip.format.model;
 
 import java.util.ArrayList;
 import java.util.List;

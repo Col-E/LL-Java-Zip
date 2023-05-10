@@ -1,6 +1,6 @@
-package software.coley.llzip.strategy;
+package software.coley.llzip.format.write;
 
-import software.coley.llzip.ZipArchive;
+import software.coley.llzip.format.model.ZipArchive;
 
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;

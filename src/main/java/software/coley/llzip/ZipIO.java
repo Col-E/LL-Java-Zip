@@ -1,8 +1,9 @@
 package software.coley.llzip;
 
-import software.coley.llzip.strategy.DefaultZipReaderStrategy;
-import software.coley.llzip.strategy.JvmZipReaderStrategy;
-import software.coley.llzip.strategy.ZipReaderStrategy;
+import software.coley.llzip.format.read.DefaultZipReaderStrategy;
+import software.coley.llzip.format.read.JvmZipReaderStrategy;
+import software.coley.llzip.format.read.ZipReaderStrategy;
+import software.coley.llzip.format.model.ZipArchive;
 import software.coley.llzip.util.BufferData;
 import software.coley.llzip.util.ByteData;
 import software.coley.llzip.util.FileMapUtil;

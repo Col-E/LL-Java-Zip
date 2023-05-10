@@ -1,7 +1,6 @@
-package software.coley.llzip.strategy;
+package software.coley.llzip.format.compression;
 
-import software.coley.llzip.ZipCompressions;
-import software.coley.llzip.part.LocalFileHeader;
+import software.coley.llzip.format.model.LocalFileHeader;
 import software.coley.llzip.util.BufferData;
 import software.coley.llzip.util.ByteData;
 

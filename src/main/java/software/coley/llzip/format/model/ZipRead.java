@@ -1,4 +1,4 @@
-package software.coley.llzip.part;
+package software.coley.llzip.format.model;
 
 import software.coley.llzip.util.ByteData;
 
