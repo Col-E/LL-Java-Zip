@@ -95,6 +95,8 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 
 	/**
 	 * Clears the reference to the source {@link ByteData}, preventing further modification.
+	 * <br>
+	 * Prevents usage of {@link #adoptLinkedCentralDirectoryValues()}.
 	 */
 	public void freeze() {
 		data = null;
