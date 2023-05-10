@@ -1,6 +1,6 @@
 package software.coley.llzip;
 
-import software.coley.llzip.format.read.DefaultZipReaderStrategy;
+import software.coley.llzip.format.read.ForwardScanZipReaderStrategy;
 import software.coley.llzip.format.read.JvmZipReaderStrategy;
 import software.coley.llzip.format.read.ZipReaderStrategy;
 import software.coley.llzip.format.model.ZipArchive;
@@ -20,7 +20,7 @@ import java.nio.file.Path;
  */
 public class ZipIO {
 	/**
-	 * Creates an archive using the {@link DefaultZipReaderStrategy}.
+	 * Creates an archive using the {@link ForwardScanZipReaderStrategy}.
 	 *
 	 * @param data
 	 * 		Zip bytes.
@@ -31,11 +31,11 @@ public class ZipIO {
 	 * 		When the archive bytes cannot be read from, usually indicating a malformed zip.
 	 */
 	public static ZipArchive readStandard(ByteData data) throws IOException {
-		return read(data, new DefaultZipReaderStrategy());
+		return read(data, new ForwardScanZipReaderStrategy());
 	}
 
 	/**
-	 * Creates an archive using the {@link DefaultZipReaderStrategy}.
+	 * Creates an archive using the {@link ForwardScanZipReaderStrategy}.
 	 *
 	 * @param data
 	 * 		Zip bytes.
@@ -46,11 +46,11 @@ public class ZipIO {
 	 * 		When the archive bytes cannot be read from, usually indicating a malformed zip.
 	 */
 	public static ZipArchive readStandard(byte[] data) throws IOException {
-		return read(data, new DefaultZipReaderStrategy());
+		return read(data, new ForwardScanZipReaderStrategy());
 	}
 
 	/**
-	 * Creates an archive using the {@link DefaultZipReaderStrategy}.
+	 * Creates an archive using the {@link ForwardScanZipReaderStrategy}.
 	 *
 	 * @param data
 	 * 		Zip path.
@@ -61,7 +61,7 @@ public class ZipIO {
 	 * 		When the archive bytes cannot be read from, usually indicating a malformed zip.
 	 */
 	public static ZipArchive readStandard(Path data) throws IOException {
-		return read(data, new DefaultZipReaderStrategy());
+		return read(data, new ForwardScanZipReaderStrategy());
 	}
 
 	/**

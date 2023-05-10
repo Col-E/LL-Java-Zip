@@ -21,7 +21,7 @@ import java.util.TreeSet;
  * The JVM has some edge cases in how it parses zip/jar files.
  * It allows for some tricks that most tools do not support/expect.
  * <br>
- * The primary difference from {@link DefaultZipReaderStrategy} is that the {@link EndOfCentralDirectory}
+ * The primary difference from {@link ForwardScanZipReaderStrategy} is that the {@link EndOfCentralDirectory}
  * is scanned from the back, rather than from the front.
  *
  * @author Matt Coley
@@ -36,10 +36,12 @@ public class JvmZipReaderStrategy implements ZipReaderStrategy {
 		long endOfCentralDirectoryOffset = ByteDataUtil.lastIndexOf(data, ZipPatterns.END_OF_CENTRAL_DIRECTORY);
 		if (endOfCentralDirectoryOffset < 0L)
 			throw new IOException("No Central-Directory-File-Header found!");
+
 		// Read end header
 		EndOfCentralDirectory end = new EndOfCentralDirectory();
 		end.read(data, endOfCentralDirectoryOffset);
 		zip.getParts().add(end);
+
 		// Read central directories
 		long len = data.length();
 		long centralDirectoryOffset = len - ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER.length;
@@ -54,6 +56,7 @@ public class JvmZipReaderStrategy implements ZipReaderStrategy {
 					maxRelativeOffset = directory.getRelativeOffsetOfLocalHeader();
 			}
 		}
+
 		// Determine base offset for computing file header locations with.
 		// - If there is a preceding block of another zip, start with that.
 		long jvmBaseFileOffset;
@@ -86,11 +89,13 @@ public class JvmZipReaderStrategy implements ZipReaderStrategy {
 				// Make sure it isn't bogus before we use it as a reference point
 				EndOfCentralDirectory tempEnd = new EndOfCentralDirectory();
 				tempEnd.read(data, precedingEndOfCentralDirectory);
+
 				// If we use this as a point of reference there must be enough data remaining
 				// to read the largest offset specified by our central directories.
 				long hypotheticalJvmBaseOffset = precedingEndOfCentralDirectory + tempEnd.length();
 				if (len <= hypotheticalJvmBaseOffset + maxRelativeOffset)
 					throw new IllegalStateException();
+
 				// TODO: Double check 'precedingEndOfCentralDirectory' points to a EndOfCentralDirectory that isn't bogus
 				//  like some shit defined as a fake comment in another ZipPart.
 				//   - Needs to be done in such a way where we do not get tricked by the '-trick.jar' samples
@@ -100,6 +105,7 @@ public class JvmZipReaderStrategy implements ZipReaderStrategy {
 				jvmBaseFileOffset = 0;
 			}
 		}
+
 		// Read local files
 		// - Set to prevent duplicate file header entries for the same offset
 		Set<Long> offsets = new HashSet<>();
@@ -130,6 +136,7 @@ public class JvmZipReaderStrategy implements ZipReaderStrategy {
 				logger.warn("Central-Directory-File-Header's offset[{}] to Local-File-Header does not match the Local-File-Header magic!", offset);
 			}
 		}
+
 		// Sort based on order
 		zip.getParts().sort(new OffsetComparator());
 	}

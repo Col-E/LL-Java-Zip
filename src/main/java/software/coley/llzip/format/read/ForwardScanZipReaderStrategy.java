@@ -20,8 +20,8 @@ import java.util.Set;
  *
  * @author Matt Coley
  */
-public class DefaultZipReaderStrategy implements ZipReaderStrategy {
-	private static final Logger logger = LoggerFactory.getLogger(DefaultZipReaderStrategy.class);
+public class ForwardScanZipReaderStrategy implements ZipReaderStrategy {
+	private static final Logger logger = LoggerFactory.getLogger(ForwardScanZipReaderStrategy.class);
 
 	@Override
 	public void read(ZipArchive zip, ByteData data) throws IOException {
@@ -29,10 +29,12 @@ public class DefaultZipReaderStrategy implements ZipReaderStrategy {
 		long endOfCentralDirectoryOffset = ByteDataUtil.indexOf(data, ZipPatterns.END_OF_CENTRAL_DIRECTORY);
 		if (endOfCentralDirectoryOffset < 0L)
 			throw new IOException("No Central-Directory-File-Header found!");
+
 		// Read end header
 		EndOfCentralDirectory end = new EndOfCentralDirectory();
 		end.read(data, endOfCentralDirectoryOffset);
 		zip.getParts().add(end);
+
 		// Read central directories
 		long len = data.length();
 		long centralDirectoryOffset = end.getCentralDirectoryOffset();
@@ -42,6 +44,7 @@ public class DefaultZipReaderStrategy implements ZipReaderStrategy {
 			centralDirectoryOffset += directory.length();
 			zip.getParts().add(directory);
 		}
+
 		// Read local files
 		// - Set to prevent duplicate file header entries for the same offset
 		Set<Long> offsets = new HashSet<>();
@@ -60,6 +63,7 @@ public class DefaultZipReaderStrategy implements ZipReaderStrategy {
 				logger.warn("Central-Directory-File-Header's offset[{}] to Local-File-Header does not match the Local-File-Header magic!", offset);
 			}
 		}
+
 		// Sort based on order
 		zip.getParts().sort(new OffsetComparator());
 	}
