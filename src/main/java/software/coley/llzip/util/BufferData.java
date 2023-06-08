@@ -2,6 +2,7 @@ package software.coley.llzip.util;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
@@ -39,11 +40,13 @@ public final class BufferData implements ByteData {
 	@Override
 	public void get(long position, byte[] b, int off, int len) {
 		ensureOpen();
+		// Left intentionally as unchained calls due to API differences across Java versions
+		// and how the compiler changes output.
 		ByteBuffer buffer = this.buffer;
-		((ByteBuffer) buffer.slice()
-				.order(buffer.order())
-				.position(validate(position)))
-				.get(b, off, len);
+		buffer.slice();
+		buffer.order(buffer.order());
+		buffer.position(validate(position));
+		buffer.get(b, off, len);
 	}
 
 	@Override
