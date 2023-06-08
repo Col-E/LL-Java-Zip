@@ -38,6 +38,7 @@ public final class BufferData implements ByteData {
 	}
 
 	@Override
+	@SuppressWarnings("all")
 	public void get(long position, byte[] b, int off, int len) {
 		ensureOpen();
 		// Left intentionally as unchained calls due to API differences across Java versions
@@ -45,7 +46,7 @@ public final class BufferData implements ByteData {
 		ByteBuffer buffer = this.buffer;
 		buffer.slice();
 		buffer.order(buffer.order());
-		buffer.position(validate(position));
+		((Buffer) buffer).position(validate(position));
 		buffer.get(b, off, len);
 	}
 
