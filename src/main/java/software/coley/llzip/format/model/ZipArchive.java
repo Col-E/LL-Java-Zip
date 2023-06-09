@@ -2,6 +2,7 @@ package software.coley.llzip.format.model;
 
 import software.coley.llzip.util.OffsetComparator;
 
+import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
@@ -12,8 +13,17 @@ import java.util.stream.Collectors;
  *
  * @author Matt Coley
  */
-public class ZipArchive {
+public class ZipArchive implements AutoCloseable {
 	private final List<ZipPart> parts = new ArrayList<>();
+	private final Closeable closableBackingResource;
+
+	/**
+	 * @param closableBackingResource
+	 * 		Closable resource backing the zip archive.
+	 */
+	public ZipArchive(Closeable closableBackingResource) {
+		this.closableBackingResource = closableBackingResource;
+	}
 
 	/**
 	 * @return All parts of the zip archive.
@@ -95,6 +105,13 @@ public class ZipArchive {
 				.findFirst().orElse(null);
 	}
 
+	/**
+	 * @return Closable resource backing the zip archive.
+	 */
+	protected Closeable getClosableBackingResource() {
+		return closableBackingResource;
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
@@ -108,5 +125,11 @@ public class ZipArchive {
 	@Override
 	public int hashCode() {
 		return parts.hashCode();
+	}
+
+	@Override
+	public void close() throws Exception {
+		if (closableBackingResource != null)
+			closableBackingResource.close();
 	}
 }

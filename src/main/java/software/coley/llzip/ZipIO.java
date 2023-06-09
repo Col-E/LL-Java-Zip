@@ -130,7 +130,7 @@ public class ZipIO {
 		if (data.length() < 22)
 			throw new IOException("Not enough bytes to read Central-Directory-File-Header, minimum=22");
 		// Create instance
-		ZipArchive zip = new ZipArchive();
+		ZipArchive zip = new ZipArchive(data);
 		strategy.read(zip, data);
 		return zip;
 	}
