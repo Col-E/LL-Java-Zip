@@ -23,6 +23,12 @@ But that's not all it does. That's just what that one comment says. Some other f
 - The file data of local file headers is not size bound by the file header's compressed size field. Instead, it uses the central directory header's declared size.
 - Class names are allowed to end in trailing `/` which most tools interpret as directories.
 
+## Additional features
+
+- Reads ZIP files using Unsafe backed mapped files.
+    - Using `FileChannel.map` yields `MappedByteBuffer` which uses `int` values, limiting files up to about 2GB
+    - Our `UnsafeMappedFile` implementation uses `long` which far exceeds the GB file size range
+
 ## Usage
 
 Maven dependency:
