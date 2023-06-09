@@ -9,6 +9,7 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Maps large files into memory.
@@ -65,7 +66,7 @@ public class FileMapUtil {
 				} catch (IllegalAccessException | InvocationTargetException ex) {
 					throw new InternalError(ex);
 				}
-			});
+			}, new AtomicBoolean());
 			return mappedFile;
 		}
 	}

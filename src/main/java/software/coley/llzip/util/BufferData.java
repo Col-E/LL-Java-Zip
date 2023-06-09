@@ -5,6 +5,7 @@ import java.io.OutputStream;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * File that is backed by a byte buffer.
@@ -13,10 +14,11 @@ import java.nio.ByteOrder;
  */
 public final class BufferData implements ByteData {
 	private final ByteBuffer buffer;
-	private volatile boolean cleaned;
+	private final AtomicBoolean cleaned;
 
-	private BufferData(ByteBuffer buffer) {
+	private BufferData(ByteBuffer buffer, AtomicBoolean cleaned) {
 		this.buffer = buffer;
+		this.cleaned = cleaned;
 	}
 
 	@Override
@@ -43,8 +45,7 @@ public final class BufferData implements ByteData {
 		ensureOpen();
 		// Left intentionally as unchained calls due to API differences across Java versions
 		// and how the compiler changes output.
-		ByteBuffer buffer = this.buffer;
-		buffer.slice();
+		ByteBuffer buffer = this.buffer.slice();
 		buffer.order(buffer.order());
 		((Buffer) buffer).position(validate(position));
 		buffer.get(b, off, len);
@@ -73,7 +74,7 @@ public final class BufferData implements ByteData {
 	@Override
 	public ByteData slice(long startIndex, long endIndex) {
 		ensureOpen();
-		return new BufferData(ByteDataUtil.sliceExact(buffer, validate(startIndex), validate(endIndex)));
+		return new BufferData(ByteDataUtil.sliceExact(buffer, validate(startIndex), validate(endIndex)), cleaned);
 	}
 
 	@Override
@@ -97,11 +98,11 @@ public final class BufferData implements ByteData {
 
 	@Override
 	public void close() {
-		if (!cleaned) {
+		if (!cleaned.get()) {
 			synchronized (this) {
-				if (cleaned)
+				if (cleaned.get())
 					return;
-				cleaned = true;
+				cleaned.set(true);
 				ByteBuffer buffer = this.buffer;
 				if (buffer.isDirect()) {
 					CleanerUtil.invokeCleaner(buffer);
@@ -110,17 +111,8 @@ public final class BufferData implements ByteData {
 		}
 	}
 
-	@Override
-	protected void finalize() throws Throwable {
-		try {
-			close();
-		} finally {
-			super.finalize();
-		}
-	}
-
 	private void ensureOpen() {
-		if (cleaned)
+		if (cleaned.get())
 			throw new IllegalStateException("Cannot access data after close");
 	}
 
@@ -138,7 +130,7 @@ public final class BufferData implements ByteData {
 	 * @return Buffer data.
 	 */
 	public static BufferData wrap(ByteBuffer buffer) {
-		return new BufferData(buffer);
+		return new BufferData(buffer, new AtomicBoolean());
 	}
 
 	/**
@@ -148,6 +140,6 @@ public final class BufferData implements ByteData {
 	 * @return Buffer data.
 	 */
 	public static BufferData wrap(byte[] array) {
-		return new BufferData(ByteBuffer.wrap(array).order(ByteOrder.LITTLE_ENDIAN));
+		return new BufferData(ByteBuffer.wrap(array).order(ByteOrder.LITTLE_ENDIAN), new AtomicBoolean());
 	}
 }

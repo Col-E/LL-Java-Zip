@@ -5,6 +5,7 @@ import sun.misc.Unsafe;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteOrder;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Mapped file backed by address & length.
@@ -15,24 +16,26 @@ final class UnsafeMappedFile implements ByteData {
 	private static final boolean SWAP = ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN;
 	private static final Unsafe UNSAFE = UnsafeUtil.get();
 
-	private volatile boolean cleaned;
+	private final AtomicBoolean cleaned;
 	private final long address;
 	private final long end;
 	private final Runnable deallocator;
 	@SuppressWarnings("unused")
 	private final Object attachment;
 
-	private UnsafeMappedFile(Object attachment, long address, long end) {
+	private UnsafeMappedFile(Object attachment, long address, long end, AtomicBoolean cleaned) {
 		this.attachment = attachment;
 		this.address = address;
 		this.end = end;
+		this.cleaned = cleaned;
 		deallocator = null;
 	}
 
-	UnsafeMappedFile(long address, long length, Runnable deallocator) {
+	UnsafeMappedFile(long address, long length, Runnable deallocator, AtomicBoolean cleaned) {
 		this.address = address;
 		this.end = address + length;
 		this.deallocator = deallocator;
+		this.cleaned = cleaned;
 		attachment = null;
 	}
 
@@ -83,7 +86,7 @@ final class UnsafeMappedFile implements ByteData {
 		ensureOpen();
 		if (startIndex > endIndex)
 			throw new IllegalArgumentException();
-		return new UnsafeMappedFile(this, validate(startIndex), validate(endIndex));
+		return new UnsafeMappedFile(this, validate(startIndex), validate(endIndex), cleaned);
 	}
 
 	@Override
@@ -113,11 +116,11 @@ final class UnsafeMappedFile implements ByteData {
 
 	@Override
 	public void close() {
-		if (!cleaned) {
+		if (!cleaned.get()) {
 			synchronized (this) {
-				if (cleaned)
+				if (cleaned.get())
 					return;
-				cleaned = true;
+				cleaned.set(true);
 				Runnable deallocator = this.deallocator;
 				if (deallocator != null)
 					deallocator.run();
@@ -126,18 +129,8 @@ final class UnsafeMappedFile implements ByteData {
 	}
 
 	private void ensureOpen() {
-		if (cleaned)
+		if (cleaned.get())
 			throw new IllegalStateException("Cannot access data after close");
-	}
-
-	@SuppressWarnings("deprecation")
-	@Override
-	protected void finalize() throws Throwable {
-		try {
-			close();
-		} finally {
-			super.finalize();
-		}
 	}
 
 	private long validate(long position) {
