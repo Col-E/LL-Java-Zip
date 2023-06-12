@@ -3,6 +3,7 @@ package software.coley.llzip.format.model;
 import software.coley.llzip.util.OffsetComparator;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
@@ -128,7 +129,7 @@ public class ZipArchive implements AutoCloseable {
 	}
 
 	@Override
-	public void close() throws Exception {
+	public void close() throws IOException {
 		if (closableBackingResource != null)
 			closableBackingResource.close();
 	}

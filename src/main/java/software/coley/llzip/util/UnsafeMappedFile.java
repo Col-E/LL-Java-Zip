@@ -128,6 +128,11 @@ final class UnsafeMappedFile implements ByteData {
 		}
 	}
 
+	@Override
+	public boolean isClosed() {
+		return cleaned.get();
+	}
+
 	private void ensureOpen() {
 		if (cleaned.get())
 			throw new IllegalStateException("Cannot access data after close");

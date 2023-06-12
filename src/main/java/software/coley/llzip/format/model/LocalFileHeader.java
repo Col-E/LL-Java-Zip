@@ -1,10 +1,11 @@
 package software.coley.llzip.format.model;
 
 import software.coley.llzip.format.compression.Decompressor;
-import software.coley.llzip.format.compression.ZipCompressions;
 import software.coley.llzip.format.read.ZipReaderStrategy;
 import software.coley.llzip.util.ByteData;
-import software.coley.llzip.util.ByteDataUtil;
+import software.coley.llzip.util.lazy.LazyByteData;
+import software.coley.llzip.util.lazy.LazyInt;
+import software.coley.llzip.util.lazy.LazyLong;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -13,55 +14,64 @@ import static software.coley.llzip.format.compression.ZipCompressions.STORED;
 
 /**
  * ZIP LocalFileHeader structure.
+ * <pre>
+ * {@code
+ *     SIGNATURE Signature ;
+ *     WORD VersionNeededToExtract ;
+ *     WORD GeneralPurposeBitFlag ;
+ *     COMPRESSION_METHOD CompressionMethod ;
+ *     DOSTIME LastModFileTime ;
+ *     DOSDATE LastModFileDate ;
+ *     DWORD Crc32 ;
+ *     DWORD CompressedSize ;
+ *     DWORD UncompressedSize ;
+ *     WORD  FileNameLength ;
+ *     WORD  ExtraFieldLength ;
+ *     char  FileName[FileNameLength] ;
+ *     blob  ExtraField[ExtraFieldLength] ;
+ *     blob  FileData[CompressedSize] ;
+ * }
+ * </pre>
  *
  * @author Matt Coley
  */
-public class LocalFileHeader implements ZipPart, ZipRead {
-	protected static final int MIN_FIXED_SIZE = 30;
-	private transient long offset = -1L;
+public class LocalFileHeader extends AbstractZipFileHeader {
+	protected static final long MIN_FIXED_SIZE = 30;
 	private transient CentralDirectoryFileHeader linkedDirectoryFileHeader;
-	// Zip spec elements
-	private int versionNeededToExtract;
-	private int generalPurposeBitFlag;
-	private int compressionMethod;
-	private int lastModFileTime;
-	private int lastModFileDate;
-	private int crc32;
-	private long compressedSize;
-	private long uncompressedSize;
-	private int fileNameLength;
-	private int extraFieldLength;
-	private ByteData fileName;
-	private ByteData extraField;
-	private ByteData fileData;
 
-	private transient String fileNameCache;
+	// LocalFileHeader spec (plus common elements between this and central file)
+	private LazyByteData fileData;
 
-	private ByteData data;
+	// Caches
+	private transient LazyLong fileDataLength;
+	private transient ByteData data;
 
 	@Override
 	public void read(ByteData data, long offset) {
+		super.read(data, offset);
 		this.data = data;
-		this.offset = offset;
-		versionNeededToExtract = ByteDataUtil.readWord(data, offset + 4);
-		generalPurposeBitFlag = ByteDataUtil.readWord(data, offset + 6);
-		compressionMethod = ByteDataUtil.readWord(data, offset + 8);
-		lastModFileTime = ByteDataUtil.readWord(data, offset + 10);
-		lastModFileDate = ByteDataUtil.readWord(data, offset + 12);
-		crc32 = ByteDataUtil.readQuad(data, offset + 14);
-		setCompressedSize(ByteDataUtil.readQuad(data, offset + 18));
-		setUncompressedSize(ByteDataUtil.readQuad(data, offset + 22));
-		setFileNameLength(ByteDataUtil.readWord(data, offset + 26));
-		setExtraFieldLength(ByteDataUtil.readWord(data, offset + 28));
-		fileName = data.sliceOf(offset + 30, fileNameLength);
-		extraField = data.sliceOf(offset + 30 + fileNameLength, extraFieldLength);
-		long fileDataLength;
-		if (compressionMethod == STORED) {
-			fileDataLength = uncompressedSize;
-		} else {
-			fileDataLength = compressedSize;
-		}
-		fileData = data.sliceOf(offset + 30 + fileNameLength + extraFieldLength, fileDataLength);
+		versionNeededToExtract = readWord(data, 4);
+		generalPurposeBitFlag = readWord(data, 6);
+		compressionMethod = readWord(data, 8);
+		lastModFileTime = readWord(data, 10);
+		lastModFileDate = readWord(data, 12);
+		crc32 = readQuad(data, 14);
+		compressedSize = readMaskedLongQuad(data, 18);
+		uncompressedSize = readMaskedLongQuad(data, 22);
+		fileNameLength = readWord(data, 26);
+		extraFieldLength = readWord(data, 28);
+		fileName = readSlice(data, new LazyInt(() -> 30), fileNameLength);
+		extraField = readSlice(data, fileNameLength.add(30), extraFieldLength);
+		fileDataLength = new LazyLong(() -> {
+			long fileDataLength;
+			if (compressionMethod.get() == STORED) {
+				fileDataLength = uncompressedSize.get();
+			} else {
+				fileDataLength = compressedSize.get();
+			}
+			return fileDataLength;
+		});
+		fileData = readLongSlice(data, fileNameLength.add(extraFieldLength).add(30), fileDataLength);
 	}
 
 	/**
@@ -77,15 +87,15 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 	 */
 	public boolean hasDifferentValuesThanCentralDirectoryHeader() {
 		if (linkedDirectoryFileHeader == null) return false;
-		if (versionNeededToExtract != linkedDirectoryFileHeader.getVersionNeededToExtract()) return true;
-		if (generalPurposeBitFlag != linkedDirectoryFileHeader.getGeneralPurposeBitFlag()) return true;
-		if (compressionMethod != linkedDirectoryFileHeader.getCompressionMethod()) return true;
-		if (lastModFileTime != linkedDirectoryFileHeader.getLastModFileTime()) return true;
-		if (lastModFileDate != linkedDirectoryFileHeader.getLastModFileDate()) return true;
-		if (crc32 != linkedDirectoryFileHeader.getCrc32()) return true;
-		if (compressedSize != linkedDirectoryFileHeader.getCompressedSize()) return true;
-		if (uncompressedSize != linkedDirectoryFileHeader.getUncompressedSize()) return true;
-		if (fileNameLength != linkedDirectoryFileHeader.getFileNameLength()) return true;
+		if (getVersionNeededToExtract() != linkedDirectoryFileHeader.getVersionNeededToExtract()) return true;
+		if (getGeneralPurposeBitFlag() != linkedDirectoryFileHeader.getGeneralPurposeBitFlag()) return true;
+		if (getCompressionMethod() != linkedDirectoryFileHeader.getCompressionMethod()) return true;
+		if (getLastModFileTime() != linkedDirectoryFileHeader.getLastModFileTime()) return true;
+		if (getLastModFileDate() != linkedDirectoryFileHeader.getLastModFileDate()) return true;
+		if (getCrc32() != linkedDirectoryFileHeader.getCrc32()) return true;
+		if (getCompressedSize() != linkedDirectoryFileHeader.getCompressedSize()) return true;
+		if (getUncompressedSize() != linkedDirectoryFileHeader.getUncompressedSize()) return true;
+		if (getFileNameLength() != linkedDirectoryFileHeader.getFileNameLength()) return true;
 		return !Objects.equals(getFileNameAsString(), linkedDirectoryFileHeader.getFileNameAsString());
 	}
 
@@ -98,24 +108,27 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 	 */
 	public void adoptLinkedCentralDirectoryValues() {
 		if (data != null && linkedDirectoryFileHeader != null) {
-			versionNeededToExtract = linkedDirectoryFileHeader.getVersionNeededToExtract();
-			generalPurposeBitFlag = linkedDirectoryFileHeader.getGeneralPurposeBitFlag();
+			setVersionNeededToExtract(linkedDirectoryFileHeader.getVersionNeededToExtract());
+			setGeneralPurposeBitFlag(linkedDirectoryFileHeader.getGeneralPurposeBitFlag());
 			setCompressionMethod(linkedDirectoryFileHeader.getCompressionMethod());
-			lastModFileTime = linkedDirectoryFileHeader.getLastModFileTime();
-			lastModFileDate = linkedDirectoryFileHeader.getLastModFileDate();
+			setLastModFileTime(linkedDirectoryFileHeader.getLastModFileTime());
+			setLastModFileDate(linkedDirectoryFileHeader.getLastModFileDate());
 			setCrc32(linkedDirectoryFileHeader.getCrc32());
 			setCompressedSize(linkedDirectoryFileHeader.getCompressedSize());
 			setUncompressedSize(linkedDirectoryFileHeader.getUncompressedSize());
 			setFileNameLength(linkedDirectoryFileHeader.getFileNameLength());
-			setFileName(data.sliceOf(offset + 30, fileNameLength));
-			extraField = data.sliceOf(offset + 30 + fileNameLength, extraFieldLength);
-			long fileDataLength;
-			if (compressionMethod == STORED) {
-				fileDataLength = uncompressedSize;
-			} else {
-				fileDataLength = compressedSize;
-			}
-			fileData = data.sliceOf(offset + 30 + fileNameLength + extraFieldLength, fileDataLength);
+			fileName = readSlice(data, new LazyInt(() -> 30), fileNameLength);
+			extraField = readSlice(data, fileNameLength.add(30), extraFieldLength);
+			fileDataLength = new LazyLong(() -> {
+				long fileDataLength;
+				if (compressionMethod.get() == STORED) {
+					fileDataLength = uncompressedSize.get();
+				} else {
+					fileDataLength = compressedSize.get();
+				}
+				return fileDataLength;
+			});
+			fileData = readLongSlice(data, fileNameLength.add(extraFieldLength).add(30), fileDataLength);
 		}
 	}
 
@@ -130,7 +143,10 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 
 	@Override
 	public long length() {
-		return MIN_FIXED_SIZE + fileName.length() + extraField.length() + fileData.length();
+		return MIN_FIXED_SIZE +
+				fileNameLength.get() +
+				extraFieldLength.get() +
+				fileDataLength.get();
 	}
 
 	@Override
@@ -153,7 +169,7 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 	 * 		When the decompressor fails.
 	 */
 	public ByteData decompress(Decompressor decompressor) throws IOException {
-		return decompressor.decompress(this, fileData);
+		return decompressor.decompress(this, fileData.get());
 	}
 
 	/**
@@ -172,221 +188,12 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 	}
 
 	/**
-	 * @return Zip software version.
-	 */
-	public int getVersionNeededToExtract() {
-		return versionNeededToExtract;
-	}
-
-	/**
-	 * @param versionNeededToExtract
-	 * 		Zip software version.
-	 */
-	public void setVersionNeededToExtract(int versionNeededToExtract) {
-		this.versionNeededToExtract = versionNeededToExtract;
-	}
-
-	public int getGeneralPurposeBitFlag() {
-		return generalPurposeBitFlag;
-	}
-
-	public void setGeneralPurposeBitFlag(int generalPurposeBitFlag) {
-		this.generalPurposeBitFlag = generalPurposeBitFlag;
-	}
-
-	/**
-	 * @return Method to use for {@link #decompress(Decompressor) decompressing data}.
-	 *
-	 * @see ZipCompressions Possible methods.
-	 */
-	public int getCompressionMethod() {
-		return compressionMethod;
-	}
-
-	/**
-	 * @param compressionMethod
-	 * 		Method to use for {@link #decompress(Decompressor) decompressing data}.
-	 *
-	 * @see ZipCompressions Possible methods.
-	 */
-	public void setCompressionMethod(int compressionMethod) {
-		this.compressionMethod = compressionMethod;
-	}
-
-	/**
-	 * @return Modification time of the file.
-	 */
-	public int getLastModFileTime() {
-		return lastModFileTime;
-	}
-
-	/**
-	 * @param lastModFileTime
-	 * 		Modification time of the file.
-	 */
-	public void setLastModFileTime(int lastModFileTime) {
-		this.lastModFileTime = lastModFileTime;
-	}
-
-	/**
-	 * @return Modification date of the file.
-	 */
-	public int getLastModFileDate() {
-		return lastModFileDate;
-	}
-
-	/**
-	 * @param lastModFileDate
-	 * 		Modification date of the file.
-	 */
-	public void setLastModFileDate(int lastModFileDate) {
-		this.lastModFileDate = lastModFileDate;
-	}
-
-	/**
-	 * @return File checksum.
-	 */
-	public int getCrc32() {
-		return crc32;
-	}
-
-	/**
-	 * @param crc32
-	 * 		File checksum.
-	 */
-	public void setCrc32(int crc32) {
-		this.crc32 = crc32;
-	}
-
-	/**
-	 * Be aware that these attributes can be falsified.
-	 * Different zip-parsing programs treat the files differently
-	 * and may not adhere to what you expect from the zip specification.
-	 * <p>
-	 * When in doubt, trust the length provided by the {@link #getLinkedDirectoryFileHeader()}.
-	 *
-	 * @return Compressed size of {@link #getFileData()}.
-	 */
-	public long getCompressedSize() {
-		return compressedSize;
-	}
-
-	/**
-	 * @param compressedSize
-	 * 		Compressed size of {@link #getFileData()}.
-	 */
-	public void setCompressedSize(long compressedSize) {
-		this.compressedSize = compressedSize & 0xFFFFFFFFL;
-	}
-
-	/**
-	 * Be aware that these attributes can be falsified.
-	 * Different zip-parsing programs treat the files differently
-	 * and may not adhere to what you expect from the zip specification.
-	 * <p>
-	 * When in doubt, trust the length provided by the {@link #getLinkedDirectoryFileHeader()} or
-	 * {@code data.length()} from {@link #getFileData()}.
-	 *
-	 * @return Uncompressed size after {@link #decompress(Decompressor)} is used on {@link #getFileData()}.
-	 */
-	public long getUncompressedSize() {
-		return uncompressedSize;
-	}
-
-	/**
-	 * @param uncompressedSize
-	 * 		Uncompressed size after {@link #decompress(Decompressor)} is used on {@link #getFileData()}.
-	 */
-	public void setUncompressedSize(long uncompressedSize) {
-		this.uncompressedSize = uncompressedSize & 0xFFFFFFFFL;
-	}
-
-	/**
-	 * @return Length of {@link #getFileName()}.
-	 */
-	public int getFileNameLength() {
-		return fileNameLength;
-	}
-
-	/**
-	 * @param fileNameLength
-	 * 		Length of {@link #getFileName()}.
-	 */
-	public void setFileNameLength(int fileNameLength) {
-		this.fileNameLength = fileNameLength & 0xFFFF;
-	}
-
-	/**
-	 * @return Length of {@link #getExtraField()}
-	 */
-	public int getExtraFieldLength() {
-		return extraFieldLength;
-	}
-
-	/**
-	 * @param extraFieldLength
-	 * 		Length of {@link #getExtraField()}
-	 */
-	public void setExtraFieldLength(int extraFieldLength) {
-		this.extraFieldLength = extraFieldLength & 0xFFFF;
-	}
-
-	/**
-	 * Should match {@link CentralDirectoryFileHeader#getFileName()} but is not a strict requirement.
-	 * If they do not match, the central directory file name should be trusted instead.
-	 *
-	 * @return File name.
-	 */
-	public ByteData getFileName() {
-		return fileName;
-	}
-
-	/**
-	 * @param fileName
-	 * 		File name.
-	 */
-	public void setFileName(ByteData fileName) {
-		this.fileName = fileName;
-		fileNameCache = null;
-	}
-
-	/**
-	 * Should match {@link CentralDirectoryFileHeader#getFileName()} but is not a strict requirement.
-	 * If they do not match, the central directory file name should be trusted instead.
-	 *
-	 * @return File name.
-	 */
-	public String getFileNameAsString() {
-		String fileNameCache = this.fileNameCache;
-		if (fileNameCache == null) {
-			return this.fileNameCache = ByteDataUtil.toString(fileName);
-		}
-		return fileNameCache;
-	}
-
-	/**
-	 * @return May be used for extra compression information,
-	 * depending on the {@link #getCompressionMethod() compression method} used.
-	 */
-	public ByteData getExtraField() {
-		return extraField;
-	}
-
-	/**
-	 * @param extraField
-	 * 		Extra field bytes.
-	 */
-	public void setExtraField(ByteData extraField) {
-		this.extraField = extraField;
-	}
-
-	/**
 	 * @return Compressed file contents.
 	 *
 	 * @see #decompress(Decompressor) Decompresses this data.
 	 */
 	public ByteData getFileData() {
-		return fileData;
+		return fileData.get();
 	}
 
 	/**
@@ -394,7 +201,28 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 	 * 		Compressed file contents.
 	 */
 	public void setFileData(ByteData fileData) {
-		this.fileData = fileData;
+		this.fileData.set(fileData);
+	}
+
+	@Override
+	public String toString() {
+		return "LocalFileHeader{" +
+				"fileData=" + fileData +
+				", fileDataLength=" + fileDataLength +
+				", data=" + data +
+				", versionNeededToExtract=" + versionNeededToExtract +
+				", generalPurposeBitFlag=" + generalPurposeBitFlag +
+				", compressionMethod=" + compressionMethod +
+				", lastModFileTime=" + lastModFileTime +
+				", lastModFileDate=" + lastModFileDate +
+				", crc32=" + crc32 +
+				", compressedSize=" + compressedSize +
+				", uncompressedSize=" + uncompressedSize +
+				", fileNameLength=" + fileNameLength +
+				", extraFieldLength=" + extraFieldLength +
+				", fileName='" + getFileNameAsString() + '\'' +
+				", extraField='" + getExtraFieldAsString() + '\'' +
+				'}';
 	}
 
 	@Override
@@ -404,37 +232,39 @@ public class LocalFileHeader implements ZipPart, ZipRead {
 
 		LocalFileHeader that = (LocalFileHeader) o;
 
-		if (versionNeededToExtract != that.versionNeededToExtract) return false;
-		if (generalPurposeBitFlag != that.generalPurposeBitFlag) return false;
-		if (compressionMethod != that.compressionMethod) return false;
-		if (lastModFileTime != that.lastModFileTime) return false;
-		if (lastModFileDate != that.lastModFileDate) return false;
-		if (crc32 != that.crc32) return false;
-		if (compressedSize != that.compressedSize) return false;
-		if (uncompressedSize != that.uncompressedSize) return false;
-		if (fileNameLength != that.fileNameLength) return false;
-		if (extraFieldLength != that.extraFieldLength) return false;
+		if (!Objects.equals(versionNeededToExtract, that.versionNeededToExtract)) return false;
+		if (!Objects.equals(generalPurposeBitFlag, that.generalPurposeBitFlag)) return false;
+		if (!Objects.equals(compressionMethod, that.compressionMethod)) return false;
+		if (!Objects.equals(lastModFileTime, that.lastModFileTime)) return false;
+		if (!Objects.equals(lastModFileDate, that.lastModFileDate)) return false;
+		if (!Objects.equals(crc32, that.crc32)) return false;
+		if (!Objects.equals(compressedSize, that.compressedSize)) return false;
+		if (!Objects.equals(uncompressedSize, that.uncompressedSize)) return false;
+		if (!Objects.equals(fileNameLength, that.fileNameLength)) return false;
+		if (!Objects.equals(extraFieldLength, that.extraFieldLength)) return false;
 		if (!Objects.equals(fileName, that.fileName)) return false;
 		if (!Objects.equals(extraField, that.extraField)) return false;
-		if (!Objects.equals(fileData, that.fileData)) return false;
-		return Objects.equals(data, that.data);
+		if (!Objects.equals(fileDataLength, that.fileDataLength)) return false;
+		return Objects.equals(fileData, that.fileData);
 	}
 
 	@Override
 	public int hashCode() {
-		int result = versionNeededToExtract;
-		result = 31 * result + generalPurposeBitFlag;
-		result = 31 * result + compressionMethod;
-		result = 31 * result + lastModFileTime;
-		result = 31 * result + lastModFileDate;
-		result = 31 * result + crc32;
-		result = 31 * result + (int) (compressedSize ^ (compressedSize >>> 32));
-		result = 31 * result + (int) (uncompressedSize ^ (uncompressedSize >>> 32));
-		result = 31 * result + fileNameLength;
-		result = 31 * result + extraFieldLength;
-		result = 31 * result + fileName.hashCode();
-		result = 31 * result + extraField.hashCode();
-		result = 31 * result + fileData.hashCode();
+		int result = 0;
+		result = 31 * result + (versionNeededToExtract != null ? versionNeededToExtract.hashCode() : 0);
+		result = 31 * result + (generalPurposeBitFlag != null ? generalPurposeBitFlag.hashCode() : 0);
+		result = 31 * result + (compressionMethod != null ? compressionMethod.hashCode() : 0);
+		result = 31 * result + (lastModFileTime != null ? lastModFileTime.hashCode() : 0);
+		result = 31 * result + (lastModFileDate != null ? lastModFileDate.hashCode() : 0);
+		result = 31 * result + (crc32 != null ? crc32.hashCode() : 0);
+		result = 31 * result + (compressedSize != null ? compressedSize.hashCode() : 0);
+		result = 31 * result + (uncompressedSize != null ? uncompressedSize.hashCode() : 0);
+		result = 31 * result + (fileNameLength != null ? fileNameLength.hashCode() : 0);
+		result = 31 * result + (extraFieldLength != null ? extraFieldLength.hashCode() : 0);
+		result = 31 * result + (fileName != null ? fileName.hashCode() : 0);
+		result = 31 * result + (extraField != null ? extraField.hashCode() : 0);
+		result = 31 * result + (fileDataLength != null ? fileDataLength.hashCode() : 0);
+		result = 31 * result + (fileData != null ? fileData.hashCode() : 0);
 		return result;
 	}
 }

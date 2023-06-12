@@ -117,14 +117,14 @@ public class PartParseTests {
 			assertTrue(hello.hasDifferentValuesThanCentralDirectoryHeader());
 
 			// The solution to differing values is to adopt values in the reader strategy
-			zipJvm = ZipIO.read(path, new JvmZipReaderStrategy() {
+			ZipArchive zipJvmAndAdopt = ZipIO.read(path, new JvmZipReaderStrategy() {
 				@Override
 				public void postProcessLocalFileHeader(LocalFileHeader file) {
 					file.adoptLinkedCentralDirectoryValues();
 				}
 			});
-			hello = zipJvm.getLocalFileByName("Hello.class");
-			assertFalse(hello.hasDifferentValuesThanCentralDirectoryHeader());
+			LocalFileHeader helloAdopted = zipJvmAndAdopt.getLocalFileByName("Hello.class");
+			assertFalse(helloAdopted.hasDifferentValuesThanCentralDirectoryHeader());
 		} catch (IOException ex) {
 			fail(ex);
 		}
@@ -132,8 +132,7 @@ public class PartParseTests {
 
 	@Test
 	public void testMergedFakeEmpty() {
-		try {
-			ZipArchive zipJvm = ZipIO.readJvm(Paths.get("src/test/resources/hello-merged-fake-empty.jar"));
+		try (ZipArchive zipJvm = ZipIO.readJvm(Paths.get("src/test/resources/hello-merged-fake-empty.jar"))) {
 			assertNotNull(zipJvm);
 			assertTrue(hasFile(zipJvm, "META-INF/MANIFEST.MF"));
 			assertTrue(hasFile(zipJvm, "Hello.class/")); // has trailing slash in class name
