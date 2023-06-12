@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.fail;
  *
  * @author Matt Coley
  */
+@SuppressWarnings("ConstantValue")
 @Disabled("only used for demonstration purposes, and does not make any assertions")
 public class ZipComparisonShowcaseTest {
 	@ParameterizedTest
@@ -77,7 +78,8 @@ public class ZipComparisonShowcaseTest {
 
 		try {
 			System.out.println("==== FileSystem ====");
-			FileSystem zipFs = FileSystems.newFileSystem(path, null);
+			ClassLoader loader = null;
+			FileSystem zipFs = FileSystems.newFileSystem(path, loader);
 			for (Path root : zipFs.getRootDirectories()) {
 				Files.walkFileTree(root, new SimpleFileVisitor<Path>() {
 					@Override
