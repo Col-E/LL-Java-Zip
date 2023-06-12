@@ -36,7 +36,7 @@ public class ZipComparisonShowcaseTest {
 		Path path = Paths.get("src/test/resources/" + name);
 
 		try {
-			System.out.println("==== LL-J-ZIP ====");
+			System.out.println("==== LL-J-ZIP (jvm-strategy) ====");
 			ZipArchive zipJvm = ZipIO.readJvm(path);
 			zipJvm.getLocalFiles().forEach(lfh -> {
 				System.out.println(lfh.getFileNameAsString());

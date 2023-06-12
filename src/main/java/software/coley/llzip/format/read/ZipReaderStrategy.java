@@ -15,13 +15,13 @@ public interface ZipReaderStrategy {
 	/**
 	 * @param zip
 	 * 		Archive to read into.
-	 * @param buffer
+	 * @param data
 	 * 		Data to read.
 	 *
 	 * @throws IOException
 	 * 		When the data cannot be read <i>(EOF, not matching expectations, etc)</i>
 	 */
-	void read(ZipArchive zip, ByteData buffer) throws IOException;
+	void read(ZipArchive zip, ByteData data) throws IOException;
 
 	default void postProcessLocalFileHeader(LocalFileHeader file) {
 		// no-op by default

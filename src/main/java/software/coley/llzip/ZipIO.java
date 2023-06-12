@@ -2,6 +2,7 @@ package software.coley.llzip;
 
 import software.coley.llzip.format.read.ForwardScanZipReaderStrategy;
 import software.coley.llzip.format.read.JvmZipReaderStrategy;
+import software.coley.llzip.format.read.NaiveLocalFileZipReaderStrategy;
 import software.coley.llzip.format.read.ZipReaderStrategy;
 import software.coley.llzip.format.model.ZipArchive;
 import software.coley.llzip.util.BufferData;
@@ -62,6 +63,51 @@ public class ZipIO {
 	 */
 	public static ZipArchive readStandard(Path data) throws IOException {
 		return read(data, new ForwardScanZipReaderStrategy());
+	}
+
+	/**
+	 * Creates an archive using the {@link NaiveLocalFileZipReaderStrategy}.
+	 *
+	 * @param data
+	 * 		Zip bytes.
+	 *
+	 * @return Archive from bytes.
+	 *
+	 * @throws IOException
+	 * 		When the archive bytes cannot be read from, usually indicating a malformed zip.
+	 */
+	public static ZipArchive readNaive(ByteData data) throws IOException {
+		return read(data, new NaiveLocalFileZipReaderStrategy());
+	}
+
+	/**
+	 * Creates an archive using the {@link NaiveLocalFileZipReaderStrategy}.
+	 *
+	 * @param data
+	 * 		Zip bytes.
+	 *
+	 * @return Archive from bytes.
+	 *
+	 * @throws IOException
+	 * 		When the archive bytes cannot be read from, usually indicating a malformed zip.
+	 */
+	public static ZipArchive readNaive(byte[] data) throws IOException {
+		return read(data, new NaiveLocalFileZipReaderStrategy());
+	}
+
+	/**
+	 * Creates an archive using the {@link NaiveLocalFileZipReaderStrategy}.
+	 *
+	 * @param data
+	 * 		Zip path.
+	 *
+	 * @return Archive from bytes.
+	 *
+	 * @throws IOException
+	 * 		When the archive bytes cannot be read from, usually indicating a malformed zip.
+	 */
+	public static ZipArchive readNaive(Path data) throws IOException {
+		return read(data, new NaiveLocalFileZipReaderStrategy());
 	}
 
 	/**
@@ -127,6 +173,7 @@ public class ZipIO {
 		if (data == null)
 			throw new IOException("Data is null!");
 		// The fixed size elements of a CDFH is 22 bytes (plus the variable size bits which can be 0)
+		// - Even if we only want to read local/central file entries, those are even larger at a minimum
 		if (data.length() < 22)
 			throw new IOException("Not enough bytes to read Central-Directory-File-Header, minimum=22");
 		// Create instance
