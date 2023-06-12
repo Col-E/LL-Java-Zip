@@ -26,6 +26,16 @@ public interface ByteData extends Closeable {
 	int getInt(long position);
 
 	/**
+	 * Gets long at specific position.
+	 *
+	 * @param position
+	 * 		Position to read long from.
+	 *
+	 * @return Read long.
+	 */
+	long getLong(long position);
+
+	/**
 	 * Gets short at specific position.
 	 *
 	 * @param position
