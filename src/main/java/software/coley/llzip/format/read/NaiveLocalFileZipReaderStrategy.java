@@ -17,7 +17,7 @@ public class NaiveLocalFileZipReaderStrategy implements ZipReaderStrategy {
 	@Override
 	public void read(ZipArchive zip, ByteData data) throws IOException {
 		long localFileOffset = -1;
-		while ((localFileOffset = ByteDataUtil.indexOf(data, localFileOffset, ZipPatterns.LOCAL_FILE_HEADER)) >= 0) {
+		while ((localFileOffset = ByteDataUtil.indexOfQuad(data, localFileOffset + 1, ZipPatterns.LOCAL_FILE_HEADER_QUAD)) >= 0) {
 			LocalFileHeader file = new LocalFileHeader();
 			file.read(data, localFileOffset);
 			zip.getParts().add(file);

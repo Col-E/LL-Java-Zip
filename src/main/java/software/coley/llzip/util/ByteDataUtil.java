@@ -15,6 +15,115 @@ public class ByteDataUtil {
 	/**
 	 * @param buffer
 	 * 		Content to search.
+	 * @param offset
+	 * 		Offset to begin search at.
+	 * @param pattern
+	 * 		Pattern to match.
+	 *
+	 * @return First index of pattern in content, or {@code -1} for no match.
+	 */
+	public static long indexOfWord(ByteData buffer, long offset, int pattern) {
+		long len = buffer.length() - 2;
+		for (long i = offset; i < len; i++) {
+			if (pattern == buffer.getShort(i))
+				return i;
+		}
+		return -1;
+	}
+
+	/**
+	 * @param buffer
+	 * 		Content to search.
+	 * @param offset
+	 * 		Offset to begin search at.
+	 * @param pattern
+	 * 		Pattern to match.
+	 *
+	 * @return First index of pattern in content, or {@code -1} for no match.
+	 */
+	public static long indexOfQuad(ByteData buffer, long offset, int pattern) {
+		long len = buffer.length() - 4;
+		long i = offset;
+		while (i < len) {
+			int value = buffer.getInt(i);
+			if (pattern == value)
+				return i;
+
+			// Move i forwards as far as possible, where we can assume that distance
+			// will never contain a match.
+			if ((pattern & 0xFF_FF_FF) == ((value & 0xFF_FF_FF_00) >>> 8)) {
+				i += 1;
+			} else if ((pattern & 0xFF_FF) == ((value & 0xFF_FF_00_00) >>> 16)) {
+				i += 2;
+			} else if ((pattern & 0xFF) == ((value & 0xFF_00_00_00)) >>> 24) {
+				i += 3;
+			} else {
+				i += 4;
+			}
+		}
+		return -1;
+	}
+
+	/**
+	 * @param buffer
+	 * 		Content to search.
+	 * @param offset
+	 * 		Offset to begin search at.
+	 * @param pattern
+	 * 		Pattern to match.
+	 *
+	 * @return Last index of pattern in content, or {@code -1} for no match.
+	 */
+	public static long lastIndexOfWord(ByteData buffer, long offset, int pattern) {
+		long limit;
+		if (buffer == null || (limit = buffer.length()) < 2 || offset >= limit)
+			return -1;
+		for (long i = offset; i >= 0; i--) {
+			if (pattern == buffer.getShort(i))
+				return i;
+		}
+		return -1;
+	}
+
+
+	/**
+	 * @param buffer
+	 * 		Content to search.
+	 * @param offset
+	 * 		Offset to begin search at.
+	 * @param pattern
+	 * 		Pattern to match.
+	 *
+	 * @return Last index of pattern in content, or {@code -1} for no match.
+	 */
+	public static long lastIndexOfQuad(ByteData buffer, long offset, int pattern) {
+		long limit;
+		if (buffer == null || (limit = buffer.length()) < 4 || offset >= limit)
+			return -1;
+		long i = offset;
+		while (i >= 0) {
+			int value = buffer.getInt(i);
+			if (pattern == value)
+				return i;
+
+			// Move i backwards as far back as possible, where we can assume that distance
+			// will never contain a match.
+			if (((pattern & 0xFF_FF_FF_00) >>> 8) == (value & 0x00_FF_FF_FF)) {
+				i -= 1;
+			} else if (((pattern & 0xFF_FF_00_00) >>> 16) == (value & 0x00_00_FF_FF)) {
+				i -= 2;
+			} else if (((pattern & 0xFF_FF_FF_00) >>> 24) == (value & 0x00_00_00_FF)) {
+				i -= 3;
+			} else {
+				i -= 4;
+			}
+		}
+		return -1;
+	}
+
+	/**
+	 * @param buffer
+	 * 		Content to search.
 	 * @param pattern
 	 * 		Pattern to match.
 	 *
