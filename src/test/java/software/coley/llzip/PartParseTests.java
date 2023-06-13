@@ -7,6 +7,7 @@ import software.coley.llzip.format.compression.ZipCompressions;
 import software.coley.llzip.format.model.LocalFileHeader;
 import software.coley.llzip.format.model.ZipArchive;
 import software.coley.llzip.format.model.ZipPart;
+import software.coley.llzip.format.read.ForwardScanZipReaderStrategy;
 import software.coley.llzip.format.read.JvmZipReaderStrategy;
 import software.coley.llzip.util.ByteDataUtil;
 
@@ -107,23 +108,30 @@ public class PartParseTests {
 		Path path = Paths.get("src/test/resources/hello-secret-0-length-locals.jar");
 
 		try {
-			ZipArchive zipJvm = ZipIO.readJvm(path);
-			assertNotNull(zipJvm);
+			// The 'standard' strategy does not adopt CEN values when reading local entries.
+			// The 'jvm' strategy does.
+			ZipArchive zipStd = ZipIO.readStandard(path);
+			assertNotNull(zipStd);
 
-			LocalFileHeader hello = zipJvm.getLocalFileByName("Hello.class");
+			LocalFileHeader hello = zipStd.getLocalFileByName("Hello.class");
 			assertNotNull(hello);
 
 			// The local file header says the contents are 0 bytes, but the central header has the real length
 			assertTrue(hello.hasDifferentValuesThanCentralDirectoryHeader());
 
 			// The solution to differing values is to adopt values in the reader strategy
-			ZipArchive zipJvmAndAdopt = ZipIO.read(path, new JvmZipReaderStrategy() {
+			ZipArchive zipStdAndAdopt = ZipIO.read(path, new ForwardScanZipReaderStrategy() {
 				@Override
 				public void postProcessLocalFileHeader(LocalFileHeader file) {
 					file.adoptLinkedCentralDirectoryValues();
 				}
 			});
-			LocalFileHeader helloAdopted = zipJvmAndAdopt.getLocalFileByName("Hello.class");
+			LocalFileHeader helloAdopted = zipStdAndAdopt.getLocalFileByName("Hello.class");
+			assertFalse(helloAdopted.hasDifferentValuesThanCentralDirectoryHeader());
+
+			// Alternatively, just use the JVM strategy
+			ZipArchive zipJvm = ZipIO.readJvm(path);
+			helloAdopted = zipJvm.getLocalFileByName("Hello.class");
 			assertFalse(helloAdopted.hasDifferentValuesThanCentralDirectoryHeader());
 		} catch (IOException ex) {
 			fail(ex);
