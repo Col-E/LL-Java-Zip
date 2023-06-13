@@ -15,8 +15,9 @@ import java.util.NavigableSet;
  */
 public class JvmLocalFileHeader extends LocalFileHeader {
 	private final NavigableSet<Long> offsets;
-	private long offset;
-	private boolean foundPk;
+	private long dataOffsetStart;
+	private long dataOffsetEnd;
+	private boolean foundData;
 	private ByteData data;
 
 	/**
@@ -33,13 +34,16 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 
 		// JVM file data reading does NOT use the compressed/uncompressed fields.
 		// Instead, it scans data until the next header.
-		offset += MIN_FIXED_SIZE + getFileNameLength() + getExtraFieldLength();
-		this.offset = offset;
-		Long nextOffset = offsets.ceiling(offset);
-		if (nextOffset != null) {
-			setFileData(data.slice(offset, nextOffset));
-			foundPk = true;
+		long dataOffsetStart = offset + MIN_FIXED_SIZE + getFileNameLength() + getExtraFieldLength();
+		Long dataOffsetEnd = offsets.ceiling(dataOffsetStart);
+		this.dataOffsetStart = dataOffsetStart;
+		this.dataOffsetEnd = dataOffsetEnd == null ? -1 : dataOffsetEnd;
+		if (dataOffsetEnd != null) {
+			// Valid data range found
+			setFileData(data.slice(dataOffsetStart, dataOffsetEnd));
+			foundData = true;
 		} else {
+			// Keep data reference to attempt restoration with later when linking to the CEN.
 			this.data = data;
 		}
 	}
@@ -47,15 +51,36 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 	@Override
 	public void link(CentralDirectoryFileHeader directoryFileHeader) {
 		super.link(directoryFileHeader);
-		if (!foundPk) {
+
+		// JVM trusts central directory file header contents over local
+		//  - Using fields as this maintains the lazy model
+		compressionMethod = directoryFileHeader.compressionMethod;
+		compressedSize = directoryFileHeader.compressedSize;
+		uncompressedSize = directoryFileHeader.uncompressedSize;
+		fileName = directoryFileHeader.fileName;
+		generalPurposeBitFlag = directoryFileHeader.generalPurposeBitFlag;
+		crc32 = directoryFileHeader.crc32;
+		lastModFileDate = directoryFileHeader.lastModFileDate;
+		lastModFileTime = directoryFileHeader.lastModFileTime;
+
+		// Update file data with new compressed/uncompressed size if it was not able to be found previously
+		// with only the local data available.
+		if (!foundData) {
+			// Extract updated length from CEN values
 			long fileDataLength;
 			if (getCompressionMethod() == ZipCompressions.STORED) {
-				fileDataLength = directoryFileHeader.getUncompressedSize() & 0xFFFFFFFFL;
+				fileDataLength = getUncompressedSize() & 0xFFFFFFFFL;
 			} else {
-				fileDataLength = directoryFileHeader.getCompressedSize() & 0xFFFFFFFFL;
+				fileDataLength = getCompressedSize() & 0xFFFFFFFFL;
 			}
-			setFileData(data.sliceOf(offset, fileDataLength));
-			data = null;
+
+			// Only allow lengths that are within a sensible range.
+			// Data should not be overflowing into adjacent header entries.
+			// - If it is, the data here is likely intentionally tampered with to screw with parsers
+			if (fileDataLength + offset < dataOffsetEnd) {
+				setFileData(data.sliceOf(dataOffsetStart, fileDataLength));
+				data = null;
+			}
 		}
 	}
 }

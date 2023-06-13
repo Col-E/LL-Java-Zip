@@ -111,19 +111,29 @@ public class JvmZipReaderStrategy implements ZipReaderStrategy {
 		// Read local files
 		// - Set to prevent duplicate file header entries for the same offset
 		Set<Long> offsets = new HashSet<>();
-		TreeSet<Long> lfhOffsets = new TreeSet<>();
+		TreeSet<Long> entryOffsets = new TreeSet<>();
+		long earliestCdfh = Long.MAX_VALUE;
 		for (CentralDirectoryFileHeader directory : zip.getCentralDirectories()) {
+			// Update earliest central offset
+			if (directory.offset() < earliestCdfh)
+				earliestCdfh = directory.offset();
+
+			// Add associated local file header offset
 			long offset = jvmBaseFileOffset + directory.getRelativeOffsetOfLocalHeader();
 			if (data.getInt(offset) == ZipPatterns.LOCAL_FILE_HEADER_QUAD) {
-				lfhOffsets.add(offset);
+				entryOffsets.add(offset);
 			}
 		}
+		// Add the earliest central directory offset, which serves as the upper bound to search against for the
+		// last local file header entry's file data contents.
+		entryOffsets.add(earliestCdfh);
+
 		for (CentralDirectoryFileHeader directory : zip.getCentralDirectories()) {
 			long relative = directory.getRelativeOffsetOfLocalHeader();
 			long offset = jvmBaseFileOffset + relative;
 			if (!offsets.contains(offset) && data.getInt(offset) == ZipPatterns.LOCAL_FILE_HEADER_QUAD) {
 				try {
-					JvmLocalFileHeader file = new JvmLocalFileHeader(lfhOffsets);
+					JvmLocalFileHeader file = new JvmLocalFileHeader(entryOffsets);
 					file.read(data, offset);
 					zip.getParts().add(file);
 					directory.link(file);
