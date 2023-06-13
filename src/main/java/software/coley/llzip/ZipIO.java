@@ -1,10 +1,12 @@
 package software.coley.llzip;
 
+import software.coley.llzip.format.model.CentralDirectoryFileHeader;
+import software.coley.llzip.format.model.EndOfCentralDirectory;
+import software.coley.llzip.format.model.ZipArchive;
 import software.coley.llzip.format.read.ForwardScanZipReaderStrategy;
 import software.coley.llzip.format.read.JvmZipReaderStrategy;
 import software.coley.llzip.format.read.NaiveLocalFileZipReaderStrategy;
 import software.coley.llzip.format.read.ZipReaderStrategy;
-import software.coley.llzip.format.model.ZipArchive;
 import software.coley.llzip.util.BufferData;
 import software.coley.llzip.util.ByteData;
 import software.coley.llzip.util.FileMapUtil;
@@ -16,6 +18,11 @@ import java.nio.file.Path;
 
 /**
  * IO wrappers for reading {@link ZipArchive} contents.
+ * <ul>
+ *     <li>For JAR files or anything intended to be read by the JVM use the JVM operations which use {@link JvmZipReaderStrategy}.</li>
+ *     <li>For regular ZIP files use {@link ForwardScanZipReaderStrategy}.</li>
+ *     <li>For ZIP files without {@link CentralDirectoryFileHeader} or {@link EndOfCentralDirectory} items, use {@link NaiveLocalFileZipReaderStrategy}</li>
+ * </ul>
  *
  * @author Matt Coley
  */

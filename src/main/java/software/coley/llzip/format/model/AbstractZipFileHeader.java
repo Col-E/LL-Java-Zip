@@ -224,6 +224,8 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * 		File name.
 	 */
 	public void setFileName(ByteData fileName) {
+		if (this.fileName != fileName)
+			fileNameCache = null;
 		this.fileName.set(fileName);
 	}
 

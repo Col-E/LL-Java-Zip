@@ -17,7 +17,7 @@ import java.util.zip.ZipException;
  */
 public class DeflateDecompressor implements Decompressor {
 	@Override
-	public ByteData decompress(LocalFileHeader header, ByteData bytes) throws IOException {
+	public ByteData decompress(LocalFileHeader header, ByteData data) throws IOException {
 		if (header.getCompressionMethod() != ZipCompressions.DEFLATED)
 			throw new IOException("LocalFileHeader contents not using 'Deflated'!");
 		Inflater inflater = new Inflater(true);
@@ -26,14 +26,14 @@ public class DeflateDecompressor implements Decompressor {
 			byte[] output = new byte[1024];
 			byte[] buffer = new byte[1024];
 			long position = 0L;
-			long length = bytes.length();
+			long length = data.length();
 			do {
 				if (inflater.needsInput()) {
 					int remaining = (int) Math.min(buffer.length, length);
 					if (remaining == 0) {
 						break;
 					}
-					bytes.get(position, buffer, 0, remaining);
+					data.get(position, buffer, 0, remaining);
 					length -= remaining;
 					position += remaining;
 					inflater.setInput(buffer, 0, remaining);
