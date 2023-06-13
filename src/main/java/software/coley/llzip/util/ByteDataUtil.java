@@ -13,7 +13,7 @@ public class ByteDataUtil {
 	public static final int WILDCARD = Integer.MIN_VALUE;
 
 	/**
-	 * @param buffer
+	 * @param data
 	 * 		Content to search.
 	 * @param offset
 	 * 		Offset to begin search at.
@@ -22,17 +22,17 @@ public class ByteDataUtil {
 	 *
 	 * @return First index of pattern in content, or {@code -1} for no match.
 	 */
-	public static long indexOfWord(ByteData buffer, long offset, int pattern) {
-		long len = buffer.length() - 2;
+	public static long indexOfWord(ByteData data, long offset, int pattern) {
+		long len = data.length() - 2;
 		for (long i = offset; i < len; i++) {
-			if (pattern == buffer.getShort(i))
+			if (pattern == data.getShort(i))
 				return i;
 		}
 		return -1;
 	}
 
 	/**
-	 * @param buffer
+	 * @param data
 	 * 		Content to search.
 	 * @param offset
 	 * 		Offset to begin search at.
@@ -41,11 +41,11 @@ public class ByteDataUtil {
 	 *
 	 * @return First index of pattern in content, or {@code -1} for no match.
 	 */
-	public static long indexOfQuad(ByteData buffer, long offset, int pattern) {
-		long len = buffer.length() - 4;
+	public static long indexOfQuad(ByteData data, long offset, int pattern) {
+		long len = data.length() - 4;
 		long i = offset;
 		while (i < len) {
-			int value = buffer.getInt(i);
+			int value = data.getInt(i);
 			if (pattern == value)
 				return i;
 
@@ -65,7 +65,7 @@ public class ByteDataUtil {
 	}
 
 	/**
-	 * @param buffer
+	 * @param data
 	 * 		Content to search.
 	 * @param offset
 	 * 		Offset to begin search at.
@@ -74,12 +74,12 @@ public class ByteDataUtil {
 	 *
 	 * @return Last index of pattern in content, or {@code -1} for no match.
 	 */
-	public static long lastIndexOfWord(ByteData buffer, long offset, int pattern) {
+	public static long lastIndexOfWord(ByteData data, long offset, int pattern) {
 		long limit;
-		if (buffer == null || (limit = buffer.length()) < 2 || offset >= limit)
+		if (data == null || (limit = data.length()) < 2 || offset >= limit)
 			return -1;
 		for (long i = offset; i >= 0; i--) {
-			if (pattern == buffer.getShort(i))
+			if (pattern == data.getShort(i))
 				return i;
 		}
 		return -1;
@@ -87,7 +87,7 @@ public class ByteDataUtil {
 
 
 	/**
-	 * @param buffer
+	 * @param data
 	 * 		Content to search.
 	 * @param offset
 	 * 		Offset to begin search at.
@@ -96,13 +96,13 @@ public class ByteDataUtil {
 	 *
 	 * @return Last index of pattern in content, or {@code -1} for no match.
 	 */
-	public static long lastIndexOfQuad(ByteData buffer, long offset, int pattern) {
+	public static long lastIndexOfQuad(ByteData data, long offset, int pattern) {
 		long limit;
-		if (buffer == null || (limit = buffer.length()) < 4 || offset >= limit)
+		if (data == null || (limit = data.length()) < 4 || offset >= limit)
 			return -1;
 		long i = offset;
 		while (i >= 0) {
-			int value = buffer.getInt(i);
+			int value = data.getInt(i);
 			if (pattern == value)
 				return i;
 
@@ -122,15 +122,15 @@ public class ByteDataUtil {
 	}
 
 	/**
-	 * @param buffer
+	 * @param data
 	 * 		Content to search.
 	 * @param pattern
 	 * 		Pattern to match.
 	 *
 	 * @return First index of pattern in content, or {@code -1} for no match.
 	 */
-	public static long indexOf(ByteData buffer, int[] pattern) {
-		return indexOf(buffer, 0, pattern);
+	public static long indexOf(ByteData data, int[] pattern) {
+		return indexOf(data, 0, pattern);
 	}
 
 	/**
@@ -157,15 +157,15 @@ public class ByteDataUtil {
 	}
 
 	/**
-	 * @param buffer
+	 * @param data
 	 * 		Content to search.
 	 * @param pattern
 	 * 		Pattern to match.
 	 *
 	 * @return Last index of pattern in content, or {@code -1} for no match.
 	 */
-	public static long lastIndexOf(ByteData buffer, int[] pattern) {
-		return lastIndexOf(buffer, (buffer.length() - pattern.length), pattern);
+	public static long lastIndexOf(ByteData data, int[] pattern) {
+		return lastIndexOf(data, (data.length() - pattern.length), pattern);
 	}
 
 	/**
