@@ -57,6 +57,7 @@ public class ZipComparisonShowcaseTest {
 			ZipEntry entry;
 			while ((entry = zipInputStream.getNextEntry()) != null) {
 				System.out.println(entry.getName());
+				sink(entry.getName());
 			}
 			zipInputStream.close();
 		} catch (Exception ex) {
