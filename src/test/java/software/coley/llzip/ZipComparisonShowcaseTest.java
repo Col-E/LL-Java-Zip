@@ -4,17 +4,19 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import software.coley.llzip.format.compression.ZipCompressions;
+import software.coley.llzip.format.model.LocalFileHeader;
 import software.coley.llzip.format.model.ZipArchive;
+import software.coley.llzip.util.ByteDataUtil;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
-
-import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Showcase different behavior in handling tampered ZIP files between ZIP parsing techniques.
@@ -31,7 +33,9 @@ public class ZipComparisonShowcaseTest {
 			"hello-merged.jar",
 			"hello-merged-junkheader.jar",
 			"hello-merged-fake-empty.jar",
-			"hello-secret-0-length-locals.jar"
+			"hello-secret-trailing-slash.jar",
+			"hello-secret-trailing-slash-0-length-locals.jar",
+			"hello-secret-0-length-locals.jar",
 	})
 	public void testConcatAndMerged(String name) {
 		Path path = Paths.get("src/test/resources/" + name);
@@ -39,16 +43,37 @@ public class ZipComparisonShowcaseTest {
 		try {
 			System.out.println("==== LL-J-ZIP (jvm-strategy) ====");
 			ZipArchive zipJvm = ZipIO.readJvm(path);
-			zipJvm.getLocalFiles().forEach(lfh -> {
-				System.out.println(lfh.getFileNameAsString());
-				try {
-					ZipCompressions.decompress(lfh);
-				} catch (IOException e) {
-					throw new RuntimeException(e);
-				}
-			});
+			for (LocalFileHeader lfh : zipJvm.getLocalFiles()) {
+				String entryName = lfh.getFileNameAsString();
+				byte[] entryData = ByteDataUtil.toByteArray(ZipCompressions.decompress(lfh));
+				handle(entryName, entryData);
+			}
 		} catch (Exception ex) {
-			fail(ex);
+			// fail(ex);
+		}
+
+		try {
+			System.out.println("==== LL-J-ZIP (std-strategy) ====");
+			ZipArchive zipJvm = ZipIO.readStandard(path);
+			for (LocalFileHeader lfh : zipJvm.getLocalFiles()) {
+				String entryName = lfh.getFileNameAsString();
+				byte[] entryData = ByteDataUtil.toByteArray(ZipCompressions.decompress(lfh));
+				handle(entryName, entryData);
+			}
+		} catch (Exception ex) {
+			// fail(ex);
+		}
+
+		try {
+			System.out.println("==== LL-J-ZIP (naive-strategy) ====");
+			ZipArchive zipJvm = ZipIO.readNaive(path);
+			for (LocalFileHeader lfh : zipJvm.getLocalFiles()) {
+				String entryName = lfh.getFileNameAsString();
+				byte[] entryData = ByteDataUtil.toByteArray(ZipCompressions.decompress(lfh));
+				handle(entryName, entryData);
+			}
+		} catch (Exception ex) {
+			// fail(ex);
 		}
 
 		try {
@@ -56,8 +81,17 @@ public class ZipComparisonShowcaseTest {
 			ZipInputStream zipInputStream = new ZipInputStream(Files.newInputStream(path));
 			ZipEntry entry;
 			while ((entry = zipInputStream.getNextEntry()) != null) {
-				System.out.println(entry.getName());
-				sink(entry.getName());
+				if (entry.isDirectory())
+					continue;
+				ByteArrayOutputStream dataOut = new ByteArrayOutputStream();
+				byte[] buffer = new byte[2048];
+				int read;
+				while ((read = zipInputStream.read(buffer)) != -1) {
+					dataOut.write(buffer, 0, read);
+				}
+				String entryName = entry.getName();
+				byte[] entryData = dataOut.toByteArray();
+				handle(entryName, entryData);
 			}
 			zipInputStream.close();
 		} catch (Exception ex) {
@@ -69,8 +103,20 @@ public class ZipComparisonShowcaseTest {
 			try (ZipFile zipFile = new ZipFile(path.toFile())) {
 				Enumeration<? extends ZipEntry> zipEntries = zipFile.entries();
 				while (zipEntries.hasMoreElements()) {
-					String fileName = zipEntries.nextElement().getName();
-					System.out.println(fileName);
+					ZipEntry entry = zipEntries.nextElement();
+					if (entry.isDirectory())
+						continue;
+					InputStream inputStream = zipFile.getInputStream(entry);
+					ByteArrayOutputStream dataOut = new ByteArrayOutputStream();
+					byte[] buffer = new byte[2048];
+					int read;
+					while ((read = inputStream.read(buffer)) != -1) {
+						dataOut.write(buffer, 0, read);
+					}
+
+					String entryName = entry.getName();
+					byte[] entryData = dataOut.toByteArray();
+					handle(entryName, entryData);
 				}
 			}
 		} catch (Exception ex) {
@@ -85,7 +131,13 @@ public class ZipComparisonShowcaseTest {
 				Files.walkFileTree(root, new SimpleFileVisitor<Path>() {
 					@Override
 					public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-						System.out.println(file.toString().substring(1));
+						try {
+							String entryName = file.toString().substring(1);
+							byte[] entryData = Files.readAllBytes(file);
+							handle(entryName, entryData);
+						} catch (IOException ex) {
+							System.err.println("Failed to read ZIP contents: " + file);
+						}
 						return FileVisitResult.CONTINUE;
 					}
 				});
@@ -95,7 +147,10 @@ public class ZipComparisonShowcaseTest {
 		}
 	}
 
-	private static boolean hasFile(ZipArchive zip, String name) {
-		return !zip.getNameFilteredLocalFiles(name::equals).isEmpty();
+	private void handle(String name, byte[] data) {
+		System.out.println(name);
+		if (name.contains("Hello")) {
+			System.out.println("Has secret message: " + new String(data).contains("The secret code is: ROSE"));
+		}
 	}
 }
