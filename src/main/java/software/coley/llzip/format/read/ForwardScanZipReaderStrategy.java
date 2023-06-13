@@ -26,7 +26,7 @@ public class ForwardScanZipReaderStrategy implements ZipReaderStrategy {
 	@Override
 	public void read(ZipArchive zip, ByteData data) throws IOException {
 		// Read scanning forwards
-		long endOfCentralDirectoryOffset = ByteDataUtil.indexOf(data, ZipPatterns.END_OF_CENTRAL_DIRECTORY);
+		long endOfCentralDirectoryOffset = ByteDataUtil.indexOfQuad(data, 0, ZipPatterns.END_OF_CENTRAL_DIRECTORY_QUAD);
 		if (endOfCentralDirectoryOffset < 0L)
 			throw new IOException("No Central-Directory-File-Header found!");
 
@@ -36,12 +36,12 @@ public class ForwardScanZipReaderStrategy implements ZipReaderStrategy {
 		zip.getParts().add(end);
 
 		// Used for relative offsets as a base.
-		long zipStart = ByteDataUtil.indexOf(data, ZipPatterns.LOCAL_FILE_HEADER);
+		long zipStart = ByteDataUtil.indexOfQuad(data, 0, ZipPatterns.LOCAL_FILE_HEADER_QUAD);
 
 		// Read central directories
 		long len = data.length();
 		long centralDirectoryOffset = zipStart + end.getCentralDirectoryOffset();
-		while (centralDirectoryOffset < len && ByteDataUtil.startsWith(data, centralDirectoryOffset, ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER)) {
+		while (centralDirectoryOffset < len && data.getInt(centralDirectoryOffset) == ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER_QUAD) {
 			CentralDirectoryFileHeader directory = new CentralDirectoryFileHeader();
 			directory.read(data, centralDirectoryOffset);
 			centralDirectoryOffset += directory.length();
@@ -53,7 +53,7 @@ public class ForwardScanZipReaderStrategy implements ZipReaderStrategy {
 		Set<Long> offsets = new HashSet<>();
 		for (CentralDirectoryFileHeader directory : zip.getCentralDirectories()) {
 			long offset = zipStart + directory.getRelativeOffsetOfLocalHeader();
-			if (!offsets.contains(offset) && ByteDataUtil.startsWith(data, offset, ZipPatterns.LOCAL_FILE_HEADER)) {
+			if (!offsets.contains(offset) && data.getInt(offset) == ZipPatterns.LOCAL_FILE_HEADER_QUAD) {
 				LocalFileHeader file = new LocalFileHeader();
 				file.read(data, offset);
 				zip.getParts().add(file);

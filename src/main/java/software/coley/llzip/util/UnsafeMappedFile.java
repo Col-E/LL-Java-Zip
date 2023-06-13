@@ -46,6 +46,12 @@ final class UnsafeMappedFile implements ByteData {
 	}
 
 	@Override
+	public long getLong(long position) {
+		ensureOpen();
+		return swap(UNSAFE.getLong(validate(position)));
+	}
+
+	@Override
 	public short getShort(long position) {
 		ensureOpen();
 		return swap(UNSAFE.getShort(validate(position)));
@@ -128,6 +134,11 @@ final class UnsafeMappedFile implements ByteData {
 		}
 	}
 
+	@Override
+	public boolean isClosed() {
+		return cleaned.get();
+	}
+
 	private void ensureOpen() {
 		if (cleaned.get())
 			throw new IllegalStateException("Cannot access data after close");
@@ -142,6 +153,12 @@ final class UnsafeMappedFile implements ByteData {
 			throw new IllegalArgumentException(Long.toString(position));
 		}
 		return position;
+	}
+
+	private static long swap(long x) {
+		if (SWAP)
+			return Long.reverseBytes(x);
+		return x;
 	}
 
 	private static int swap(int x) {

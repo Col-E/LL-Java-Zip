@@ -28,6 +28,12 @@ public final class BufferData implements ByteData {
 	}
 
 	@Override
+	public long getLong(long position) {
+		ensureOpen();
+		return buffer.getLong(validate(position));
+	}
+
+	@Override
 	public short getShort(long position) {
 		ensureOpen();
 		return buffer.getShort(validate(position));
@@ -109,6 +115,11 @@ public final class BufferData implements ByteData {
 				}
 			}
 		}
+	}
+
+	@Override
+	public boolean isClosed() {
+		return cleaned.get();
 	}
 
 	private void ensureOpen() {

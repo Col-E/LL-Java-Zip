@@ -9,6 +9,19 @@ import java.util.Objects;
 
 /**
  * ZIP EndOfCentralDirectory structure.
+ * <pre>
+ * {@code
+ *     SIGNATURE Signature ;
+ *     WORD  DiskNumber ;
+ *     WORD  CentralDirectoryStartDisk ;
+ *     WORD  CentralDirectoryStartOffset ;
+ *     WORD  NumEntries ;
+ *     DWORD CentralDirectorySize ;
+ *     DWORD CentralDirectoryOffset ;
+ *     WORD  ZipCommentLength ;
+ *     char  ZipComment[ZipCommentLength] ;
+ * }
+ * </pre>
  *
  * @author Matt Coley
  */
@@ -176,7 +189,10 @@ public class EndOfCentralDirectory implements ZipPart, ZipRead {
 			zipComment = BufferData.wrap(new byte[0]);
 		this.zipComment = zipComment;
 	}
-	
+
+	/**
+	 * @return Optional comment, or empty string.
+	 */
 	public String getZipCommentAsString() {
 		String zipCommentCache = this.zipCommentCache;
 		if (zipCommentCache == null) {

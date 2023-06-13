@@ -1,71 +1,87 @@
 package software.coley.llzip.format.model;
 
-import software.coley.llzip.format.compression.ZipCompressions;
-import software.coley.llzip.format.compression.Decompressor;
 import software.coley.llzip.util.ByteData;
 import software.coley.llzip.util.ByteDataUtil;
+import software.coley.llzip.util.lazy.LazyByteData;
+import software.coley.llzip.util.lazy.LazyInt;
+import software.coley.llzip.util.lazy.LazyLong;
 
 import java.util.Objects;
 
 /**
  * ZIP CentralDirectoryFileHeader structure.
+ * <pre>
+ * {@code
+ *     SIGNATURE Signature ;
+ *     VERSION_MADE_BY VersionMadeBy ;
+ *     WORD VersionNeededToExtract ;
+ *     WORD GeneralPurposeBitFlag ;
+ *     COMPRESSION_METHOD CompressionMethod ;
+ *     DOSTIME LastModFileTime ;
+ *     DOSDATE LastModFileDate ;
+ *     DWORD Crc32 ;
+ *     DWORD CompressedSize ;
+ *     DWORD UncompressedSize ;
+ *     WORD  FileNameLength ;
+ *     WORD  ExtraFieldLength ;
+ *     WORD  FileCommentLength ;
+ *     WORD  DiskNumberStart ;
+ *     WORD  InternalFileAttributes ;
+ *     DWORD ExternalFileAttributes ;
+ *     DWORD RelativeOffsetOfLocalHeader ;
+ * }
+ * </pre>
  *
  * @author Matt Coley
  */
-public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
-	private transient long offset = -1L;
-	private transient LocalFileHeader linkedFileHeader;
-	// Zip spec elements
-	private int versionMadeBy;
-	private int versionNeededToExtract;
-	private int generalPurposeBitFlag;
-	private int compressionMethod;
-	private int lastModFileTime;
-	private int lastModFileDate;
-	private int crc32;
-	private long compressedSize;
-	private long uncompressedSize;
-	private int fileNameLength;
-	private int extraFieldLength;
-	private int fileCommentLength;
-	private int diskNumberStart;
-	private int internalFileAttributes;
-	private int externalFileAttributes;
-	private long relativeOffsetOfLocalHeader;
-	private ByteData fileName;
-	private ByteData extraField;
-	private ByteData fileComment;
+public class CentralDirectoryFileHeader extends AbstractZipFileHeader {
+	protected static final long MIN_FIXED_SIZE = 46;
 
-	private transient String fileNameCache;
+	private transient LocalFileHeader linkedFileHeader;
+
+	// CentralDirectoryFileHeader spec (plus common elements between this and local file)
+	private LazyInt versionMadeBy;
+	private LazyInt fileCommentLength;
+	private LazyByteData fileComment;
+	private LazyInt diskNumberStart;
+	private LazyInt internalFileAttributes;
+	private LazyInt externalFileAttributes;
+	private LazyLong relativeOffsetOfLocalHeader;
+
+	// String cache values
 	private transient String fileCommentCache;
 
 	@Override
 	public void read(ByteData data, long offset) {
-		this.offset = offset;
-		versionMadeBy = ByteDataUtil.readWord(data, offset + 4);
-		versionNeededToExtract = ByteDataUtil.readWord(data, offset + 6);
-		generalPurposeBitFlag = ByteDataUtil.readWord(data, offset + 8);
-		compressionMethod = ByteDataUtil.readWord(data, offset + 10);
-		lastModFileTime = ByteDataUtil.readWord(data, offset + 12);
-		lastModFileDate = ByteDataUtil.readWord(data, offset + 14);
-		crc32 = ByteDataUtil.readQuad(data, offset + 16);
-		setCompressedSize(ByteDataUtil.readQuad(data, offset + 20));
-		setUncompressedSize(ByteDataUtil.readQuad(data, offset + 24));
-		setFileNameLength(ByteDataUtil.readWord(data, offset + 28));
-		setExtraFieldLength(ByteDataUtil.readWord(data, offset + 30));
-		setFileCommentLength(ByteDataUtil.readWord(data, offset + 32));
-		diskNumberStart = ByteDataUtil.readWord(data, offset + 34);
-		internalFileAttributes = ByteDataUtil.readWord(data, offset + 36);
-		externalFileAttributes = ByteDataUtil.readQuad(data, offset + 38);
-		setRelativeOffsetOfLocalHeader(ByteDataUtil.readQuad(data, offset + 42));
-		fileName = data.sliceOf(offset + 46, fileNameLength);
-		extraField = data.sliceOf(offset + 46 + fileNameLength, extraFieldLength);
-		fileComment = data.sliceOf(offset + 46 + fileNameLength + extraFieldLength, fileCommentLength);
+		super.read(data, offset);
+		versionMadeBy = readWord(data, 4);
+		versionMadeBy = readWord(data, 4);
+		versionNeededToExtract = readWord(data, 6);
+		generalPurposeBitFlag = readWord(data, 8);
+		compressionMethod = readWord(data, 10);
+		lastModFileTime = readWord(data, 12);
+		lastModFileDate = readWord(data, 14);
+		crc32 = readQuad(data, 16);
+		compressedSize = readMaskedLongQuad(data, 20);
+		uncompressedSize = readMaskedLongQuad(data, 24);
+		fileNameLength = readWord(data, 28);
+		extraFieldLength = readWord(data, 30);
+		fileCommentLength = readWord(data, 32);
+		diskNumberStart = readWord(data, 34);
+		internalFileAttributes = readWord(data, 36);
+		externalFileAttributes = readQuad(data, 38);
+		relativeOffsetOfLocalHeader = readMaskedLongQuad(data, 42);
+		fileName = readSlice(data, new LazyInt(() -> 46), fileNameLength);
+		extraField = readSlice(data, fileNameLength.add(46), extraFieldLength);
+		fileComment = readSlice(data, fileNameLength.add(46).add(extraFieldLength), fileCommentLength);
 	}
 
 	@Override
 	public long length() {
-		return 46L + fileName.length() + extraField.length() + fileComment.length();
+		return MIN_FIXED_SIZE +
+				fileNameLength.get() +
+				extraFieldLength.get() +
+				fileCommentLength.get();
 	}
 
 	@Override
@@ -73,10 +89,6 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 		return PartType.CENTRAL_DIRECTORY_FILE_HEADER;
 	}
 
-	@Override
-	public long offset() {
-		return offset;
-	}
 
 	/**
 	 * @return The file header associated with {@link #getRelativeOffsetOfLocalHeader()}. May be {@code null}.
@@ -97,7 +109,7 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 	 * @return Version of zip software used to make the archive.
 	 */
 	public int getVersionMadeBy() {
-		return versionMadeBy;
+		return versionMadeBy.get();
 	}
 
 	/**
@@ -105,193 +117,14 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 	 * 		Version of zip software used to make the archive.
 	 */
 	public void setVersionMadeBy(int versionMadeBy) {
-		this.versionMadeBy = versionMadeBy;
-	}
-
-	/**
-	 * @return Version of zip software required to read the archive features.
-	 */
-	public int getVersionNeededToExtract() {
-		return versionNeededToExtract;
-	}
-
-	/**
-	 * @param versionNeededToExtract
-	 * 		Version of zip software required to read the archive features.
-	 */
-	public void setVersionNeededToExtract(int versionNeededToExtract) {
-		this.versionNeededToExtract = versionNeededToExtract;
-	}
-
-	/**
-	 * @return Used primarily to expand on details of file compression.
-	 */
-	public int getGeneralPurposeBitFlag() {
-		return generalPurposeBitFlag;
-	}
-
-	/**
-	 * @param generalPurposeBitFlag
-	 * 		Used primarily to expand on details of file compression.
-	 */
-	public void setGeneralPurposeBitFlag(int generalPurposeBitFlag) {
-		this.generalPurposeBitFlag = generalPurposeBitFlag;
-	}
-
-	/**
-	 * @return Method to use for {@link LocalFileHeader#decompress(Decompressor) decompressing data}.
-	 *
-	 * @see ZipCompressions Possible methods.
-	 */
-	public int getCompressionMethod() {
-		return compressionMethod;
-	}
-
-	/**
-	 * @param compressionMethod
-	 * 		Method to use for {@link LocalFileHeader#decompress(Decompressor) decompressing data}.
-	 *
-	 * @see ZipCompressions Possible methods.
-	 */
-	public void setCompressionMethod(int compressionMethod) {
-		this.compressionMethod = compressionMethod;
-	}
-
-	/**
-	 * @return Modification time of the file.
-	 */
-	public int getLastModFileTime() {
-		return lastModFileTime;
-	}
-
-	/**
-	 * @param lastModFileTime
-	 * 		Modification time of the file.
-	 */
-	public void setLastModFileTime(int lastModFileTime) {
-		this.lastModFileTime = lastModFileTime;
-	}
-
-	/**
-	 * @return Modification date of the file.
-	 */
-	public int getLastModFileDate() {
-		return lastModFileDate;
-	}
-
-	/**
-	 * @param lastModFileDate
-	 * 		Modification date of the file.
-	 */
-	public void setLastModFileDate(int lastModFileDate) {
-		this.lastModFileDate = lastModFileDate;
-	}
-
-	/**
-	 * @return File checksum.
-	 */
-	public int getCrc32() {
-		return crc32;
-	}
-
-	/**
-	 * @param crc32
-	 * 		File checksum.
-	 */
-	public void setCrc32(int crc32) {
-		this.crc32 = crc32;
-	}
-
-	/**
-	 * Be aware that these attributes can be falsified.
-	 * Different zip-parsing programs treat the files differently
-	 * and may not adhere to what you expect from the zip specification.
-	 * <p>
-	 * When in doubt, trust {@code data.length()} from {@link LocalFileHeader#getFileData()}.
-	 *
-	 * @return Compressed size of {@link LocalFileHeader#getFileData()}.
-	 */
-	public long getCompressedSize() {
-		return compressedSize;
-	}
-
-	/**
-	 * @param compressedSize
-	 * 		Compressed size of {@link LocalFileHeader#getFileData()}.
-	 */
-	public void setCompressedSize(long compressedSize) {
-		this.compressedSize = compressedSize & 0xFFFFFFFFL;
-	}
-
-	/**
-	 * Be aware that these attributes can be falsified.
-	 * Different zip-parsing programs treat the files differently
-	 * and may not adhere to what you expect from the zip specification.
-	 *
-	 * @return Uncompressed size after {@link LocalFileHeader#decompress(Decompressor)} is used on {@link LocalFileHeader#getFileData()}.
-	 */
-	public long getUncompressedSize() {
-		return uncompressedSize;
-	}
-
-	/**
-	 * @param uncompressedSize
-	 * 		Uncompressed size after {@link LocalFileHeader#decompress(Decompressor)} is used on {@link LocalFileHeader#getFileData()}.
-	 */
-	public void setUncompressedSize(long uncompressedSize) {
-		this.uncompressedSize = uncompressedSize & 0xFFFFFFFFL;
-	}
-
-	/**
-	 * @return Length of {@link #getFileName()}.
-	 */
-	public int getFileNameLength() {
-		return fileNameLength;
-	}
-
-	/**
-	 * @param fileNameLength
-	 * 		Length of {@link #getFileName()}.
-	 */
-	public void setFileNameLength(int fileNameLength) {
-		this.fileNameLength = fileNameLength & 0xFFFF;
-	}
-
-	/**
-	 * @return Length of {@link #getExtraField()}
-	 */
-	public int getExtraFieldLength() {
-		return extraFieldLength;
-	}
-
-	/**
-	 * @param extraFieldLength
-	 * 		Length of {@link #getExtraField()}
-	 */
-	public void setExtraFieldLength(int extraFieldLength) {
-		this.extraFieldLength = extraFieldLength & 0xFFFF;
-	}
-
-	/**
-	 * @return Length of {@link #getFileComment()}.
-	 */
-	public int getFileCommentLength() {
-		return fileCommentLength;
-	}
-
-	/**
-	 * @param fileCommentLength
-	 * 		Length of {@link #getFileComment()}.
-	 */
-	public void setFileCommentLength(int fileCommentLength) {
-		this.fileCommentLength = fileCommentLength & 0xFFFF;
+		this.versionMadeBy.set(versionMadeBy);
 	}
 
 	/**
 	 * @return Disk number where the archive starts from, or {@code 0xFFFF} for ZIP64.
 	 */
 	public int getDiskNumberStart() {
-		return diskNumberStart;
+		return diskNumberStart.get();
 	}
 
 	/**
@@ -299,7 +132,7 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 	 * 		Disk number where the archive starts from, or {@code 0xFFFF} for ZIP64.
 	 */
 	public void setDiskNumberStart(int diskNumberStart) {
-		this.diskNumberStart = diskNumberStart;
+		this.diskNumberStart.set(diskNumberStart);
 	}
 
 	/**
@@ -314,7 +147,7 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 	 * @return Internal attributes used for inferring content type.
 	 */
 	public int getInternalFileAttributes() {
-		return internalFileAttributes;
+		return internalFileAttributes.get();
 	}
 
 	/**
@@ -322,7 +155,7 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 	 * 		Internal attributes used for inferring content type.
 	 */
 	public void setInternalFileAttributes(int internalFileAttributes) {
-		this.internalFileAttributes = internalFileAttributes;
+		this.internalFileAttributes.set(internalFileAttributes);
 	}
 
 	/**
@@ -332,7 +165,7 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 	 * @return Host system dependent attributes.
 	 */
 	public int getExternalFileAttributes() {
-		return externalFileAttributes;
+		return externalFileAttributes.get();
 	}
 
 	/**
@@ -340,7 +173,7 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 	 * 		Host system dependent attributes.
 	 */
 	public void setExternalFileAttributes(int externalFileAttributes) {
-		this.externalFileAttributes = externalFileAttributes;
+		this.externalFileAttributes.set(externalFileAttributes);
 	}
 
 	/**
@@ -348,7 +181,7 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 	 * This should also be where the {@link LocalFileHeader} is located.  Or {@code 0xFFFFFFFF} for ZIP64.
 	 */
 	public long getRelativeOffsetOfLocalHeader() {
-		return relativeOffsetOfLocalHeader;
+		return relativeOffsetOfLocalHeader.get();
 	}
 
 	/**
@@ -357,62 +190,30 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 	 * 		This should also be where the {@link LocalFileHeader} is located.  Or {@code 0xFFFFFFFF} for ZIP64.
 	 */
 	public void setRelativeOffsetOfLocalHeader(long relativeOffsetOfLocalHeader) {
-		this.relativeOffsetOfLocalHeader = relativeOffsetOfLocalHeader & 0xFFFFFFFFL;
+		this.relativeOffsetOfLocalHeader.set(relativeOffsetOfLocalHeader & 0xFFFFFFFFL);
 	}
 
 	/**
-	 * Should match {@link LocalFileHeader#getFileName()} but is not a strict requirement.
-	 * If they do not match, trust this value instead.
-	 *
-	 * @return File name.
+	 * @return Length of {@link #getFileComment()}.
 	 */
-	public ByteData getFileName() {
-		return fileName;
+	public int getFileCommentLength() {
+		return fileCommentLength.get();
 	}
 
-	/**
-	 * @param fileName
-	 * 		File name.
-	 */
-	public void setFileName(ByteData fileName) {
-		this.fileName = fileName;
-	}
 
 	/**
-	 * Should match {@link CentralDirectoryFileHeader#getFileName()} but is not a strict requirement.
-	 * If they do not match, the central directory file name should be trusted instead.
-	 *
-	 * @return File name.
+	 * @param fileCommentLength
+	 * 		Length of {@link #getFileComment()}.
 	 */
-	public String getFileNameAsString() {
-		String fileNameCache = this.fileNameCache;
-		if (fileNameCache == null) {
-			return this.fileNameCache = ByteDataUtil.toString(fileName);
-		}
-		return fileNameCache;
-	}
-
-	/**
-	 * @return May be used for extra compression information,
-	 * depending on the {@link #getCompressionMethod() compression method} used.
-	 */
-	public ByteData getExtraField() {
-		return extraField;
-	}
-
-	/**
-	 * @param extraField
-	 * 		Extra field bytes.
-	 */
-	public void setExtraField(ByteData extraField) {
-		this.extraField = extraField;
+	public void setFileCommentLength(int fileCommentLength) {
+		this.fileCommentLength.set(fileCommentLength & 0xFFFF);
 	}
 
 	/**
 	 * @return File comment.
 	 */
 	public ByteData getFileComment() {
-		return fileComment;
+		return fileComment.get();
 	}
 
 	/**
@@ -420,7 +221,7 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 	 * 		File comment.
 	 */
 	public void setFileComment(ByteData fileComment) {
-		this.fileComment = fileComment;
+		this.fileComment.set(fileComment);
 	}
 
 	/**
@@ -429,7 +230,7 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 	public String getFileCommentAsString() {
 		String fileCommentCache = this.fileCommentCache;
 		if (fileCommentCache == null) {
-			return this.fileCommentCache = ByteDataUtil.toString(fileComment);
+			return this.fileCommentCache = ByteDataUtil.toString(fileComment.get());
 		}
 		return fileCommentCache;
 	}
@@ -453,9 +254,9 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 				", internalFileAttributes=" + internalFileAttributes +
 				", externalFileAttributes=" + externalFileAttributes +
 				", relativeOffsetOfLocalHeader=" + relativeOffsetOfLocalHeader +
-				", fileName='" + ByteDataUtil.toString(fileName) + '\'' +
-				", extraField=" + ByteDataUtil.toString(extraField) +
-				", fileComment='" + ByteDataUtil.toString(fileComment) + '\'' +
+				", fileName='" + getFileNameAsString() + '\'' +
+				", extraField='" + getExtraFieldAsString() + '\'' +
+				", fileComment='" + getFileCommentAsString() + '\'' +
 				'}';
 	}
 
@@ -463,34 +264,53 @@ public class CentralDirectoryFileHeader implements ZipPart, ZipRead {
 	public boolean equals(Object o) {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
+
 		CentralDirectoryFileHeader that = (CentralDirectoryFileHeader) o;
-		return versionMadeBy == that.versionMadeBy &&
-				versionNeededToExtract == that.versionNeededToExtract &&
-				generalPurposeBitFlag == that.generalPurposeBitFlag &&
-				compressionMethod == that.compressionMethod &&
-				lastModFileTime == that.lastModFileTime &&
-				lastModFileDate == that.lastModFileDate &&
-				crc32 == that.crc32 &&
-				compressedSize == that.compressedSize &&
-				uncompressedSize == that.uncompressedSize &&
-				fileNameLength == that.fileNameLength &&
-				extraFieldLength == that.extraFieldLength &&
-				fileCommentLength == that.fileCommentLength &&
-				diskNumberStart == that.diskNumberStart &&
-				internalFileAttributes == that.internalFileAttributes &&
-				externalFileAttributes == that.externalFileAttributes &&
-				relativeOffsetOfLocalHeader == that.relativeOffsetOfLocalHeader &&
-				Objects.equals(linkedFileHeader, that.linkedFileHeader) &&
-				fileName.equals(that.fileName) &&
-				ByteDataUtil.equals(extraField, that.extraField) &&
-				fileComment.equals(that.fileComment);
+
+		if (!Objects.equals(linkedFileHeader, that.linkedFileHeader)) return false;
+		if (!Objects.equals(versionMadeBy, that.versionMadeBy)) return false;
+		if (!Objects.equals(versionNeededToExtract, that.versionNeededToExtract)) return false;
+		if (!Objects.equals(generalPurposeBitFlag, that.generalPurposeBitFlag)) return false;
+		if (!Objects.equals(compressionMethod, that.compressionMethod)) return false;
+		if (!Objects.equals(lastModFileTime, that.lastModFileTime)) return false;
+		if (!Objects.equals(lastModFileDate, that.lastModFileDate)) return false;
+		if (!Objects.equals(crc32, that.crc32)) return false;
+		if (!Objects.equals(compressedSize, that.compressedSize)) return false;
+		if (!Objects.equals(uncompressedSize, that.uncompressedSize)) return false;
+		if (!Objects.equals(fileNameLength, that.fileNameLength)) return false;
+		if (!Objects.equals(extraFieldLength, that.extraFieldLength)) return false;
+		if (!Objects.equals(fileCommentLength, that.fileCommentLength)) return false;
+		if (!Objects.equals(diskNumberStart, that.diskNumberStart)) return false;
+		if (!Objects.equals(internalFileAttributes, that.internalFileAttributes)) return false;
+		if (!Objects.equals(externalFileAttributes, that.externalFileAttributes)) return false;
+		if (!Objects.equals(relativeOffsetOfLocalHeader, that.relativeOffsetOfLocalHeader)) return false;
+		if (!Objects.equals(fileName, that.fileName)) return false;
+		if (!Objects.equals(extraField, that.extraField)) return false;
+		return Objects.equals(fileComment, that.fileComment);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(linkedFileHeader, versionMadeBy, versionNeededToExtract, generalPurposeBitFlag,
-				compressionMethod, lastModFileTime, lastModFileDate, crc32, compressedSize, uncompressedSize,
-				fileNameLength, extraFieldLength, fileCommentLength, diskNumberStart, internalFileAttributes,
-				externalFileAttributes, relativeOffsetOfLocalHeader, extraField, fileName, fileComment);
+		int result = linkedFileHeader != null ? linkedFileHeader.hashCode() : 0;
+		result = 31 * result + (versionMadeBy != null ? versionMadeBy.hashCode() : 0);
+		result = 31 * result + (versionNeededToExtract != null ? versionNeededToExtract.hashCode() : 0);
+		result = 31 * result + (generalPurposeBitFlag != null ? generalPurposeBitFlag.hashCode() : 0);
+		result = 31 * result + (compressionMethod != null ? compressionMethod.hashCode() : 0);
+		result = 31 * result + (lastModFileTime != null ? lastModFileTime.hashCode() : 0);
+		result = 31 * result + (lastModFileDate != null ? lastModFileDate.hashCode() : 0);
+		result = 31 * result + (crc32 != null ? crc32.hashCode() : 0);
+		result = 31 * result + (compressedSize != null ? compressedSize.hashCode() : 0);
+		result = 31 * result + (uncompressedSize != null ? uncompressedSize.hashCode() : 0);
+		result = 31 * result + (fileNameLength != null ? fileNameLength.hashCode() : 0);
+		result = 31 * result + (extraFieldLength != null ? extraFieldLength.hashCode() : 0);
+		result = 31 * result + (fileCommentLength != null ? fileCommentLength.hashCode() : 0);
+		result = 31 * result + (diskNumberStart != null ? diskNumberStart.hashCode() : 0);
+		result = 31 * result + (internalFileAttributes != null ? internalFileAttributes.hashCode() : 0);
+		result = 31 * result + (externalFileAttributes != null ? externalFileAttributes.hashCode() : 0);
+		result = 31 * result + (relativeOffsetOfLocalHeader != null ? relativeOffsetOfLocalHeader.hashCode() : 0);
+		result = 31 * result + (fileName != null ? fileName.hashCode() : 0);
+		result = 31 * result + (extraField != null ? extraField.hashCode() : 0);
+		result = 31 * result + (fileComment != null ? fileComment.hashCode() : 0);
+		return result;
 	}
 }

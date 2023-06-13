@@ -11,6 +11,11 @@ import java.io.OutputStream;
  */
 public interface ByteData extends Closeable {
 	/**
+	 * @return {@code true} when the data is closed.
+	 */
+	boolean isClosed();
+
+	/**
 	 * Gets int at specific position.
 	 *
 	 * @param position
@@ -19,6 +24,16 @@ public interface ByteData extends Closeable {
 	 * @return Read int.
 	 */
 	int getInt(long position);
+
+	/**
+	 * Gets long at specific position.
+	 *
+	 * @param position
+	 * 		Position to read long from.
+	 *
+	 * @return Read long.
+	 */
+	long getLong(long position);
 
 	/**
 	 * Gets short at specific position.
