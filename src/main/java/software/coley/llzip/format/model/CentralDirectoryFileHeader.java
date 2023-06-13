@@ -2,11 +2,8 @@ package software.coley.llzip.format.model;
 
 import software.coley.llzip.util.ByteData;
 import software.coley.llzip.util.ByteDataUtil;
-import software.coley.llzip.util.lazy.LazyByteData;
-import software.coley.llzip.util.lazy.LazyInt;
-import software.coley.llzip.util.lazy.LazyLong;
 
-import java.util.Objects;
+import static software.coley.llzip.util.ByteDataUtil.*;
 
 /**
  * ZIP CentralDirectoryFileHeader structure.
@@ -40,13 +37,13 @@ public class CentralDirectoryFileHeader extends AbstractZipFileHeader {
 	private transient LocalFileHeader linkedFileHeader;
 
 	// CentralDirectoryFileHeader spec (plus common elements between this and local file)
-	private LazyInt versionMadeBy;
-	private LazyInt fileCommentLength;
-	private LazyByteData fileComment;
-	private LazyInt diskNumberStart;
-	private LazyInt internalFileAttributes;
-	private LazyInt externalFileAttributes;
-	private LazyLong relativeOffsetOfLocalHeader;
+	private int versionMadeBy;
+	private int fileCommentLength;
+	private ByteData fileComment;
+	private int diskNumberStart;
+	private int internalFileAttributes;
+	private int externalFileAttributes;
+	private long relativeOffsetOfLocalHeader;
 
 	// String cache values
 	private transient String fileCommentCache;
@@ -54,6 +51,7 @@ public class CentralDirectoryFileHeader extends AbstractZipFileHeader {
 	@Override
 	public void read(ByteData data, long offset) {
 		super.read(data, offset);
+		data = data.sliceOf(offset, data.length() - offset);
 		versionMadeBy = readWord(data, 4);
 		versionMadeBy = readWord(data, 4);
 		versionNeededToExtract = readWord(data, 6);
@@ -62,26 +60,26 @@ public class CentralDirectoryFileHeader extends AbstractZipFileHeader {
 		lastModFileTime = readWord(data, 12);
 		lastModFileDate = readWord(data, 14);
 		crc32 = readQuad(data, 16);
-		compressedSize = readMaskedLongQuad(data, 20);
-		uncompressedSize = readMaskedLongQuad(data, 24);
+		compressedSize = readUnsignedQuad(data, 20);
+		uncompressedSize = readUnsignedQuad(data, 24);
 		fileNameLength = readWord(data, 28);
 		extraFieldLength = readWord(data, 30);
 		fileCommentLength = readWord(data, 32);
 		diskNumberStart = readWord(data, 34);
 		internalFileAttributes = readWord(data, 36);
 		externalFileAttributes = readQuad(data, 38);
-		relativeOffsetOfLocalHeader = readMaskedLongQuad(data, 42);
-		fileName = readSlice(data, new LazyInt(() -> 46), fileNameLength);
-		extraField = readSlice(data, fileNameLength.add(46), extraFieldLength);
-		fileComment = readSlice(data, fileNameLength.add(46).add(extraFieldLength), fileCommentLength);
+		relativeOffsetOfLocalHeader = readUnsignedQuad(data, 42);
+		fileName = data.sliceOf(46, fileNameLength);
+		extraField = data.sliceOf(46 + fileNameLength, extraFieldLength);
+		fileComment = data.sliceOf(46 + fileNameLength + extraFieldLength, fileCommentLength);
 	}
 
 	@Override
 	public long length() {
 		return MIN_FIXED_SIZE +
-				fileNameLength.get() +
-				extraFieldLength.get() +
-				fileCommentLength.get();
+				fileNameLength +
+				extraFieldLength +
+				fileCommentLength;
 	}
 
 	@Override
@@ -109,7 +107,7 @@ public class CentralDirectoryFileHeader extends AbstractZipFileHeader {
 	 * @return Version of zip software used to make the archive.
 	 */
 	public int getVersionMadeBy() {
-		return versionMadeBy.get();
+		return versionMadeBy;
 	}
 
 	/**
@@ -117,14 +115,14 @@ public class CentralDirectoryFileHeader extends AbstractZipFileHeader {
 	 * 		Version of zip software used to make the archive.
 	 */
 	public void setVersionMadeBy(int versionMadeBy) {
-		this.versionMadeBy.set(versionMadeBy);
+		this.versionMadeBy = versionMadeBy;
 	}
 
 	/**
 	 * @return Disk number where the archive starts from, or {@code 0xFFFF} for ZIP64.
 	 */
 	public int getDiskNumberStart() {
-		return diskNumberStart.get();
+		return diskNumberStart;
 	}
 
 	/**
@@ -132,7 +130,7 @@ public class CentralDirectoryFileHeader extends AbstractZipFileHeader {
 	 * 		Disk number where the archive starts from, or {@code 0xFFFF} for ZIP64.
 	 */
 	public void setDiskNumberStart(int diskNumberStart) {
-		this.diskNumberStart.set(diskNumberStart);
+		this.diskNumberStart = diskNumberStart;
 	}
 
 	/**
@@ -147,7 +145,7 @@ public class CentralDirectoryFileHeader extends AbstractZipFileHeader {
 	 * @return Internal attributes used for inferring content type.
 	 */
 	public int getInternalFileAttributes() {
-		return internalFileAttributes.get();
+		return internalFileAttributes;
 	}
 
 	/**
@@ -155,7 +153,7 @@ public class CentralDirectoryFileHeader extends AbstractZipFileHeader {
 	 * 		Internal attributes used for inferring content type.
 	 */
 	public void setInternalFileAttributes(int internalFileAttributes) {
-		this.internalFileAttributes.set(internalFileAttributes);
+		this.internalFileAttributes = internalFileAttributes;
 	}
 
 	/**
@@ -165,7 +163,7 @@ public class CentralDirectoryFileHeader extends AbstractZipFileHeader {
 	 * @return Host system dependent attributes.
 	 */
 	public int getExternalFileAttributes() {
-		return externalFileAttributes.get();
+		return externalFileAttributes;
 	}
 
 	/**
@@ -173,7 +171,7 @@ public class CentralDirectoryFileHeader extends AbstractZipFileHeader {
 	 * 		Host system dependent attributes.
 	 */
 	public void setExternalFileAttributes(int externalFileAttributes) {
-		this.externalFileAttributes.set(externalFileAttributes);
+		this.externalFileAttributes = externalFileAttributes;
 	}
 
 	/**
@@ -181,7 +179,7 @@ public class CentralDirectoryFileHeader extends AbstractZipFileHeader {
 	 * This should also be where the {@link LocalFileHeader} is located.  Or {@code 0xFFFFFFFF} for ZIP64.
 	 */
 	public long getRelativeOffsetOfLocalHeader() {
-		return relativeOffsetOfLocalHeader.get();
+		return relativeOffsetOfLocalHeader;
 	}
 
 	/**
@@ -190,14 +188,14 @@ public class CentralDirectoryFileHeader extends AbstractZipFileHeader {
 	 * 		This should also be where the {@link LocalFileHeader} is located.  Or {@code 0xFFFFFFFF} for ZIP64.
 	 */
 	public void setRelativeOffsetOfLocalHeader(long relativeOffsetOfLocalHeader) {
-		this.relativeOffsetOfLocalHeader.set(relativeOffsetOfLocalHeader & 0xFFFFFFFFL);
+		this.relativeOffsetOfLocalHeader = relativeOffsetOfLocalHeader;
 	}
 
 	/**
 	 * @return Length of {@link #getFileComment()}.
 	 */
 	public int getFileCommentLength() {
-		return fileCommentLength.get();
+		return fileCommentLength;
 	}
 
 
@@ -206,14 +204,14 @@ public class CentralDirectoryFileHeader extends AbstractZipFileHeader {
 	 * 		Length of {@link #getFileComment()}.
 	 */
 	public void setFileCommentLength(int fileCommentLength) {
-		this.fileCommentLength.set(fileCommentLength & 0xFFFF);
+		this.fileCommentLength = fileCommentLength;
 	}
 
 	/**
 	 * @return File comment.
 	 */
 	public ByteData getFileComment() {
-		return fileComment.get();
+		return fileComment;
 	}
 
 	/**
@@ -221,7 +219,7 @@ public class CentralDirectoryFileHeader extends AbstractZipFileHeader {
 	 * 		File comment.
 	 */
 	public void setFileComment(ByteData fileComment) {
-		this.fileComment.set(fileComment);
+		this.fileComment = fileComment;
 	}
 
 	/**
@@ -230,7 +228,7 @@ public class CentralDirectoryFileHeader extends AbstractZipFileHeader {
 	public String getFileCommentAsString() {
 		String fileCommentCache = this.fileCommentCache;
 		if (fileCommentCache == null) {
-			return this.fileCommentCache = ByteDataUtil.toString(fileComment.get());
+			return this.fileCommentCache = ByteDataUtil.toString(fileComment);
 		}
 		return fileCommentCache;
 	}
@@ -266,51 +264,11 @@ public class CentralDirectoryFileHeader extends AbstractZipFileHeader {
 		if (o == null || getClass() != o.getClass()) return false;
 
 		CentralDirectoryFileHeader that = (CentralDirectoryFileHeader) o;
-
-		if (!Objects.equals(linkedFileHeader, that.linkedFileHeader)) return false;
-		if (!Objects.equals(versionMadeBy, that.versionMadeBy)) return false;
-		if (!Objects.equals(versionNeededToExtract, that.versionNeededToExtract)) return false;
-		if (!Objects.equals(generalPurposeBitFlag, that.generalPurposeBitFlag)) return false;
-		if (!Objects.equals(compressionMethod, that.compressionMethod)) return false;
-		if (!Objects.equals(lastModFileTime, that.lastModFileTime)) return false;
-		if (!Objects.equals(lastModFileDate, that.lastModFileDate)) return false;
-		if (!Objects.equals(crc32, that.crc32)) return false;
-		if (!Objects.equals(compressedSize, that.compressedSize)) return false;
-		if (!Objects.equals(uncompressedSize, that.uncompressedSize)) return false;
-		if (!Objects.equals(fileNameLength, that.fileNameLength)) return false;
-		if (!Objects.equals(extraFieldLength, that.extraFieldLength)) return false;
-		if (!Objects.equals(fileCommentLength, that.fileCommentLength)) return false;
-		if (!Objects.equals(diskNumberStart, that.diskNumberStart)) return false;
-		if (!Objects.equals(internalFileAttributes, that.internalFileAttributes)) return false;
-		if (!Objects.equals(externalFileAttributes, that.externalFileAttributes)) return false;
-		if (!Objects.equals(relativeOffsetOfLocalHeader, that.relativeOffsetOfLocalHeader)) return false;
-		if (!Objects.equals(fileName, that.fileName)) return false;
-		if (!Objects.equals(extraField, that.extraField)) return false;
-		return Objects.equals(fileComment, that.fileComment);
+		return offset == that.offset;
 	}
 
 	@Override
 	public int hashCode() {
-		int result = linkedFileHeader != null ? linkedFileHeader.hashCode() : 0;
-		result = 31 * result + (versionMadeBy != null ? versionMadeBy.hashCode() : 0);
-		result = 31 * result + (versionNeededToExtract != null ? versionNeededToExtract.hashCode() : 0);
-		result = 31 * result + (generalPurposeBitFlag != null ? generalPurposeBitFlag.hashCode() : 0);
-		result = 31 * result + (compressionMethod != null ? compressionMethod.hashCode() : 0);
-		result = 31 * result + (lastModFileTime != null ? lastModFileTime.hashCode() : 0);
-		result = 31 * result + (lastModFileDate != null ? lastModFileDate.hashCode() : 0);
-		result = 31 * result + (crc32 != null ? crc32.hashCode() : 0);
-		result = 31 * result + (compressedSize != null ? compressedSize.hashCode() : 0);
-		result = 31 * result + (uncompressedSize != null ? uncompressedSize.hashCode() : 0);
-		result = 31 * result + (fileNameLength != null ? fileNameLength.hashCode() : 0);
-		result = 31 * result + (extraFieldLength != null ? extraFieldLength.hashCode() : 0);
-		result = 31 * result + (fileCommentLength != null ? fileCommentLength.hashCode() : 0);
-		result = 31 * result + (diskNumberStart != null ? diskNumberStart.hashCode() : 0);
-		result = 31 * result + (internalFileAttributes != null ? internalFileAttributes.hashCode() : 0);
-		result = 31 * result + (externalFileAttributes != null ? externalFileAttributes.hashCode() : 0);
-		result = 31 * result + (relativeOffsetOfLocalHeader != null ? relativeOffsetOfLocalHeader.hashCode() : 0);
-		result = 31 * result + (fileName != null ? fileName.hashCode() : 0);
-		result = 31 * result + (extraField != null ? extraField.hashCode() : 0);
-		result = 31 * result + (fileComment != null ? fileComment.hashCode() : 0);
-		return result;
+		return Long.hashCode(offset);
 	}
 }

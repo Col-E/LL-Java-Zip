@@ -243,6 +243,18 @@ public class ByteDataUtil {
 	/**
 	 * @param data
 	 * 		Content to read from.
+	 * @param i
+	 * 		Index to read quad from.
+	 *
+	 * @return Value of quad.
+	 */
+	public static long readUnsignedQuad(ByteData data, long i) {
+		return data.getInt(i) & 0xFFFFFFFFL;
+	}
+
+	/**
+	 * @param data
+	 * 		Content to read from.
 	 * @param start
 	 * 		Start position of string.
 	 * @param len

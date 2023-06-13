@@ -4,9 +4,6 @@ import software.coley.llzip.format.compression.Decompressor;
 import software.coley.llzip.format.compression.ZipCompressions;
 import software.coley.llzip.util.ByteData;
 import software.coley.llzip.util.ByteDataUtil;
-import software.coley.llzip.util.lazy.LazyByteData;
-import software.coley.llzip.util.lazy.LazyInt;
-import software.coley.llzip.util.lazy.LazyLong;
 
 /**
  * Common base for shared elements of {@link CentralDirectoryFileHeader} and {@link LocalFileHeader}.
@@ -15,18 +12,18 @@ import software.coley.llzip.util.lazy.LazyLong;
  */
 public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	// Zip spec elements, all lazily read, common between central/local file headers
-	protected LazyInt versionNeededToExtract;
-	protected LazyInt generalPurposeBitFlag;
-	protected LazyInt compressionMethod;
-	protected LazyInt lastModFileTime;
-	protected LazyInt lastModFileDate;
-	protected LazyInt crc32;
-	protected LazyLong compressedSize;
-	protected LazyLong uncompressedSize;
-	protected LazyInt fileNameLength;
-	protected LazyInt extraFieldLength;
-	protected LazyByteData fileName;
-	protected LazyByteData extraField;
+	protected int versionNeededToExtract;
+	protected int generalPurposeBitFlag;
+	protected int compressionMethod;
+	protected int lastModFileTime;
+	protected int lastModFileDate;
+	protected int crc32;
+	protected long compressedSize;
+	protected long uncompressedSize;
+	protected int fileNameLength;
+	protected int extraFieldLength;
+	protected ByteData fileName;
+	protected ByteData extraField;
 
 	// Offset into the data this part is read from
 	protected transient long offset = -1L;
@@ -49,7 +46,7 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * @return Version of zip software required to read the archive features.
 	 */
 	public int getVersionNeededToExtract() {
-		return versionNeededToExtract.get();
+		return versionNeededToExtract;
 	}
 
 	/**
@@ -57,14 +54,14 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * 		Version of zip software required to read the archive features.
 	 */
 	public void setVersionNeededToExtract(int versionNeededToExtract) {
-		this.versionNeededToExtract.set(versionNeededToExtract);
+		this.versionNeededToExtract = versionNeededToExtract;
 	}
 
 	/**
 	 * @return Used primarily to expand on details of file compression.
 	 */
 	public int getGeneralPurposeBitFlag() {
-		return generalPurposeBitFlag.get();
+		return generalPurposeBitFlag;
 	}
 
 	/**
@@ -72,7 +69,7 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * 		Used primarily to expand on details of file compression.
 	 */
 	public void setGeneralPurposeBitFlag(int generalPurposeBitFlag) {
-		this.generalPurposeBitFlag.set(generalPurposeBitFlag);
+		this.generalPurposeBitFlag = generalPurposeBitFlag;
 	}
 
 	/**
@@ -81,7 +78,7 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * @see ZipCompressions Possible methods.
 	 */
 	public int getCompressionMethod() {
-		return compressionMethod.get();
+		return compressionMethod;
 	}
 
 	/**
@@ -91,14 +88,14 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * @see ZipCompressions Possible methods.
 	 */
 	public void setCompressionMethod(int compressionMethod) {
-		this.compressionMethod.set(compressionMethod);
+		this.compressionMethod = compressionMethod;
 	}
 
 	/**
 	 * @return Modification time of the file.
 	 */
 	public int getLastModFileTime() {
-		return lastModFileTime.get();
+		return lastModFileTime;
 	}
 
 	/**
@@ -106,14 +103,14 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * 		Modification time of the file.
 	 */
 	public void setLastModFileTime(int lastModFileTime) {
-		this.lastModFileTime.set(lastModFileTime);
+		this.lastModFileTime = lastModFileTime;
 	}
 
 	/**
 	 * @return Modification date of the file.
 	 */
 	public int getLastModFileDate() {
-		return lastModFileDate.get();
+		return lastModFileDate;
 	}
 
 	/**
@@ -121,14 +118,14 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * 		Modification date of the file.
 	 */
 	public void setLastModFileDate(int lastModFileDate) {
-		this.lastModFileDate.set(lastModFileDate);
+		this.lastModFileDate = lastModFileDate;
 	}
 
 	/**
 	 * @return File checksum.
 	 */
 	public int getCrc32() {
-		return crc32.get();
+		return crc32;
 	}
 
 	/**
@@ -136,7 +133,7 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * 		File checksum.
 	 */
 	public void setCrc32(int crc32) {
-		this.crc32.set(crc32);
+		this.crc32 = crc32;
 	}
 
 	/**
@@ -149,7 +146,7 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * @return Compressed size of {@link LocalFileHeader#getFileData()}.
 	 */
 	public long getCompressedSize() {
-		return compressedSize.get();
+		return compressedSize;
 	}
 
 	/**
@@ -157,7 +154,7 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * 		Compressed size of {@link LocalFileHeader#getFileData()}.
 	 */
 	public void setCompressedSize(long compressedSize) {
-		this.compressedSize.set(compressedSize & 0xFFFFFFFFL);
+		this.compressedSize = compressedSize;
 	}
 
 	/**
@@ -168,7 +165,7 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * @return Uncompressed size after {@link LocalFileHeader#decompress(Decompressor)} is used on {@link LocalFileHeader#getFileData()}.
 	 */
 	public long getUncompressedSize() {
-		return uncompressedSize.get();
+		return uncompressedSize;
 	}
 
 	/**
@@ -176,14 +173,14 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * 		Uncompressed size after {@link LocalFileHeader#decompress(Decompressor)} is used on {@link LocalFileHeader#getFileData()}.
 	 */
 	public void setUncompressedSize(long uncompressedSize) {
-		this.uncompressedSize.set(uncompressedSize & 0xFFFFFFFFL);
+		this.uncompressedSize = uncompressedSize;
 	}
 
 	/**
 	 * @return Length of {@link #getFileName()}.
 	 */
 	public int getFileNameLength() {
-		return fileNameLength.get();
+		return fileNameLength;
 	}
 
 	/**
@@ -191,14 +188,14 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * 		Length of {@link #getFileName()}.
 	 */
 	public void setFileNameLength(int fileNameLength) {
-		this.fileNameLength.set(fileNameLength & 0xFFFF);
+		this.fileNameLength = fileNameLength;
 	}
 
 	/**
 	 * @return Length of {@link #getExtraField()}
 	 */
 	public int getExtraFieldLength() {
-		return extraFieldLength.get();
+		return extraFieldLength;
 	}
 
 	/**
@@ -206,7 +203,7 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * 		Length of {@link #getExtraField()}
 	 */
 	public void setExtraFieldLength(int extraFieldLength) {
-		this.extraFieldLength.set(extraFieldLength & 0xFFFF);
+		this.extraFieldLength = extraFieldLength;
 	}
 
 	/**
@@ -216,7 +213,7 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * @return File name.
 	 */
 	public ByteData getFileName() {
-		return fileName.get();
+		return fileName;
 	}
 
 	/**
@@ -226,7 +223,7 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	public void setFileName(ByteData fileName) {
 		if (this.fileName != fileName)
 			fileNameCache = null;
-		this.fileName.set(fileName);
+		this.fileName = fileName;
 	}
 
 	/**
@@ -238,7 +235,7 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	public String getFileNameAsString() {
 		String fileNameCache = this.fileNameCache;
 		if (fileNameCache == null) {
-			return this.fileNameCache = ByteDataUtil.toString(fileName.get());
+			return this.fileNameCache = ByteDataUtil.toString(fileName);
 		}
 		return fileNameCache;
 	}
@@ -248,7 +245,7 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * depending on the {@link #getCompressionMethod() compression method} used.
 	 */
 	public ByteData getExtraField() {
-		return extraField.get();
+		return extraField;
 	}
 
 	/**
@@ -256,7 +253,7 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * 		Extra field bytes.
 	 */
 	public void setExtraField(ByteData extraField) {
-		this.extraField.set(extraField);
+		this.extraField = extraField;
 	}
 
 	/**
@@ -265,72 +262,8 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	public String getExtraFieldAsString() {
 		String fileCommentCache = this.extraFieldCache;
 		if (fileCommentCache == null) {
-			return this.extraFieldCache = ByteDataUtil.toString(extraField.get());
+			return this.extraFieldCache = ByteDataUtil.toString(extraField);
 		}
 		return fileCommentCache;
-	}
-
-	protected LazyInt readWord(ByteData data, int localOffset) {
-		return new LazyInt(() -> {
-			if (data.isClosed())
-				throw new IllegalStateException("Cannot read from closed data source");
-			return ByteDataUtil.readWord(data, offset + localOffset);
-		});
-	}
-
-	protected LazyInt readQuad(ByteData data, int localOffset) {
-		return new LazyInt(() -> {
-			if (data.isClosed())
-				throw new IllegalStateException("Cannot read from closed data source");
-			return ByteDataUtil.readQuad(data, offset + localOffset);
-		});
-	}
-
-	protected LazyInt readMaskedQuad(ByteData data, int localOffset) {
-		return new LazyInt(() -> {
-			if (data.isClosed())
-				throw new IllegalStateException("Cannot read from closed data source");
-			return ByteDataUtil.readQuad(data, offset + localOffset) & 0xFFFF;
-		});
-	}
-
-	protected LazyLong readLongWord(ByteData data, int localOffset) {
-		return new LazyLong(() -> {
-			if (data.isClosed())
-				throw new IllegalStateException("Cannot read from closed data source");
-			return ByteDataUtil.readWord(data, offset + localOffset);
-		});
-	}
-
-	protected LazyLong readMaskedLongQuad(ByteData data, int localOffset) {
-		return new LazyLong(() -> {
-			if (data.isClosed())
-				throw new IllegalStateException("Cannot read from closed data source");
-			return ByteDataUtil.readQuad(data, offset + localOffset) & 0xFFFFFFFFL;
-		});
-	}
-
-	protected LazyByteData readSlice(ByteData data, LazyInt localOffset, LazyInt length) {
-		return new LazyByteData(() -> {
-			if (data.isClosed())
-				throw new IllegalStateException("Cannot read from closed data source");
-			return data.sliceOf(offset + localOffset.get(), length.get());
-		});
-	}
-
-	protected LazyByteData readLongSlice(ByteData data, LazyInt localOffset, LazyLong length) {
-		return new LazyByteData(() -> {
-			if (data.isClosed())
-				throw new IllegalStateException("Cannot read from closed data source");
-			return data.sliceOf(offset + localOffset.get(), length.get());
-		});
-	}
-
-	protected LazyByteData readLongSlice(ByteData data, LazyLong localOffset, LazyLong length) {
-		return new LazyByteData(() -> {
-			if (data.isClosed())
-				throw new IllegalStateException("Cannot read from closed data source");
-			return data.sliceOf(offset + localOffset.get(), length.get());
-		});
 	}
 }

@@ -2,8 +2,6 @@ package software.coley.llzip.format.model;
 
 import software.coley.llzip.format.compression.ZipCompressions;
 import software.coley.llzip.util.ByteData;
-import software.coley.llzip.util.lazy.LazyInt;
-import software.coley.llzip.util.lazy.LazyLong;
 
 import java.util.NavigableSet;
 
@@ -33,6 +31,7 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 	@Override
 	public void read(ByteData data, long offset) {
 		super.read(data, offset);
+		data = data.sliceOf(offset, data.length() - offset);
 
 		// JVM file data reading does NOT use the compressed/uncompressed fields.
 		// Instead, it scans data until the next header.
@@ -42,9 +41,7 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 		this.dataOffsetEnd = dataOffsetEnd == null ? -1 : dataOffsetEnd;
 		if (dataOffsetEnd != null) {
 			// Valid data range found, map back to (localOffset, range)
-			fileData = readLongSlice(data,
-					new LazyLong(() -> dataOffsetStart - offset),
-					new LazyLong(() -> dataOffsetEnd - offset));
+			fileData = data.sliceOf(dataOffsetStart - offset, dataOffsetEnd - offset);
 			foundData = true;
 		} else {
 			// Keep data reference to attempt restoration with later when linking to the CEN.
@@ -82,9 +79,7 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 			// Data should not be overflowing into adjacent header entries.
 			// - If it is, the data here is likely intentionally tampered with to screw with parsers
 			if (fileDataLength + offset < dataOffsetEnd) {
-				fileData = readLongSlice(data,
-						new LazyLong(() -> dataOffsetStart - offset),
-						new LazyLong(() -> fileDataLength));
+				fileData = data.sliceOf(dataOffsetStart - offset, fileDataLength);
 				data = null;
 			}
 		}
