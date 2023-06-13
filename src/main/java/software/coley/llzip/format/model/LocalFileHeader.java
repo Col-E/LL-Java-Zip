@@ -40,7 +40,7 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 	private transient CentralDirectoryFileHeader linkedDirectoryFileHeader;
 
 	// LocalFileHeader spec (plus common elements between this and central file)
-	private LazyByteData fileData;
+	protected LazyByteData fileData;
 
 	// Caches
 	private transient LazyLong fileDataLength;

@@ -2,6 +2,8 @@ package software.coley.llzip.format.model;
 
 import software.coley.llzip.format.compression.ZipCompressions;
 import software.coley.llzip.util.ByteData;
+import software.coley.llzip.util.lazy.LazyInt;
+import software.coley.llzip.util.lazy.LazyLong;
 
 import java.util.NavigableSet;
 
@@ -39,8 +41,10 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 		this.dataOffsetStart = dataOffsetStart;
 		this.dataOffsetEnd = dataOffsetEnd == null ? -1 : dataOffsetEnd;
 		if (dataOffsetEnd != null) {
-			// Valid data range found
-			setFileData(data.slice(dataOffsetStart, dataOffsetEnd));
+			// Valid data range found, map back to (localOffset, range)
+			fileData = readLongSlice(data,
+					new LazyLong(() -> dataOffsetStart - offset),
+					new LazyLong(() -> dataOffsetEnd - offset));
 			foundData = true;
 		} else {
 			// Keep data reference to attempt restoration with later when linking to the CEN.
@@ -78,7 +82,9 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 			// Data should not be overflowing into adjacent header entries.
 			// - If it is, the data here is likely intentionally tampered with to screw with parsers
 			if (fileDataLength + offset < dataOffsetEnd) {
-				setFileData(data.sliceOf(dataOffsetStart, fileDataLength));
+				fileData = readLongSlice(data,
+						new LazyLong(() -> dataOffsetStart - offset),
+						new LazyLong(() -> fileDataLength));
 				data = null;
 			}
 		}

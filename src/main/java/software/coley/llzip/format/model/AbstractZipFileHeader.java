@@ -325,4 +325,12 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 			return data.sliceOf(offset + localOffset.get(), length.get());
 		});
 	}
+
+	protected LazyByteData readLongSlice(ByteData data, LazyLong localOffset, LazyLong length) {
+		return new LazyByteData(() -> {
+			if (data.isClosed())
+				throw new IllegalStateException("Cannot read from closed data source");
+			return data.sliceOf(offset + localOffset.get(), length.get());
+		});
+	}
 }
