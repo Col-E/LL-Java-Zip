@@ -190,6 +190,9 @@ public class EndOfCentralDirectory implements ZipPart, ZipRead {
 		this.zipComment = zipComment;
 	}
 
+	/**
+	 * @return Optional comment, or empty string.
+	 */
 	public String getZipCommentAsString() {
 		String zipCommentCache = this.zipCommentCache;
 		if (zipCommentCache == null) {
