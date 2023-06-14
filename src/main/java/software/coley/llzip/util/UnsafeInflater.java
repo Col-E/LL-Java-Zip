@@ -54,10 +54,8 @@ public class UnsafeInflater extends Inflater {
 		super(nowrap);
 	}
 
-	/**
-	 * {@link #reset()} but without synchronization.
-	 */
-	public void fastReset() {
+	@Override
+	public void reset() {
 		try {
 			Object zsRefValue = UNSAFE.getObject(this, off_zsRef);
 			if (mh_address == null) {
