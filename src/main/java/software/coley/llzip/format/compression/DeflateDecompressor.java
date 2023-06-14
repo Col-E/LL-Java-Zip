@@ -41,7 +41,7 @@ public class DeflateDecompressor implements Decompressor {
 				if (count != 0) {
 					out.write(output, 0, count);
 				}
-			} while (!inflater.finished() && !inflater.needsDictionary());
+			} while (!inflater.finished());
 		} catch (DataFormatException e) {
 			String s = e.getMessage();
 			throw (ZipException) new ZipException(s != null ? null : "Invalid ZLIB data format").initCause(e);
