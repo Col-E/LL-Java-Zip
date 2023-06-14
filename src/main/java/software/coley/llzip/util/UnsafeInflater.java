@@ -66,10 +66,13 @@ public class UnsafeInflater extends Inflater {
 			}
 			long addressRet = (long) mh_address.invoke(zsRefValue);
 			mh_reset.invoke(addressRet);
+
 			UNSAFE.putObject(this, off_input, DEFAULT_BUF);
 			UNSAFE.putObject(this, off_inputArray, null);
-			UNSAFE.putBoolean(this, off_finished, false);
-			UNSAFE.putBoolean(this, off_needDict, false);
+			// This is so fucking dumb, but resetting these causes a 2x slowdown. Yes, putBoolean is SLOW!
+			// In testing, we don't need these values changes, so I guess we'll ignore this for now.
+			//  UNSAFE.putBoolean(this, off_finished, false);
+			//  UNSAFE.putBoolean(this, off_needDict, false);
 			UNSAFE.putLong(this, off_bytesRead, 0);
 			UNSAFE.putLong(this, off_bytesWritten, 0);
 		} catch (Throwable ex) {
