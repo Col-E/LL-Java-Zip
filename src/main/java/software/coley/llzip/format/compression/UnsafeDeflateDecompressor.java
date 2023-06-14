@@ -1,11 +1,10 @@
 package software.coley.llzip.format.compression;
 
 import software.coley.llzip.format.model.LocalFileHeader;
-import software.coley.llzip.util.BufferData;
 import software.coley.llzip.util.ByteData;
+import software.coley.llzip.util.FastWrapOutputStream;
 import software.coley.llzip.util.UnsafeInflater;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -24,7 +23,7 @@ public class UnsafeDeflateDecompressor implements Decompressor {
 	public ByteData decompress(LocalFileHeader header, ByteData data) throws IOException {
 		if (header.getCompressionMethod() != ZipCompressions.DEFLATED)
 			throw new IOException("LocalFileHeader contents not using 'Deflated'!");
-		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		FastWrapOutputStream out = new FastWrapOutputStream();
 		UnsafeInflater inflater;
 		Deque<UnsafeInflater> inflaters = INFLATERS;
 		synchronized (inflaters) {
@@ -72,6 +71,6 @@ public class UnsafeDeflateDecompressor implements Decompressor {
 				inflater.end();
 			}
 		}
-		return BufferData.wrap(out.toByteArray());
+		return out.wrap();
 	}
 }

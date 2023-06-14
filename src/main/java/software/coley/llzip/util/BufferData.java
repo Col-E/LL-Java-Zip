@@ -153,4 +153,18 @@ public final class BufferData implements ByteData {
 	public static BufferData wrap(byte[] array) {
 		return new BufferData(ByteBuffer.wrap(array).order(ByteOrder.LITTLE_ENDIAN), new AtomicBoolean());
 	}
+
+	/**
+	 * @param array
+	 * 		Byte array to wrap.
+	 * @param offset
+	 * 		Offset into the array to start at.
+	 * @param length
+	 * 		Length of content.
+	 *
+	 * @return Buffer data.
+	 */
+	public static BufferData wrap(byte[] array, int offset, int length) {
+		return new BufferData(ByteBuffer.wrap(array, offset, length).order(ByteOrder.LITTLE_ENDIAN), new AtomicBoolean());
+	}
 }
