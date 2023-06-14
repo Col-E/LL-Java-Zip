@@ -2,6 +2,7 @@ package software.coley.llzip.format.compression;
 
 import software.coley.llzip.format.model.LocalFileHeader;
 import software.coley.llzip.util.ByteData;
+import software.coley.llzip.util.UnsafeInflater;
 
 import java.io.IOException;
 
@@ -208,7 +209,12 @@ public interface ZipCompressions {
 			case STORED:
 				return header.getFileData();
 			case DEFLATED:
-				return header.decompress(new DeflateDecompressor());
+				// Use unsafe decompressor if available since it is faster.
+				if (UnsafeInflater.initFail) {
+					return header.decompress(new DeflateDecompressor());
+				} else {
+					return header.decompress(new UnsafeDeflateDecompressor());
+				}
 			default:
 				// TODO: Support other decompressing techniques
 				String methodName = getName(method);

@@ -1,10 +1,9 @@
 package software.coley.llzip.format.compression;
 
 import software.coley.llzip.format.model.LocalFileHeader;
-import software.coley.llzip.util.BufferData;
 import software.coley.llzip.util.ByteData;
+import software.coley.llzip.util.FastWrapOutputStream;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
@@ -21,7 +20,7 @@ public class DeflateDecompressor implements Decompressor {
 		if (header.getCompressionMethod() != ZipCompressions.DEFLATED)
 			throw new IOException("LocalFileHeader contents not using 'Deflated'!");
 		Inflater inflater = new Inflater(true);
-		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		FastWrapOutputStream out = new FastWrapOutputStream();
 		try {
 			byte[] output = new byte[1024];
 			byte[] buffer = new byte[1024];
@@ -42,13 +41,13 @@ public class DeflateDecompressor implements Decompressor {
 				if (count != 0) {
 					out.write(output, 0, count);
 				}
-			} while (!inflater.finished() && !inflater.needsDictionary());
-		}catch (DataFormatException e) {
+			} while (!inflater.finished());
+		} catch (DataFormatException e) {
 			String s = e.getMessage();
 			throw (ZipException) new ZipException(s != null ? null : "Invalid ZLIB data format").initCause(e);
 		} finally {
 			inflater.end();
 		}
-		return BufferData.wrap(out.toByteArray());
+		return out.wrap();
 	}
 }
