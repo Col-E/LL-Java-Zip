@@ -3,7 +3,7 @@ package software.coley.llzip.format.compression;
 import software.coley.llzip.format.model.LocalFileHeader;
 import software.coley.llzip.util.ByteData;
 import software.coley.llzip.util.FastWrapOutputStream;
-import software.coley.llzip.util.UnsafeInflater;
+import software.coley.llzip.util.InflaterHackery;
 
 import java.io.IOException;
 import java.util.ArrayDeque;
@@ -43,9 +43,7 @@ public class UnsafeDeflateDecompressor implements Decompressor {
 		if (entry == null) {
 			entry = new DeflateEntry();
 		} else {
-			// Normal 'Inflater' reset() is synchronized and bottlenecks us,
-			// but we're using 'UnsafeInflater' which bypasses that.
-			entry.inflater.reset();
+			InflaterHackery.reset(entry.inflater);
 		}
 		try {
 			byte[] output = entry.decompress;
@@ -90,7 +88,7 @@ public class UnsafeDeflateDecompressor implements Decompressor {
 	}
 
 	private static final class DeflateEntry {
-		final Inflater inflater = new UnsafeInflater(true);
+		final Inflater inflater = new Inflater(true);
 		final byte[] decompress = new byte[1024];
 		final byte[] buffer = new byte[8192];
 	}
