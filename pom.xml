@@ -6,7 +6,7 @@
 
     <groupId>software.coley</groupId>
     <artifactId>lljzip</artifactId>
-    <version>1.6.1</version>
+    <version>1.6.2</version>
 
     <name>LL Java ZIP</name>
     <description>Lower level ZIP support for Java</description>
