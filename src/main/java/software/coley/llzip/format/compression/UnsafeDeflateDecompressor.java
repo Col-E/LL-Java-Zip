@@ -43,7 +43,7 @@ public class UnsafeDeflateDecompressor implements Decompressor {
 		if (entry == null) {
 			entry = new DeflateEntry();
 		} else {
-			InflaterHackery.reset(entry.inflater);
+			entry.reset();
 		}
 		try {
 			byte[] output = entry.decompress;
@@ -51,25 +51,32 @@ public class UnsafeDeflateDecompressor implements Decompressor {
 			Inflater inflater = entry.inflater;
 			long position = 0L;
 			long length = data.length();
-			inflater.setInput(emptyBuf);
+			int remaining = 0;
+			boolean needsInput = true;
 			do {
-				if (inflater.needsInput()) {
-					int remaining = (int) Math.min(buffer.length, length);
+				if (needsInput) {
+					remaining = (int) Math.min(buffer.length, length);
 					if (remaining != 0) {
 						data.get(position, buffer, 0, remaining);
 						length -= remaining;
 						position += remaining;
 						inflater.setInput(buffer, 0, remaining);
 					}
+					entry.offset = 0;
 				}
-				int count = inflater.inflate(output);
-				if (count != 0) {
-					out.write(output, 0, count);
+				int written = InflaterHackery.inflate(entry, buffer, remaining, output);
+				if (written != 0) {
+					out.write(output, 0, written);
 				}
-			} while (!inflater.finished());
+				int state = entry.state;
+				if (state == 2) {
+					break;
+				}
+				needsInput = state == 1;
+			} while (true);
 		} catch (DataFormatException e) {
-			String msg = e.getMessage();
-			throw (ZipException) new ZipException(msg != null ? null : "Invalid ZLIB data format").initCause(e);
+			String s = e.getMessage();
+			throw (ZipException) new ZipException(s != null ? null : "Invalid ZLIB data format").initCause(e);
 		} finally {
 			end:
 			{
@@ -85,11 +92,8 @@ public class UnsafeDeflateDecompressor implements Decompressor {
 			}
 		}
 		return out.wrap();
+
 	}
 
-	private static final class DeflateEntry {
-		final Inflater inflater = new Inflater(true);
-		final byte[] decompress = new byte[1024];
-		final byte[] buffer = new byte[8192];
-	}
+
 }
