@@ -60,7 +60,7 @@ public class CopyZipWriterStrategy implements ZipWriterStrategy {
 			// Extra field
 			os.write(ByteDataUtil.toByteArray(fileHeader.getExtraField()));
 			// Compressed data
-			os.write(ByteDataUtil.toByteArray(fileHeader.getFileData()), 0, (int) fileHeader.getCompressedSize());
+			os.write(ByteDataUtil.toByteArray(fileHeader.getFileData()));
 		}
 
 		// Write central directory file headers.
