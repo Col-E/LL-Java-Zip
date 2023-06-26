@@ -11,7 +11,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- * Manually recomputes the zip file format. Input data is written as-is.
+ * Manually copies the input zip file.
+ * Data is written as-is, and no validation is performed.
  *
  * @author Ned Loynd
  */
