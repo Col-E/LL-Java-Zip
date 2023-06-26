@@ -15,7 +15,7 @@ import java.io.OutputStream;
  *
  * @author Ned Loynd
  */
-public class BasicZipWriterStrategy implements ZipWriterStrategy {
+public class CopyZipWriterStrategy implements ZipWriterStrategy {
 	private static void writeShortLE(OutputStream os, int value) throws IOException {
 		os.write(value & 0xFF);
 		os.write((value >> 8) & 0xFF);
