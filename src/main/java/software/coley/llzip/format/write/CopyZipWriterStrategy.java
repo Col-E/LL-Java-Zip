@@ -109,7 +109,6 @@ public class CopyZipWriterStrategy implements ZipWriterStrategy {
 
 		// Write end of central directory record.
 		final EndOfCentralDirectory end = archive.getEnd();
-		// TODO Handle null EndOfCentralDirectory more gracefully
 		if (end != null) {
 			// Header
 			writeIntLE(os, ZipPatterns.END_OF_CENTRAL_DIRECTORY_QUAD);
