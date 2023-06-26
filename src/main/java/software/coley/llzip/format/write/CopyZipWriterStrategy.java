@@ -109,23 +109,26 @@ public class CopyZipWriterStrategy implements ZipWriterStrategy {
 
 		// Write end of central directory record.
 		final EndOfCentralDirectory end = archive.getEnd();
-		// Header
-		writeIntLE(os, ZipPatterns.END_OF_CENTRAL_DIRECTORY_QUAD);
-		// Disk number
-		writeShortLE(os, end.getDiskNumber());
-		// Central directory start disk
-		writeShortLE(os, end.getCentralDirectoryStartDisk());
-		// TODO What is this?
-		writeShortLE(os, end.getCentralDirectoryStartOffset());
-		// Central directory entries
-		writeShortLE(os, end.getNumEntries());
-		// Central directory size
-		writeIntLE(os, (int) end.getCentralDirectorySize());
-		// Central directory offset
-		writeIntLE(os, (int) end.getCentralDirectoryOffset());
-		// Comment length
-		writeShortLE(os, end.getZipCommentLength());
-		// Comment
-		os.write(ByteDataUtil.toByteArray(end.getZipComment()));
+		// TODO Handle null EndOfCentralDirectory more gracefully
+		if (end != null) {
+			// Header
+			writeIntLE(os, ZipPatterns.END_OF_CENTRAL_DIRECTORY_QUAD);
+			// Disk number
+			writeShortLE(os, end.getDiskNumber());
+			// Central directory start disk
+			writeShortLE(os, end.getCentralDirectoryStartDisk());
+			// TODO What is this?
+			writeShortLE(os, end.getCentralDirectoryStartOffset());
+			// Central directory entries
+			writeShortLE(os, end.getNumEntries());
+			// Central directory size
+			writeIntLE(os, (int) end.getCentralDirectorySize());
+			// Central directory offset
+			writeIntLE(os, (int) end.getCentralDirectoryOffset());
+			// Comment length
+			writeShortLE(os, end.getZipCommentLength());
+			// Comment
+			os.write(ByteDataUtil.toByteArray(end.getZipComment()));
+		}
 	}
 }
