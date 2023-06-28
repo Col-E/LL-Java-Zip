@@ -44,7 +44,7 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 			// Valid data range found, map back to (localOffset, range)
 			fileData = readLongSlice(data,
 					new LazyLong(() -> dataOffsetStart - offset),
-					new LazyLong(() -> dataOffsetEnd - offset));
+					new LazyLong(() -> dataOffsetEnd - dataOffsetStart));
 			foundData = true;
 		} else {
 			// Keep data reference to attempt restoration with later when linking to the CEN.
