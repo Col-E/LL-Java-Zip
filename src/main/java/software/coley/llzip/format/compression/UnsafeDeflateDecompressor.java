@@ -21,7 +21,6 @@ import java.util.zip.ZipException;
 public class UnsafeDeflateDecompressor implements Decompressor {
 	private static final int DEFLATE_CACHE_LIMIT = 64;
 	private static final Deque<DeflateEntry> DEFLATE_ENTRIES = new ArrayDeque<>();
-	private static final byte[] emptyBuf = new byte[0];
 
 	static {
 		Deque<DeflateEntry> entries = DEFLATE_ENTRIES;
@@ -64,15 +63,19 @@ public class UnsafeDeflateDecompressor implements Decompressor {
 					}
 					entry.offset = 0;
 				}
-				int written = InflaterHackery.inflate(entry, buffer, remaining, output);
-				if (written != 0) {
-					out.write(output, 0, written);
-				}
-				int state = entry.state;
-				if (state == 2) {
+				if (remaining > 0) {
+					int written = InflaterHackery.inflate(entry, buffer, remaining, output);
+					if (written != 0) {
+						out.write(output, 0, written);
+					}
+					int state = entry.state;
+					if (state == 2) {
+						break;
+					}
+					needsInput = state == 1;
+				} else {
 					break;
 				}
-				needsInput = state == 1;
 			} while (true);
 		} catch (DataFormatException e) {
 			String s = e.getMessage();

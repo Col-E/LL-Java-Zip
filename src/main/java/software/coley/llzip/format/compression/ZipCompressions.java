@@ -208,7 +208,6 @@ public interface ZipCompressions {
 			case STORED:
 				return header.getFileData();
 			case DEFLATED:
-				// Use unsafe decompressor if available since it is faster.
 				return header.decompress(new UnsafeDeflateDecompressor());
 			default:
 				// TODO: Support other decompressing techniques
