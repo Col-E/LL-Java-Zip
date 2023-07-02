@@ -36,7 +36,7 @@ import static software.coley.llzip.format.compression.ZipCompressions.STORED;
  * @author Matt Coley
  */
 public class LocalFileHeader extends AbstractZipFileHeader {
-	protected static final long MIN_FIXED_SIZE = 30;
+	protected static final int MIN_FIXED_SIZE = 30;
 	private transient CentralDirectoryFileHeader linkedDirectoryFileHeader;
 
 	// LocalFileHeader spec (plus common elements between this and central file)
@@ -60,8 +60,8 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 		uncompressedSize = readMaskedLongQuad(data, 22);
 		fileNameLength = readWord(data, 26);
 		extraFieldLength = readWord(data, 28);
-		fileName = readSlice(data, new LazyInt(() -> 30), fileNameLength);
-		extraField = readSlice(data, fileNameLength.add(30), extraFieldLength);
+		fileName = readSlice(data, new LazyInt(() -> MIN_FIXED_SIZE), fileNameLength);
+		extraField = readSlice(data, fileNameLength.add(MIN_FIXED_SIZE), extraFieldLength);
 		fileDataLength = new LazyLong(() -> {
 			long fileDataLength;
 			if (compressionMethod.get() == STORED) {
@@ -71,7 +71,7 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 			}
 			return fileDataLength;
 		});
-		fileData = readLongSlice(data, fileNameLength.add(extraFieldLength).add(30), fileDataLength);
+		fileData = readLongSlice(data, fileNameLength.add(extraFieldLength).add(MIN_FIXED_SIZE), fileDataLength);
 	}
 
 	/**
@@ -116,8 +116,8 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 			setCompressedSize(linkedDirectoryFileHeader.getCompressedSize());
 			setUncompressedSize(linkedDirectoryFileHeader.getUncompressedSize());
 			setFileNameLength(linkedDirectoryFileHeader.getFileNameLength());
-			fileName = readSlice(data, new LazyInt(() -> 30), fileNameLength);
-			extraField = readSlice(data, fileNameLength.add(30), extraFieldLength);
+			fileName = readSlice(data, new LazyInt(() -> MIN_FIXED_SIZE), fileNameLength);
+			extraField = readSlice(data, fileNameLength.add(MIN_FIXED_SIZE), extraFieldLength);
 			fileDataLength = new LazyLong(() -> {
 				long fileDataLength;
 				if (compressionMethod.get() == STORED) {

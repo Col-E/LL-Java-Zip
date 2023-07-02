@@ -64,17 +64,26 @@ public final class InflaterHackery {
 			Inflater inflater = entry.inflater;
 			if (NEW_INFLATE) {
 				Unsafe u = UNSAFE;
+				// Taken from 'Inflater.inflate' logic
 				long address = u.getLong(u.getObject(inflater, zRef_offset), zRef_address_offset);
 				int offset = entry.offset;
 				long packed = (long) INFLATE.invokeExact(inflater, address, in, offset, len - offset, out, 0, out.length);
-				int newOffset = offset + ((int) (packed & 0x7fff_ffffL));
-				entry.state = ((int) (packed >>> 62 & 1)) << 1 | (((newOffset - in.length) >>> 31) ^ 1);
+				int read = (int) (packed & 0x7fff_ffffL);
+				int written = (int) (packed >>> 31 & 0x7fff_ffffL);
+				int finished = (int) (packed >>> 62 & 1);
+				if (finished == 0 && written == 0 && len == offset) // hack to break out of infinite deflates
+					finished = 1;
+				int newOffset = offset + read;
+				entry.state = finished << 1 | (((newOffset - in.length) >>> 31) ^ 1);
 				entry.offset = newOffset;
-				return (int) (packed >>> 31 & 0x7fff_ffffL);
+				return written;
 			} else {
-				int n = inflater.inflate(out);
-				entry.state = inflater.finished() ? 2 : n == 0 ? 1 : 0;
-				return n;
+				int written = inflater.inflate(out);
+				boolean finished = inflater.finished();
+				if (!finished && written == 0 && len == entry.offset) // hack to break out of infinite deflates
+					finished = true;
+				entry.state = finished ? 2 : written == 0 ? 1 : 0;
+				return written;
 			}
 		} catch (OutOfMemoryError | StackOverflowError | DataFormatException e) {
 			throw e;
