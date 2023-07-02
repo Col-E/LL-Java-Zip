@@ -22,7 +22,6 @@ public class NaiveLocalFileZipReaderStrategy implements ZipReaderStrategy {
 			file.read(data, localFileOffset);
 			zip.getParts().add(file);
 			postProcessLocalFileHeader(file);
-			file.freeze();
 		}
 	}
 }

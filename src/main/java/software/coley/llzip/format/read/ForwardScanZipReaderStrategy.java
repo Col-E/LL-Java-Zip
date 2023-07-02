@@ -60,7 +60,6 @@ public class ForwardScanZipReaderStrategy implements ZipReaderStrategy {
 				directory.link(file);
 				file.link(directory);
 				postProcessLocalFileHeader(file);
-				file.freeze();
 				offsets.add(offset);
 			} else {
 				logger.warn("Central-Directory-File-Header's offset[{}] to Local-File-Header does not match the Local-File-Header magic!", offset);

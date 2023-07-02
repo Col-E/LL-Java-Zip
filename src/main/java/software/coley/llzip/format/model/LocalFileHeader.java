@@ -100,8 +100,7 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 	}
 
 	/**
-	 * When called before being {@link #freeze() frozen} values can be adopted from the linked
-	 * {@link #getLinkedDirectoryFileHeader() CentralDirectoryFileHeader}.
+	 * Allows values to be adopted from the linked {@link #getLinkedDirectoryFileHeader() CentralDirectoryFileHeader}.
 	 * <p>
 	 * In some cases the {@link LocalFileHeader} file size may be 0, but the authoritative CEN states a non-0 value,
 	 * which you may want to adopt.
@@ -130,15 +129,6 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 			});
 			fileData = readLongSlice(data, fileNameLength.add(extraFieldLength).add(30), fileDataLength);
 		}
-	}
-
-	/**
-	 * Clears the reference to the source {@link ByteData}, preventing further modification.
-	 * <p>
-	 * Prevents usage of {@link #adoptLinkedCentralDirectoryValues()}.
-	 */
-	public void freeze() {
-		data = null;
 	}
 
 	@Override
