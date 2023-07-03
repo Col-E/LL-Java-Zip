@@ -18,13 +18,13 @@ import java.util.zip.ZipOutputStream;
  *
  * @author Matt Coley
  */
-public class JavaZipWriter implements ZipWriter {
+public class ZipOutputStreamZipWriter implements ZipWriter {
 	private final boolean createDirectoryEntries;
 
 	/**
 	 * New writer, which will create directories.
 	 */
-	public JavaZipWriter() {
+	public ZipOutputStreamZipWriter() {
 		this(false);
 	}
 
@@ -35,7 +35,7 @@ public class JavaZipWriter implements ZipWriter {
 	 *        {@code true} to create directory entries.
 	 * 		Some ZIP tools will make entries for directory paths, though this is not strictly required.
 	 */
-	public JavaZipWriter(boolean createDirectoryEntries) {
+	public ZipOutputStreamZipWriter(boolean createDirectoryEntries) {
 		this.createDirectoryEntries = createDirectoryEntries;
 	}
 
