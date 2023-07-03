@@ -50,4 +50,4 @@ implementation group: 'software.coley', name: 'lljzip', version: zipVersion
 implementation "software.coley:lljzip:${zipVersion}"
 ```
 
-For example usage see the [tests](src/test/java/software/coley/llzip).
+For example usage see the [tests](src/test/java/software/coley/lljzip).
