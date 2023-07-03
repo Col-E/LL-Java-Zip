@@ -15,6 +15,12 @@ import java.util.zip.ZipException;
  * @author Matt Coley
  */
 public class DeflateDecompressor implements Decompressor {
+	public static final DeflateDecompressor INSTANCE = new DeflateDecompressor();
+
+	private DeflateDecompressor() {
+		// deny construction
+	}
+
 	@Override
 	public ByteData decompress(LocalFileHeader header, ByteData data) throws IOException {
 		if (header.getCompressionMethod() != ZipCompressions.DEFLATED)

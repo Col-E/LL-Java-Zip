@@ -208,7 +208,7 @@ public interface ZipCompressions {
 			case STORED:
 				return header.getFileData();
 			case DEFLATED:
-				return header.decompress(new UnsafeDeflateDecompressor());
+				return header.decompress(UnsafeDeflateDecompressor.INSTANCE);
 			default:
 				// TODO: Support other decompressing techniques
 				String methodName = getName(method);

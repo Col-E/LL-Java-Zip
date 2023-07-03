@@ -19,8 +19,13 @@ import java.util.zip.ZipException;
  */
 @SuppressWarnings("UnnecessaryLocalVariable")
 public class UnsafeDeflateDecompressor implements Decompressor {
+	public static final UnsafeDeflateDecompressor INSTANCE = new UnsafeDeflateDecompressor();
 	private static final int DEFLATE_CACHE_LIMIT = 64;
 	private static final Deque<DeflateEntry> DEFLATE_ENTRIES = new ArrayDeque<>();
+
+	private UnsafeDeflateDecompressor() {
+		// deny construction
+	}
 
 	static {
 		Deque<DeflateEntry> entries = DEFLATE_ENTRIES;
