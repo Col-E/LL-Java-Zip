@@ -45,14 +45,11 @@ public class JavaZipWriter implements ZipWriter {
 			for (LocalFileHeader fileHeader : archive.getLocalFiles()) {
 				String name = fileHeader.getFileNameAsString();
 				if (fileHeader.getFileData().length() > 0L) {
-					// File, may need to patch things like trailing '/' for '.class' files.
-					if (name.endsWith(".class/"))
-						name = name.substring(0, name.length() - 1);
 					zos.putNextEntry(new ZipEntry(name));
 					zos.write(ByteDataUtil.toByteArray(ZipCompressions.decompress(fileHeader)));
 					zos.closeEntry();
 				} else if (createDirectoryEntries) {
-					// Directory, don't need to do any extra work
+					// Directory, don't need to write anything
 					zos.putNextEntry(new ZipEntry(name));
 					zos.closeEntry();
 				}

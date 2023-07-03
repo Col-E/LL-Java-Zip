@@ -18,6 +18,16 @@ public class LazyLong extends Lazy<LongSupplier> {
 	}
 
 	/**
+	 * @return Copy.
+	 */
+	@Nonnull
+	public LazyLong copy() {
+		LazyLong copy = new LazyLong(lookup);
+		if (set) copy.set(value);
+		return copy;
+	}
+
+	/**
 	 * @param value
 	 * 		Long value.
 	 */

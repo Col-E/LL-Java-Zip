@@ -21,6 +21,16 @@ public class LazyByteData extends Lazy<Supplier<ByteData>> {
 	}
 
 	/**
+	 * @return Copy.
+	 */
+	@Nonnull
+	public LazyByteData copy() {
+		LazyByteData copy = new LazyByteData(lookup);
+		if (set) copy.set(value);
+		return copy;
+	}
+
+	/**
 	 * @param value
 	 * 		Data value.
 	 */

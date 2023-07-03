@@ -17,10 +17,32 @@ public class LazyInt extends Lazy<IntSupplier> {
 		super(lookup);
 	}
 
+	/**
+	 * @return Copy.
+	 */
+	@Nonnull
+	public LazyInt copy() {
+		LazyInt copy = new LazyInt(lookup);
+		if (set) copy.set(value);
+		return copy;
+	}
+
+	/**
+	 * @param value
+	 * 		Value to add to the current.
+	 *
+	 * @return New value that maps the current value plus the additional value.
+	 */
 	public LazyInt add(int value) {
 		return new LazyInt(() -> value + lookup.getAsInt());
 	}
 
+	/**
+	 * @param value
+	 * 		Value to add to the current.
+	 *
+	 * @return New value that maps the current value plus the additional value.
+	 */
 	public LazyInt add(@Nonnull LazyInt value) {
 		return new LazyInt(() -> value.get() + lookup.getAsInt());
 	}

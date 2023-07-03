@@ -39,6 +39,25 @@ public class EndOfCentralDirectory implements ZipPart, ZipRead {
 	private ByteData zipComment;
 	private transient String zipCommentCache;
 
+	/**
+	 * @return Copy.
+	 */
+	@Nonnull
+	public EndOfCentralDirectory copy() {
+		EndOfCentralDirectory copy = new EndOfCentralDirectory();
+		copy.offset = offset;
+		copy.diskNumber = diskNumber;
+		copy.centralDirectoryStartDisk = centralDirectoryStartDisk;
+		copy.centralDirectoryStartOffset = centralDirectoryStartOffset;
+		copy.numEntries = numEntries;
+		copy.centralDirectorySize = centralDirectorySize;
+		copy.centralDirectoryOffset = centralDirectoryOffset;
+		copy.zipCommentLength = zipCommentLength;
+		copy.zipComment = zipComment;
+		copy.zipCommentCache = zipCommentCache;
+		return copy;
+	}
+
 	@Override
 	public void read(@Nonnull ByteData data, long offset) {
 		this.offset = offset;

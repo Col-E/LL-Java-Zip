@@ -8,7 +8,7 @@ import javax.annotation.Nonnull;
  * @param <S>
  * 		Lazy supplier type.
  */
-public class Lazy<S> {
+public abstract class Lazy<S> {
 	protected final S lookup;
 	protected boolean set;
 

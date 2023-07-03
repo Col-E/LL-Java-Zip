@@ -52,10 +52,38 @@ public class CentralDirectoryFileHeader extends AbstractZipFileHeader {
 	// String cache values
 	private transient String fileCommentCache;
 
+	/**
+	 * @return Copy.
+	 */
+	@Nonnull
+	public CentralDirectoryFileHeader copy() {
+		CentralDirectoryFileHeader copy = new CentralDirectoryFileHeader();
+		copy.offset = offset;
+		copy.versionMadeBy = versionMadeBy.copy();
+		copy.versionNeededToExtract = versionNeededToExtract.copy();
+		copy.generalPurposeBitFlag = generalPurposeBitFlag.copy();
+		copy.compressionMethod = compressionMethod.copy();
+		copy.lastModFileTime = lastModFileTime.copy();
+		copy.lastModFileDate = lastModFileDate.copy();
+		copy.crc32 = crc32.copy();
+		copy.compressedSize = compressedSize.copy();
+		copy.uncompressedSize = uncompressedSize.copy();
+		copy.fileNameLength = fileNameLength.copy();
+		copy.extraFieldLength = extraFieldLength.copy();
+		copy.fileCommentLength = fileCommentLength.copy();
+		copy.diskNumberStart = diskNumberStart.copy();
+		copy.internalFileAttributes = internalFileAttributes.copy();
+		copy.externalFileAttributes = externalFileAttributes.copy();
+		copy.relativeOffsetOfLocalHeader = relativeOffsetOfLocalHeader.copy();
+		copy.fileName = fileName.copy();
+		copy.extraField = extraField.copy();
+		copy.fileComment = fileComment.copy();
+		return copy;
+	}
+
 	@Override
 	public void read(@Nonnull ByteData data, long offset) {
 		super.read(data, offset);
-		versionMadeBy = ByteDataUtil.readLazyWord(data, offset, 4);
 		versionMadeBy = ByteDataUtil.readLazyWord(data, offset, 4);
 		versionNeededToExtract = ByteDataUtil.readLazyWord(data, offset, 6);
 		generalPurposeBitFlag = ByteDataUtil.readLazyWord(data, offset, 8);
