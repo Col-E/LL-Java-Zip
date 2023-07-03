@@ -1,7 +1,10 @@
 package software.coley.llzip.format.model;
 
+import software.coley.llzip.format.transform.ZipPartMapper;
 import software.coley.llzip.util.OffsetComparator;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.*;
@@ -30,27 +33,46 @@ public class ZipArchive implements AutoCloseable, Iterable<ZipPart> {
 	 * @param closableBackingResource
 	 * 		Closable resource backing the zip archive.
 	 */
-	public ZipArchive(Closeable closableBackingResource) {
+	public ZipArchive(@Nonnull Closeable closableBackingResource) {
 		this.closableBackingResource = closableBackingResource;
 	}
 
 	/**
-	 * @param part Part to add.
+	 * @param mapper
+	 * 		Part mapper to manipulate contained zip parts.
+	 *
+	 * @return Copy of archive with mapping applied.
 	 */
-	public void addPart(ZipPart part) {
+	@Nonnull
+	public ZipArchive withMapping(@Nonnull ZipPartMapper mapper) {
+		ZipArchive copy = new ZipArchive();
+		for (ZipPart part : parts)
+			copy.addPart(mapper.map(this, part));
+		return copy;
+	}
+
+	/**
+	 * @param part
+	 * 		Part to add.
+	 */
+	public void addPart(@Nonnull ZipPart part) {
 		parts.add(part);
 	}
 
 	/**
-	 * @param index Index to add at.
-	 * @param part Part to add.
+	 * @param index
+	 * 		Index to add at.
+	 * @param part
+	 * 		Part to add.
 	 */
 	public void addPart(int index, ZipPart part) {
 		parts.add(index, part);
 	}
 
 	/**
-	 * @param part Part to remove.
+	 * @param part
+	 * 		Part to remove.
+	 *
 	 * @return {@code true} when part was removed. {@code false} when it was not in the archive.
 	 */
 	public boolean removePart(ZipPart part) {
@@ -58,15 +80,19 @@ public class ZipArchive implements AutoCloseable, Iterable<ZipPart> {
 	}
 
 	/**
-	 * @param index Index to remove part of.
+	 * @param index
+	 * 		Index to remove part of.
+	 *
 	 * @return Part removed.
 	 */
+	@Nullable
 	public ZipPart removePart(int index) {
 		return parts.remove(index);
 	}
 
 	/**
-	 * @param comparator Comparator to sort the parts list with.
+	 * @param comparator
+	 * 		Comparator to sort the parts list with.
 	 */
 	public void sortParts(Comparator<ZipPart> comparator) {
 		parts.sort(comparator);
@@ -75,6 +101,7 @@ public class ZipArchive implements AutoCloseable, Iterable<ZipPart> {
 	/**
 	 * @return All parts of the zip archive.
 	 */
+	@Nonnull
 	public List<ZipPart> getParts() {
 		return Collections.unmodifiableList(parts);
 	}
@@ -85,6 +112,7 @@ public class ZipArchive implements AutoCloseable, Iterable<ZipPart> {
 	 *
 	 * @return Central directory header entries matching the given file path filter.
 	 */
+	@Nonnull
 	public List<CentralDirectoryFileHeader> getNameFilteredCentralDirectories(Predicate<String> nameFilter) {
 		return getCentralDirectories().stream()
 				.filter(c -> nameFilter.test(c.getFileNameAsString()))
@@ -97,6 +125,7 @@ public class ZipArchive implements AutoCloseable, Iterable<ZipPart> {
 	 *
 	 * @return Local file header entries matching the given file path filter.
 	 */
+	@Nonnull
 	public List<LocalFileHeader> getNameFilteredLocalFiles(Predicate<String> nameFilter) {
 		return getCentralDirectories().stream()
 				.filter(c -> nameFilter.test(c.getFileNameAsString())) // Use central names, as they are authoritative
@@ -114,6 +143,7 @@ public class ZipArchive implements AutoCloseable, Iterable<ZipPart> {
 	 *
 	 * @return Local file header for the path, or {@code null} if no such entry for the name exists.
 	 */
+	@Nullable
 	public LocalFileHeader getLocalFileByName(String name) {
 		List<LocalFileHeader> matches = getNameFilteredLocalFiles(name::equals);
 		if (matches.isEmpty()) return null;
@@ -123,6 +153,7 @@ public class ZipArchive implements AutoCloseable, Iterable<ZipPart> {
 	/**
 	 * @return Local file header entries.
 	 */
+	@Nonnull
 	public List<LocalFileHeader> getLocalFiles() {
 		return parts.stream()
 				.filter(part -> part.type() == PartType.LOCAL_FILE_HEADER)
@@ -133,6 +164,7 @@ public class ZipArchive implements AutoCloseable, Iterable<ZipPart> {
 	/**
 	 * @return Central directory header entries.
 	 */
+	@Nonnull
 	public List<CentralDirectoryFileHeader> getCentralDirectories() {
 		return parts.stream()
 				.filter(part -> part.type() == PartType.CENTRAL_DIRECTORY_FILE_HEADER)
@@ -143,6 +175,7 @@ public class ZipArchive implements AutoCloseable, Iterable<ZipPart> {
 	/**
 	 * @return End of central directory.
 	 */
+	@Nullable
 	public EndOfCentralDirectory getEnd() {
 		return parts.stream()
 				.filter(part -> part.type() == PartType.END_OF_CENTRAL_DIRECTORY)
@@ -155,6 +188,7 @@ public class ZipArchive implements AutoCloseable, Iterable<ZipPart> {
 	/**
 	 * @return Closable resource backing the zip archive.
 	 */
+	@Nullable
 	protected Closeable getClosableBackingResource() {
 		return closableBackingResource;
 	}
