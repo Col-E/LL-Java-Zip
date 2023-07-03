@@ -9,6 +9,7 @@ import software.coley.llzip.util.lazy.LazyInt;
 import software.coley.llzip.util.lazy.LazyLong;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 /**
  * Common base for shared elements of {@link CentralDirectoryFileHeader} and {@link LocalFileHeader}.
@@ -33,9 +34,20 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	// Offset into the data this part is read from
 	protected transient long offset = -1L;
 
+	// Data source that contents were read from.
+	protected transient ByteData data;
+
 	// String cache values
 	private transient String fileNameCache;
 	private transient String extraFieldCache;
+
+	/**
+	 * @return The associated backing data that this file header was read from.
+	 */
+	@Nullable
+	public ByteData getBackingData() {
+		return data;
+	}
 
 	@Override
 	public long offset() {
@@ -44,6 +56,7 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 
 	@Override
 	public void read(@Nonnull ByteData data, long offset) {
+		this.data = data;
 		this.offset = offset;
 	}
 

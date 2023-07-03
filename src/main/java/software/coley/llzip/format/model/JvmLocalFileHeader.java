@@ -21,7 +21,6 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 	private long dataOffsetStart;
 	private long dataOffsetEnd;
 	private boolean foundData;
-	private ByteData data;
 
 	/**
 	 * @param offsets
@@ -47,9 +46,6 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 					new LazyLong(() -> dataOffsetStart - offset),
 					new LazyLong(() -> dataOffsetEnd - dataOffsetStart));
 			foundData = true;
-		} else {
-			// Keep data reference to attempt restoration with later when linking to the CEN.
-			this.data = data;
 		}
 	}
 

@@ -46,7 +46,6 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 
 	// Caches
 	private transient LazyLong fileDataLength;
-	private transient ByteData data;
 
 	/**
 	 * @return Copy.
@@ -54,6 +53,7 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 	@Nonnull
 	public LocalFileHeader copy() {
 		LocalFileHeader copy = new LocalFileHeader();
+		copy.data = data;
 		copy.offset = offset;
 		copy.versionNeededToExtract = versionNeededToExtract.copy();
 		copy.generalPurposeBitFlag = generalPurposeBitFlag.copy();
@@ -75,7 +75,6 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 	@Override
 	public void read(@Nonnull ByteData data, long offset) {
 		super.read(data, offset);
-		this.data = data;
 		versionNeededToExtract = ByteDataUtil.readLazyWord(data, offset, 4);
 		generalPurposeBitFlag = ByteDataUtil.readLazyWord(data, offset, 6);
 		compressionMethod = ByteDataUtil.readLazyWord(data, offset, 8);
