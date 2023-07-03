@@ -6,6 +6,7 @@ import software.coley.llzip.util.lazy.LazyByteData;
 import software.coley.llzip.util.lazy.LazyInt;
 import software.coley.llzip.util.lazy.LazyLong;
 
+import javax.annotation.Nonnull;
 import java.util.Objects;
 
 /**
@@ -52,28 +53,28 @@ public class CentralDirectoryFileHeader extends AbstractZipFileHeader {
 	private transient String fileCommentCache;
 
 	@Override
-	public void read(ByteData data, long offset) {
+	public void read(@Nonnull ByteData data, long offset) {
 		super.read(data, offset);
-		versionMadeBy = readWord(data, 4);
-		versionMadeBy = readWord(data, 4);
-		versionNeededToExtract = readWord(data, 6);
-		generalPurposeBitFlag = readWord(data, 8);
-		compressionMethod = readWord(data, 10);
-		lastModFileTime = readWord(data, 12);
-		lastModFileDate = readWord(data, 14);
-		crc32 = readQuad(data, 16);
-		compressedSize = readMaskedLongQuad(data, 20);
-		uncompressedSize = readMaskedLongQuad(data, 24);
-		fileNameLength = readWord(data, 28);
-		extraFieldLength = readWord(data, 30);
-		fileCommentLength = readWord(data, 32);
-		diskNumberStart = readWord(data, 34);
-		internalFileAttributes = readWord(data, 36);
-		externalFileAttributes = readQuad(data, 38);
-		relativeOffsetOfLocalHeader = readMaskedLongQuad(data, 42);
-		fileName = readSlice(data, new LazyInt(() -> 46), fileNameLength);
-		extraField = readSlice(data, fileNameLength.add(46), extraFieldLength);
-		fileComment = readSlice(data, fileNameLength.add(46).add(extraFieldLength), fileCommentLength);
+		versionMadeBy = ByteDataUtil.readLazyWord(data, offset, 4);
+		versionMadeBy = ByteDataUtil.readLazyWord(data, offset, 4);
+		versionNeededToExtract = ByteDataUtil.readLazyWord(data, offset, 6);
+		generalPurposeBitFlag = ByteDataUtil.readLazyWord(data, offset, 8);
+		compressionMethod = ByteDataUtil.readLazyWord(data, offset, 10);
+		lastModFileTime = ByteDataUtil.readLazyWord(data, offset, 12);
+		lastModFileDate = ByteDataUtil.readLazyWord(data, offset, 14);
+		crc32 = ByteDataUtil.readLazyQuad(data, offset, 16);
+		compressedSize = ByteDataUtil.readLazyMaskedLongQuad(data, offset, 20);
+		uncompressedSize = ByteDataUtil.readLazyMaskedLongQuad(data, offset, 24);
+		fileNameLength = ByteDataUtil.readLazyWord(data, offset, 28);
+		extraFieldLength = ByteDataUtil.readLazyWord(data, offset, 30);
+		fileCommentLength = ByteDataUtil.readLazyWord(data, offset, 32);
+		diskNumberStart = ByteDataUtil.readLazyWord(data, offset, 34);
+		internalFileAttributes = ByteDataUtil.readLazyWord(data, offset, 36);
+		externalFileAttributes = ByteDataUtil.readLazyQuad(data, offset, 38);
+		relativeOffsetOfLocalHeader = ByteDataUtil.readLazyMaskedLongQuad(data, offset, 42);
+		fileName = ByteDataUtil.readLazySlice(data, offset, new LazyInt(() -> 46), fileNameLength);
+		extraField = ByteDataUtil.readLazySlice(data, offset, fileNameLength.add(46), extraFieldLength);
+		fileComment = ByteDataUtil.readLazySlice(data, offset, fileNameLength.add(46).add(extraFieldLength), fileCommentLength);
 	}
 
 	@Override
@@ -84,6 +85,7 @@ public class CentralDirectoryFileHeader extends AbstractZipFileHeader {
 				fileCommentLength.get();
 	}
 
+	@Nonnull
 	@Override
 	public PartType type() {
 		return PartType.CENTRAL_DIRECTORY_FILE_HEADER;

@@ -11,6 +11,7 @@ import software.coley.llzip.util.ByteData;
 import software.coley.llzip.util.ByteDataUtil;
 import software.coley.llzip.util.OffsetComparator;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
@@ -20,20 +21,36 @@ import java.util.Set;
  *
  * @author Matt Coley
  */
-public class ForwardScanZipReaderStrategy implements ZipReaderStrategy {
-	private static final Logger logger = LoggerFactory.getLogger(ForwardScanZipReaderStrategy.class);
+public class ForwardScanZipReader extends AbstractZipReader {
+	private static final Logger logger = LoggerFactory.getLogger(ForwardScanZipReader.class);
+
+	/**
+	 * New reader with simple allocator.
+	 */
+	public ForwardScanZipReader() {
+		this(new SimpleZipPartAllocator());
+	}
+
+	/**
+	 * New reader with given allocator.
+	 *
+	 * @param allocator Allocator to use.
+	 */
+	public ForwardScanZipReader(@Nonnull ZipPartAllocator allocator) {
+		super(allocator);
+	}
 
 	@Override
-	public void read(ZipArchive zip, ByteData data) throws IOException {
+	public void read(@Nonnull ZipArchive zip, @Nonnull ByteData data) throws IOException {
 		// Read scanning forwards
 		long endOfCentralDirectoryOffset = ByteDataUtil.indexOfQuad(data, 0, ZipPatterns.END_OF_CENTRAL_DIRECTORY_QUAD);
 		if (endOfCentralDirectoryOffset < 0L)
 			throw new IOException("No Central-Directory-File-Header found!");
 
 		// Read end header
-		EndOfCentralDirectory end = new EndOfCentralDirectory();
+		EndOfCentralDirectory end = newEndOfCentralDirectory();
 		end.read(data, endOfCentralDirectoryOffset);
-		zip.getParts().add(end);
+		zip.addPart(end);
 
 		// Used for relative offsets as a base.
 		long zipStart = ByteDataUtil.indexOfQuad(data, 0, ZipPatterns.LOCAL_FILE_HEADER_QUAD);
@@ -45,7 +62,7 @@ public class ForwardScanZipReaderStrategy implements ZipReaderStrategy {
 			CentralDirectoryFileHeader directory = new CentralDirectoryFileHeader();
 			directory.read(data, centralDirectoryOffset);
 			centralDirectoryOffset += directory.length();
-			zip.getParts().add(directory);
+			zip.addPart(directory);
 		}
 
 		// Read local files
@@ -54,9 +71,9 @@ public class ForwardScanZipReaderStrategy implements ZipReaderStrategy {
 		for (CentralDirectoryFileHeader directory : zip.getCentralDirectories()) {
 			long offset = zipStart + directory.getRelativeOffsetOfLocalHeader();
 			if (!offsets.contains(offset) && data.getInt(offset) == ZipPatterns.LOCAL_FILE_HEADER_QUAD) {
-				LocalFileHeader file = new LocalFileHeader();
+				LocalFileHeader file = newLocalFileHeader();
 				file.read(data, offset);
-				zip.getParts().add(file);
+				zip.addPart(file);
 				directory.link(file);
 				file.link(directory);
 				postProcessLocalFileHeader(file);
@@ -67,6 +84,6 @@ public class ForwardScanZipReaderStrategy implements ZipReaderStrategy {
 		}
 
 		// Sort based on order
-		zip.getParts().sort(new OffsetComparator());
+		zip.sortParts(new OffsetComparator());
 	}
 }

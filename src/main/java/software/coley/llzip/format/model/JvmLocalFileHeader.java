@@ -2,9 +2,10 @@ package software.coley.llzip.format.model;
 
 import software.coley.llzip.format.compression.ZipCompressions;
 import software.coley.llzip.util.ByteData;
-import software.coley.llzip.util.lazy.LazyInt;
+import software.coley.llzip.util.ByteDataUtil;
 import software.coley.llzip.util.lazy.LazyLong;
 
+import javax.annotation.Nonnull;
 import java.util.NavigableSet;
 
 
@@ -16,7 +17,7 @@ import java.util.NavigableSet;
  * @author Wolfie / win32kbase <i>(Reverse engineering JVM specific zip handling)</i>
  */
 public class JvmLocalFileHeader extends LocalFileHeader {
-	private final NavigableSet<Long> offsets;
+	private NavigableSet<Long> offsets;
 	private long dataOffsetStart;
 	private long dataOffsetEnd;
 	private boolean foundData;
@@ -26,12 +27,12 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 	 * @param offsets
 	 * 		Set containing all local file header offsets.
 	 */
-	public JvmLocalFileHeader(NavigableSet<Long> offsets) {
+	public void setOffsets(@Nonnull NavigableSet<Long> offsets) {
 		this.offsets = offsets;
 	}
 
 	@Override
-	public void read(ByteData data, long offset) {
+	public void read(@Nonnull ByteData data, long offset) {
 		super.read(data, offset);
 
 		// JVM file data reading does NOT use the compressed/uncompressed fields.
@@ -42,7 +43,7 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 		this.dataOffsetEnd = dataOffsetEnd == null ? -1 : dataOffsetEnd;
 		if (dataOffsetEnd != null) {
 			// Valid data range found, map back to (localOffset, range)
-			fileData = readLongSlice(data,
+			fileData = ByteDataUtil.readLazyLongSlice(data, offset,
 					new LazyLong(() -> dataOffsetStart - offset),
 					new LazyLong(() -> dataOffsetEnd - dataOffsetStart));
 			foundData = true;
@@ -82,7 +83,7 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 			// Data should not be overflowing into adjacent header entries.
 			// - If it is, the data here is likely intentionally tampered with to screw with parsers
 			if (fileDataLength + offset < dataOffsetEnd) {
-				fileData = readLongSlice(data,
+				fileData = ByteDataUtil.readLazyLongSlice(data, offset,
 						new LazyLong(() -> dataOffsetStart - offset),
 						new LazyLong(() -> fileDataLength));
 				data = null;

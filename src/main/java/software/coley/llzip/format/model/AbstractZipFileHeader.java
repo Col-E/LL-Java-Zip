@@ -8,6 +8,8 @@ import software.coley.llzip.util.lazy.LazyByteData;
 import software.coley.llzip.util.lazy.LazyInt;
 import software.coley.llzip.util.lazy.LazyLong;
 
+import javax.annotation.Nonnull;
+
 /**
  * Common base for shared elements of {@link CentralDirectoryFileHeader} and {@link LocalFileHeader}.
  *
@@ -41,7 +43,7 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	}
 
 	@Override
-	public void read(ByteData data, long offset) {
+	public void read(@Nonnull ByteData data, long offset) {
 		this.offset = offset;
 	}
 
@@ -224,9 +226,8 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * 		File name.
 	 */
 	public void setFileName(ByteData fileName) {
-		if (this.fileName != fileName)
-			fileNameCache = null;
 		this.fileName.set(fileName);
+		fileNameCache = null;
 	}
 
 	/**
@@ -268,69 +269,5 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 			return this.extraFieldCache = ByteDataUtil.toString(extraField.get());
 		}
 		return fileCommentCache;
-	}
-
-	protected LazyInt readWord(ByteData data, int localOffset) {
-		return new LazyInt(() -> {
-			if (data.isClosed())
-				throw new IllegalStateException("Cannot read from closed data source");
-			return ByteDataUtil.readWord(data, offset + localOffset);
-		});
-	}
-
-	protected LazyInt readQuad(ByteData data, int localOffset) {
-		return new LazyInt(() -> {
-			if (data.isClosed())
-				throw new IllegalStateException("Cannot read from closed data source");
-			return ByteDataUtil.readQuad(data, offset + localOffset);
-		});
-	}
-
-	protected LazyInt readMaskedQuad(ByteData data, int localOffset) {
-		return new LazyInt(() -> {
-			if (data.isClosed())
-				throw new IllegalStateException("Cannot read from closed data source");
-			return ByteDataUtil.readQuad(data, offset + localOffset) & 0xFFFF;
-		});
-	}
-
-	protected LazyLong readLongWord(ByteData data, int localOffset) {
-		return new LazyLong(() -> {
-			if (data.isClosed())
-				throw new IllegalStateException("Cannot read from closed data source");
-			return ByteDataUtil.readWord(data, offset + localOffset);
-		});
-	}
-
-	protected LazyLong readMaskedLongQuad(ByteData data, int localOffset) {
-		return new LazyLong(() -> {
-			if (data.isClosed())
-				throw new IllegalStateException("Cannot read from closed data source");
-			return ByteDataUtil.readQuad(data, offset + localOffset) & 0xFFFFFFFFL;
-		});
-	}
-
-	protected LazyByteData readSlice(ByteData data, LazyInt localOffset, LazyInt length) {
-		return new LazyByteData(() -> {
-			if (data.isClosed())
-				throw new IllegalStateException("Cannot read from closed data source");
-			return data.sliceOf(offset + localOffset.get(), length.get());
-		});
-	}
-
-	protected LazyByteData readLongSlice(ByteData data, LazyInt localOffset, LazyLong length) {
-		return new LazyByteData(() -> {
-			if (data.isClosed())
-				throw new IllegalStateException("Cannot read from closed data source");
-			return data.sliceOf(offset + localOffset.get(), length.get());
-		});
-	}
-
-	protected LazyByteData readLongSlice(ByteData data, LazyLong localOffset, LazyLong length) {
-		return new LazyByteData(() -> {
-			if (data.isClosed())
-				throw new IllegalStateException("Cannot read from closed data source");
-			return data.sliceOf(offset + localOffset.get(), length.get());
-		});
 	}
 }

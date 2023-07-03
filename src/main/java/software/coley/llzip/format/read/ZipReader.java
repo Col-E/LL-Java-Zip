@@ -4,6 +4,7 @@ import software.coley.llzip.format.model.LocalFileHeader;
 import software.coley.llzip.format.model.ZipArchive;
 import software.coley.llzip.util.ByteData;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 
 /**
@@ -11,7 +12,7 @@ import java.io.IOException;
  *
  * @author Matt Coley
  */
-public interface ZipReaderStrategy {
+public interface ZipReader {
 	/**
 	 * @param zip
 	 * 		Archive to read into.
@@ -21,9 +22,12 @@ public interface ZipReaderStrategy {
 	 * @throws IOException
 	 * 		When the data cannot be read <i>(EOF, not matching expectations, etc)</i>
 	 */
-	void read(ZipArchive zip, ByteData data) throws IOException;
+	void read(@Nonnull ZipArchive zip, @Nonnull ByteData data) throws IOException;
 
-	default void postProcessLocalFileHeader(LocalFileHeader file) {
+	/**
+	 * @param file File to post-process.
+	 */
+	default void postProcessLocalFileHeader(@Nonnull LocalFileHeader file) {
 		// no-op by default
 	}
 }

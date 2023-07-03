@@ -1,5 +1,6 @@
 package software.coley.llzip.util.lazy;
 
+import javax.annotation.Nonnull;
 import java.util.function.IntSupplier;
 
 /**
@@ -12,7 +13,7 @@ public class LazyInt extends Lazy<IntSupplier> {
 	 * @param lookup
 	 * 		Lazy lookup.
 	 */
-	public LazyInt(IntSupplier lookup) {
+	public LazyInt(@Nonnull IntSupplier lookup) {
 		super(lookup);
 	}
 
@@ -20,7 +21,7 @@ public class LazyInt extends Lazy<IntSupplier> {
 		return new LazyInt(() -> value + lookup.getAsInt());
 	}
 
-	public LazyInt add(LazyInt value) {
+	public LazyInt add(@Nonnull LazyInt value) {
 		return new LazyInt(() -> value.get() + lookup.getAsInt());
 	}
 

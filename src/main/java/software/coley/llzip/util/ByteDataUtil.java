@@ -1,5 +1,10 @@
 package software.coley.llzip.util;
 
+import software.coley.llzip.format.model.ZipPart;
+import software.coley.llzip.util.lazy.LazyByteData;
+import software.coley.llzip.util.lazy.LazyInt;
+import software.coley.llzip.util.lazy.LazyLong;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
@@ -148,10 +153,12 @@ public class ByteDataUtil {
 		long limit;
 		if (data == null || (limit = data.length()) < pattern.length || offset >= limit)
 			return -1;
+
 		// Search from offset going forwards
 		for (long i = offset; i < limit; i++)
 			if (startsWith(data, i, pattern))
 				return i;
+
 		// Not found
 		return -1;
 	}
@@ -182,10 +189,12 @@ public class ByteDataUtil {
 		// Remaining data must be as long as pattern
 		if (data == null || data.length() < pattern.length)
 			return -1;
+
 		// Search from offset going backwards
 		for (long i = offset; i >= 0; i--)
 			if (startsWith(data, i, pattern))
 				return i;
+
 		// Not found
 		return -1;
 	}
@@ -204,6 +213,7 @@ public class ByteDataUtil {
 		// Remaining data must be as long as pattern and in the array bounds
 		if (data == null || (data.length() - offset) < pattern.length || offset < 0 || offset >= data.length())
 			return false;
+
 		// Check for mis-match
 		for (int i = 0; i < pattern.length; i++) {
 			int p = pattern[i];
@@ -212,6 +222,7 @@ public class ByteDataUtil {
 			if (data.get(offset + i) != p)
 				return false;
 		}
+
 		// No mis-match, array starts with pattern
 		return true;
 	}
@@ -351,5 +362,149 @@ public class ByteDataUtil {
 	 */
 	public static boolean equals(ByteData a, ByteData b) {
 		return Objects.equals(a, b);
+	}
+
+	/**
+	 * @param data
+	 * 		Content to get word from.
+	 * @param headerOffset
+	 * 		Offset of {@link ZipPart} header.
+	 * @param localOffset
+	 * 		Local offset from the header offset.
+	 *
+	 * @return Lazily populated word.
+	 */
+	public static LazyInt readLazyWord(ByteData data, long headerOffset, int localOffset) {
+		return new LazyInt(() -> {
+			if (data.isClosed())
+				throw new IllegalStateException("Cannot read from closed data source");
+			return readWord(data, headerOffset + localOffset);
+		});
+	}
+
+	/**
+	 * @param data
+	 * 		Content to get quad from.
+	 * @param headerOffset
+	 * 		Offset of {@link ZipPart} header.
+	 * @param localOffset
+	 * 		Local offset from the header offset.
+	 *
+	 * @return Lazily populated quad.
+	 */
+	public static LazyInt readLazyQuad(ByteData data, long headerOffset, int localOffset) {
+		return new LazyInt(() -> {
+			if (data.isClosed())
+				throw new IllegalStateException("Cannot read from closed data source");
+			return readQuad(data, headerOffset + localOffset);
+		});
+	}
+
+	/**
+	 * @param data
+	 * 		Content to get masked quad from.
+	 * @param headerOffset
+	 * 		Offset of {@link ZipPart} header.
+	 * @param localOffset
+	 * 		Local offset from the header offset.
+	 *
+	 * @return Lazily populated masked quad.
+	 */
+	public static LazyInt readLazyMaskedQuad(ByteData data, long headerOffset, int localOffset) {
+		return new LazyInt(() -> {
+			if (data.isClosed())
+				throw new IllegalStateException("Cannot read from closed data source");
+			return readQuad(data, headerOffset + localOffset) & 0xFFFF;
+		});
+	}
+
+	/**
+	 * @param data
+	 * 		Content to get long word from.
+	 * @param headerOffset
+	 * 		Offset of {@link ZipPart} header.
+	 * @param localOffset
+	 * 		Local offset from the header offset.
+	 *
+	 * @return Lazily populated long word.
+	 */
+	public static LazyLong readLazyLongWord(ByteData data, long headerOffset, int localOffset) {
+		return new LazyLong(() -> {
+			if (data.isClosed())
+				throw new IllegalStateException("Cannot read from closed data source");
+			return readWord(data, headerOffset + localOffset);
+		});
+	}
+
+	/**
+	 * @param data
+	 * 		Content to get masked long quad from.
+	 * @param headerOffset
+	 * 		Offset of {@link ZipPart} header.
+	 * @param localOffset
+	 * 		Local offset from the header offset.
+	 *
+	 * @return Lazily populated masked long quad.
+	 */
+	public static LazyLong readLazyMaskedLongQuad(ByteData data, long headerOffset, int localOffset) {
+		return new LazyLong(() -> {
+			if (data.isClosed())
+				throw new IllegalStateException("Cannot read from closed data source");
+			return readQuad(data, headerOffset + localOffset) & 0xFFFFFFFFL;
+		});
+	}
+
+	/**
+	 * @param data
+	 * 		Content to get slice from.
+	 * @param headerOffset
+	 * 		Offset of {@link ZipPart} header.
+	 * @param localOffset
+	 * 		Local offset from the header offset.
+	 *
+	 * @return Lazily populated slice.
+	 */
+	public static LazyByteData readLazySlice(ByteData data, long headerOffset, LazyInt localOffset, LazyInt length) {
+		return new LazyByteData(() -> {
+			if (data.isClosed())
+				throw new IllegalStateException("Cannot read from closed data source");
+			return data.sliceOf(headerOffset + localOffset.get(), length.get());
+		});
+	}
+
+	/**
+	 * @param data
+	 * 		Content to get long slice from.
+	 * @param headerOffset
+	 * 		Offset of {@link ZipPart} header.
+	 * @param localOffset
+	 * 		Local offset from the header offset.
+	 *
+	 * @return Lazily populated long slice.
+	 */
+	public static LazyByteData readLazyLongSlice(ByteData data, long headerOffset, LazyInt localOffset, LazyLong length) {
+		return new LazyByteData(() -> {
+			if (data.isClosed())
+				throw new IllegalStateException("Cannot read from closed data source");
+			return data.sliceOf(headerOffset + localOffset.get(), length.get());
+		});
+	}
+
+	/**
+	 * @param data
+	 * 		Content to get long slice from.
+	 * @param headerOffset
+	 * 		Offset of {@link ZipPart} header.
+	 * @param localOffset
+	 * 		Local offset from the header offset.
+	 *
+	 * @return Lazily populated long slice.
+	 */
+	public static LazyByteData readLazyLongSlice(ByteData data, long headerOffset, LazyLong localOffset, LazyLong length) {
+		return new LazyByteData(() -> {
+			if (data.isClosed())
+				throw new IllegalStateException("Cannot read from closed data source");
+			return data.sliceOf(headerOffset + localOffset.get(), length.get());
+		});
 	}
 }

@@ -3,7 +3,7 @@ package software.coley.llzip;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import software.coley.llzip.format.model.ZipArchive;
-import software.coley.llzip.format.write.JavaZipWriterStrategy;
+import software.coley.llzip.format.write.JavaZipWriter;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -57,7 +57,7 @@ public class PatchingTests {
 			// Parse the zip with LL-Java zip, then write back using std java apis
 			// in order to create a std java complaint jar.
 			ZipArchive zip = ZipIO.readJvm(path);
-			new JavaZipWriterStrategy().write(zip, baos);
+			new JavaZipWriter().write(zip, baos);
 			byte[] fixed = baos.toByteArray();
 
 			// Validate the new jar bytes can be read and show the true file contents.

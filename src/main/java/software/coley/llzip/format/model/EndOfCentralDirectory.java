@@ -4,6 +4,7 @@ import software.coley.llzip.util.BufferData;
 import software.coley.llzip.util.ByteData;
 import software.coley.llzip.util.ByteDataUtil;
 
+import javax.annotation.Nonnull;
 import java.util.Objects;
 
 
@@ -39,7 +40,7 @@ public class EndOfCentralDirectory implements ZipPart, ZipRead {
 	private transient String zipCommentCache;
 
 	@Override
-	public void read(ByteData data, long offset) {
+	public void read(@Nonnull ByteData data, long offset) {
 		this.offset = offset;
 		diskNumber = ByteDataUtil.readWord(data, offset + 4);
 		centralDirectoryStartDisk = ByteDataUtil.readWord(data, offset + 6);
@@ -56,6 +57,7 @@ public class EndOfCentralDirectory implements ZipPart, ZipRead {
 		return 22L + zipComment.length();
 	}
 
+	@Nonnull
 	@Override
 	public PartType type() {
 		return PartType.END_OF_CENTRAL_DIRECTORY;

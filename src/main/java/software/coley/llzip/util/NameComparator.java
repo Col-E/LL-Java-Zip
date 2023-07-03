@@ -3,14 +3,14 @@ package software.coley.llzip.util;
 import software.coley.llzip.format.model.CentralDirectoryFileHeader;
 import software.coley.llzip.format.model.LocalFileHeader;
 import software.coley.llzip.format.model.ZipPart;
-import software.coley.llzip.format.write.JavaZipWriterStrategy;
+import software.coley.llzip.format.write.JavaZipWriter;
 
 import java.util.Comparator;
 import java.util.Optional;
 
 /**
  * For sorting by {@link CentralDirectoryFileHeader#getFileName()} and {@link LocalFileHeader#getFileName()}.
- * This is intended to be used in cases like {@link JavaZipWriterStrategy} where offset information is ignored anyways.
+ * This is intended to be used in cases like {@link JavaZipWriter} where offset information is ignored anyways.
  *
  * @author Matt Coley
  */

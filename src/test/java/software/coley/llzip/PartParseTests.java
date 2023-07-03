@@ -7,10 +7,10 @@ import software.coley.llzip.format.compression.ZipCompressions;
 import software.coley.llzip.format.model.LocalFileHeader;
 import software.coley.llzip.format.model.ZipArchive;
 import software.coley.llzip.format.model.ZipPart;
-import software.coley.llzip.format.read.ForwardScanZipReaderStrategy;
-import software.coley.llzip.format.read.JvmZipReaderStrategy;
+import software.coley.llzip.format.read.ForwardScanZipReader;
 import software.coley.llzip.util.ByteDataUtil;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -120,9 +120,9 @@ public class PartParseTests {
 			assertTrue(hello.hasDifferentValuesThanCentralDirectoryHeader());
 
 			// The solution to differing values is to adopt values in the reader strategy
-			ZipArchive zipStdAndAdopt = ZipIO.read(path, new ForwardScanZipReaderStrategy() {
+			ZipArchive zipStdAndAdopt = ZipIO.read(path, new ForwardScanZipReader() {
 				@Override
-				public void postProcessLocalFileHeader(LocalFileHeader file) {
+				public void postProcessLocalFileHeader(@Nonnull LocalFileHeader file) {
 					file.adoptLinkedCentralDirectoryValues();
 				}
 			});

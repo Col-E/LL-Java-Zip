@@ -4,8 +4,7 @@ import software.coley.llzip.util.OffsetComparator;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -14,11 +13,20 @@ import java.util.stream.Collectors;
  *
  * @author Matt Coley
  */
-public class ZipArchive implements AutoCloseable {
+public class ZipArchive implements AutoCloseable, Iterable<ZipPart> {
 	private final List<ZipPart> parts = new ArrayList<>();
 	private final Closeable closableBackingResource;
 
 	/**
+	 * New zip archive without any backing resource.
+	 */
+	public ZipArchive() {
+		closableBackingResource = null;
+	}
+
+	/**
+	 * New zip archive with a backing resource.
+	 *
 	 * @param closableBackingResource
 	 * 		Closable resource backing the zip archive.
 	 */
@@ -27,10 +35,48 @@ public class ZipArchive implements AutoCloseable {
 	}
 
 	/**
+	 * @param part Part to add.
+	 */
+	public void addPart(ZipPart part) {
+		parts.add(part);
+	}
+
+	/**
+	 * @param index Index to add at.
+	 * @param part Part to add.
+	 */
+	public void addPart(int index, ZipPart part) {
+		parts.add(index, part);
+	}
+
+	/**
+	 * @param part Part to remove.
+	 * @return {@code true} when part was removed. {@code false} when it was not in the archive.
+	 */
+	public boolean removePart(ZipPart part) {
+		return parts.remove(part);
+	}
+
+	/**
+	 * @param index Index to remove part of.
+	 * @return Part removed.
+	 */
+	public ZipPart removePart(int index) {
+		return parts.remove(index);
+	}
+
+	/**
+	 * @param comparator Comparator to sort the parts list with.
+	 */
+	public void sortParts(Comparator<ZipPart> comparator) {
+		parts.sort(comparator);
+	}
+
+	/**
 	 * @return All parts of the zip archive.
 	 */
 	public List<ZipPart> getParts() {
-		return parts;
+		return Collections.unmodifiableList(parts);
 	}
 
 	/**
@@ -114,6 +160,17 @@ public class ZipArchive implements AutoCloseable {
 	}
 
 	@Override
+	public void close() throws IOException {
+		if (closableBackingResource != null)
+			closableBackingResource.close();
+	}
+
+	@Override
+	public Iterator<ZipPart> iterator() {
+		return parts.listIterator();
+	}
+
+	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
@@ -126,11 +183,5 @@ public class ZipArchive implements AutoCloseable {
 	@Override
 	public int hashCode() {
 		return parts.hashCode();
-	}
-
-	@Override
-	public void close() throws IOException {
-		if (closableBackingResource != null)
-			closableBackingResource.close();
 	}
 }

@@ -2,6 +2,7 @@ package software.coley.llzip.util.lazy;
 
 import software.coley.llzip.util.ByteData;
 
+import javax.annotation.Nonnull;
 import java.util.Objects;
 import java.util.function.Supplier;
 
@@ -15,7 +16,7 @@ public class LazyByteData extends Lazy<Supplier<ByteData>> {
 	 * @param lookup
 	 * 		Lazy lookup.
 	 */
-	public LazyByteData(Supplier<ByteData> lookup) {
+	public LazyByteData(@Nonnull Supplier<ByteData> lookup) {
 		super(lookup);
 	}
 
@@ -23,7 +24,7 @@ public class LazyByteData extends Lazy<Supplier<ByteData>> {
 	 * @param value
 	 * 		Data value.
 	 */
-	public void set(ByteData value) {
+	public void set(@Nonnull ByteData value) {
 		set = true;
 		this.value = value;
 	}
@@ -31,6 +32,7 @@ public class LazyByteData extends Lazy<Supplier<ByteData>> {
 	/**
 	 * @return Data value.
 	 */
+	@Nonnull
 	public ByteData get() {
 		if (!set) {
 			value = lookup.get();

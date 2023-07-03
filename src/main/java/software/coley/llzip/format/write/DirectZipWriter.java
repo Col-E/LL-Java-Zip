@@ -7,30 +7,19 @@ import software.coley.llzip.format.model.LocalFileHeader;
 import software.coley.llzip.format.model.ZipArchive;
 import software.coley.llzip.util.ByteDataUtil;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- * Manually copies the input zip file.
+ * Directly writes the input zip file.
  * Data is written as-is, and no validation is performed.
  *
  * @author Ned Loynd
  */
-public class CopyZipWriterStrategy implements ZipWriterStrategy {
-	private static void writeShortLE(OutputStream os, int value) throws IOException {
-		os.write(value & 0xFF);
-		os.write((value >> 8) & 0xFF);
-	}
-
-	private static void writeIntLE(OutputStream os, int value) throws IOException {
-		os.write(value & 0xFF);
-		os.write((value >> 8) & 0xFF);
-		os.write((value >> 16) & 0xFF);
-		os.write((value >> 24) & 0xFF);
-	}
-
+public class DirectZipWriter implements ZipWriter {
 	@Override
-	public void write(ZipArchive archive, OutputStream os) throws IOException {
+	public void write(@Nonnull ZipArchive archive, @Nonnull OutputStream os) throws IOException {
 		// Write local file headers.
 		for (final LocalFileHeader fileHeader : archive.getLocalFiles()) {
 			writeIntLE(os, ZipPatterns.LOCAL_FILE_HEADER_QUAD);
@@ -86,5 +75,17 @@ public class CopyZipWriterStrategy implements ZipWriterStrategy {
 			writeShortLE(os, end.getZipCommentLength());
 			os.write(ByteDataUtil.toByteArray(end.getZipComment()));
 		}
+	}
+
+	private static void writeShortLE(OutputStream os, int value) throws IOException {
+		os.write(value & 0xFF);
+		os.write((value >> 8) & 0xFF);
+	}
+
+	private static void writeIntLE(OutputStream os, int value) throws IOException {
+		os.write(value & 0xFF);
+		os.write((value >> 8) & 0xFF);
+		os.write((value >> 16) & 0xFF);
+		os.write((value >> 24) & 0xFF);
 	}
 }

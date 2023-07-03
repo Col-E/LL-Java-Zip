@@ -2,9 +2,9 @@ package software.coley.llzip.format.write;
 
 import software.coley.llzip.format.model.ZipArchive;
 
+import javax.annotation.Nonnull;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
@@ -15,7 +15,7 @@ import java.nio.file.Path;
  *
  * @author Matt Coley
  */
-public interface ZipWriterStrategy {
+public interface ZipWriter {
 	/**
 	 * Writes the given archive to the stream.
 	 *
@@ -27,7 +27,7 @@ public interface ZipWriterStrategy {
 	 * @throws IOException
 	 * 		When writing the archive failed.
 	 */
-	void write(ZipArchive archive, OutputStream os) throws IOException;
+	void write(@Nonnull ZipArchive archive, @Nonnull OutputStream os) throws IOException;
 
 	/**
 	 * Convenience call to {@link #write(ZipArchive, OutputStream)} that writes directly to a file path.
@@ -40,7 +40,7 @@ public interface ZipWriterStrategy {
 	 * @throws IOException
 	 * 		When writing the archive failed, or the given path cannot be written to.
 	 */
-	default void writeToDisk(ZipArchive archive, Path path) throws IOException {
+	default void writeToDisk(@Nonnull ZipArchive archive, @Nonnull Path path) throws IOException {
 		try (OutputStream fos = new BufferedOutputStream(Files.newOutputStream(path))) {
 			write(archive, fos);
 		}
@@ -57,7 +57,7 @@ public interface ZipWriterStrategy {
 	 * @throws IOException
 	 * 		When writing the archive failed.
 	 */
-	default byte[] writeToByteArray(ZipArchive archive) throws IOException {
+	default byte[] writeToByteArray(@Nonnull ZipArchive archive) throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		write(archive, baos);
 		return baos.toByteArray();

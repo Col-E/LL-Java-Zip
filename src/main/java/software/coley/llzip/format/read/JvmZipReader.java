@@ -8,6 +8,7 @@ import software.coley.llzip.util.ByteData;
 import software.coley.llzip.util.ByteDataUtil;
 import software.coley.llzip.util.OffsetComparator;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
@@ -17,17 +18,33 @@ import java.util.TreeSet;
  * The JVM has some edge cases in how it parses zip/jar files.
  * It allows for some tricks that most tools do not support/expect.
  * <p>
- * The primary difference from {@link ForwardScanZipReaderStrategy} is that the {@link EndOfCentralDirectory}
+ * The primary difference from {@link ForwardScanZipReader} is that the {@link EndOfCentralDirectory}
  * is scanned from the back, rather than from the front.
  *
  * @author Matt Coley
  * @author Wolfie / win32kbase <i>(Reverse engineering JVM specific zip handling)</i>
  */
-public class JvmZipReaderStrategy implements ZipReaderStrategy {
-	private static final Logger logger = LoggerFactory.getLogger(JvmZipReaderStrategy.class);
+public class JvmZipReader extends AbstractZipReader {
+	private static final Logger logger = LoggerFactory.getLogger(JvmZipReader.class);
+
+	/**
+	 * New reader with jvm allocator.
+	 */
+	public JvmZipReader() {
+		this(new JvmZipPartAllocator());
+	}
+
+	/**
+	 * New reader with given allocator.
+	 *
+	 * @param allocator Allocator to use.
+	 */
+	public JvmZipReader(@Nonnull ZipPartAllocator allocator) {
+		super(allocator);
+	}
 
 	@Override
-	public void read(ZipArchive zip, ByteData data) throws IOException {
+	public void read(@Nonnull ZipArchive zip, @Nonnull ByteData data) throws IOException {
 		// Read scanning backwards
 		long endOfCentralDirectoryOffset = ByteDataUtil.lastIndexOfQuad(data, data.length() - 4, ZipPatterns.END_OF_CENTRAL_DIRECTORY_QUAD);
 		if (endOfCentralDirectoryOffset < 0L)
@@ -37,9 +54,9 @@ public class JvmZipReaderStrategy implements ZipReaderStrategy {
 		long precedingEndOfCentralDirectory = ByteDataUtil.lastIndexOfQuad(data, endOfCentralDirectoryOffset - 1, ZipPatterns.END_OF_CENTRAL_DIRECTORY_QUAD);
 
 		// Read end header
-		EndOfCentralDirectory end = new EndOfCentralDirectory();
+		EndOfCentralDirectory end = newEndOfCentralDirectory();
 		end.read(data, endOfCentralDirectoryOffset);
-		zip.getParts().add(end);
+		zip.addPart(end);
 
 		// Read central directories (going from the back to the front) up until the preceding ZIP file (if any)
 		long len = data.length();
@@ -49,9 +66,9 @@ public class JvmZipReaderStrategy implements ZipReaderStrategy {
 		while (centralDirectoryOffset > centralDirectoryOffsetScanEnd) {
 			centralDirectoryOffset = ByteDataUtil.lastIndexOfQuad(data, centralDirectoryOffset - 1L, ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER_QUAD);
 			if (centralDirectoryOffset >= 0L) {
-				CentralDirectoryFileHeader directory = new CentralDirectoryFileHeader();
+				CentralDirectoryFileHeader directory = newCentralDirectoryFileHeader();
 				directory.read(data, centralDirectoryOffset);
-				zip.getParts().add(directory);
+				zip.addPart(directory);
 				if (directory.getRelativeOffsetOfLocalHeader() > maxRelativeOffset)
 					maxRelativeOffset = directory.getRelativeOffsetOfLocalHeader();
 			}
@@ -133,9 +150,12 @@ public class JvmZipReaderStrategy implements ZipReaderStrategy {
 			long offset = jvmBaseFileOffset + relative;
 			if (!offsets.contains(offset) && data.getInt(offset) == ZipPatterns.LOCAL_FILE_HEADER_QUAD) {
 				try {
-					JvmLocalFileHeader file = new JvmLocalFileHeader(entryOffsets);
+					LocalFileHeader file = newLocalFileHeader();
+					if (file instanceof JvmLocalFileHeader) {
+						((JvmLocalFileHeader) file).setOffsets(entryOffsets);
+					}
 					file.read(data, offset);
-					zip.getParts().add(file);
+					zip.addPart(file);
 					directory.link(file);
 					file.link(directory);
 					postProcessLocalFileHeader(file);
@@ -149,6 +169,6 @@ public class JvmZipReaderStrategy implements ZipReaderStrategy {
 		}
 
 		// Sort based on order
-		zip.getParts().sort(new OffsetComparator());
+		zip.sortParts(new OffsetComparator());
 	}
 }

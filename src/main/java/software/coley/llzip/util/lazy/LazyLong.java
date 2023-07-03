@@ -1,5 +1,6 @@
 package software.coley.llzip.util.lazy;
 
+import javax.annotation.Nonnull;
 import java.util.function.LongSupplier;
 
 /**
@@ -12,7 +13,7 @@ public class LazyLong extends Lazy<LongSupplier> {
 	 * @param lookup
 	 * 		Lazy lookup.
 	 */
-	public LazyLong(LongSupplier lookup) {
+	public LazyLong(@Nonnull LongSupplier lookup) {
 		super(lookup);
 	}
 

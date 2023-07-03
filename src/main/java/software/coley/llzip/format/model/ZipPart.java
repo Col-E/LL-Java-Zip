@@ -1,5 +1,7 @@
 package software.coley.llzip.format.model;
 
+import javax.annotation.Nonnull;
+
 /**
  * Outline of a zip section.
  *
@@ -10,13 +12,14 @@ package software.coley.llzip.format.model;
  */
 public interface ZipPart {
 	/**
-	 * @return Length of current content.
+	 * @return Length of the part.
 	 */
 	long length();
 
 	/**
 	 * @return Implementation type.
 	 */
+	@Nonnull
 	PartType type();
 
 	/**

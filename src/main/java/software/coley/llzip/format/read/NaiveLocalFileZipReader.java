@@ -6,6 +6,7 @@ import software.coley.llzip.format.model.ZipArchive;
 import software.coley.llzip.util.ByteData;
 import software.coley.llzip.util.ByteDataUtil;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 
 /**
@@ -13,14 +14,31 @@ import java.io.IOException;
  *
  * @author Matt Coley
  */
-public class NaiveLocalFileZipReaderStrategy implements ZipReaderStrategy {
+public class NaiveLocalFileZipReader extends AbstractZipReader {
+	/**
+	 * New reader with simple allocator.
+	 */
+	public NaiveLocalFileZipReader() {
+		super(new SimpleZipPartAllocator());
+	}
+
+	/**
+	 * New reader with given allocator.
+	 *
+	 * @param allocator
+	 * 		Allocator to use.
+	 */
+	public NaiveLocalFileZipReader(@Nonnull ZipPartAllocator allocator) {
+		super(allocator);
+	}
+
 	@Override
-	public void read(ZipArchive zip, ByteData data) throws IOException {
+	public void read(@Nonnull ZipArchive zip, @Nonnull ByteData data) throws IOException {
 		long localFileOffset = -1;
 		while ((localFileOffset = ByteDataUtil.indexOfQuad(data, localFileOffset + 1, ZipPatterns.LOCAL_FILE_HEADER_QUAD)) >= 0) {
-			LocalFileHeader file = new LocalFileHeader();
+			LocalFileHeader file = newLocalFileHeader();
 			file.read(data, localFileOffset);
-			zip.getParts().add(file);
+			zip.addPart(file);
 			postProcessLocalFileHeader(file);
 		}
 	}
