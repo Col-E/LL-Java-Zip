@@ -38,10 +38,9 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 		// JVM file data reading does NOT use the compressed/uncompressed fields.
 		// Instead, it scans data until the next header.
 		long dataOffsetStart = offset + MIN_FIXED_SIZE + getFileNameLength() + getExtraFieldLength();
-		// Subtract the length of the data descriptor section from the data end offset
-		int dataDescLength = this.dataDescLength.get();
 		final Long rawDataOffsetEnd = offsets.ceiling(dataOffsetStart);
-		final Long dataOffsetEnd = rawDataOffsetEnd != null ? rawDataOffsetEnd - dataDescLength : null;
+		// Subtract the length of the data descriptor section from the data end offset
+		final Long dataOffsetEnd = rawDataOffsetEnd != null ? rawDataOffsetEnd - this.dataDescLength.get() : null;
 		this.dataOffsetStart = dataOffsetStart;
 		this.dataOffsetEnd = dataOffsetEnd == null ? -1 : dataOffsetEnd;
 		if (dataOffsetEnd != null) {
