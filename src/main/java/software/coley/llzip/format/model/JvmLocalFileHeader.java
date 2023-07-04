@@ -38,17 +38,16 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 		// JVM file data reading does NOT use the compressed/uncompressed fields.
 		// Instead, it scans data until the next header.
 		long dataOffsetStart = offset + MIN_FIXED_SIZE + getFileNameLength() + getExtraFieldLength();
-		final Long rawDataOffsetEnd = offsets.ceiling(dataOffsetStart);
+		Long rawDataOffsetEnd = offsets.ceiling(dataOffsetStart);
 		// Subtract the length of the data descriptor section from the data end offset
-		int dataDescLength = 0;
 		if (rawDataOffsetEnd != null && (getGeneralPurposeBitFlag() & 8) == 8) {
-			dataDescLength = 12;
+			rawDataOffsetEnd -= 12;
 
-			if (data.getInt(rawDataOffsetEnd - 16) == ZipPatterns.DATA_DESCRIPTOR_QUAD) {
-				dataDescLength += 4;
+			if (data.getInt(rawDataOffsetEnd - 4) == ZipPatterns.DATA_DESCRIPTOR_QUAD) {
+				rawDataOffsetEnd -= 4;
 			}
 		}
-		final Long dataOffsetEnd = rawDataOffsetEnd != null ? rawDataOffsetEnd - dataDescLength : null;
+		final Long dataOffsetEnd = rawDataOffsetEnd;
 		this.dataOffsetStart = dataOffsetStart;
 		this.dataOffsetEnd = dataOffsetEnd == null ? -1 : dataOffsetEnd;
 		if (dataOffsetEnd != null) {
