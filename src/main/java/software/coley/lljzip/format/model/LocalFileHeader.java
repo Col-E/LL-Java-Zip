@@ -55,6 +55,7 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 		LocalFileHeader copy = new LocalFileHeader();
 		copy.data = data;
 		copy.offset = offset;
+		copy.linkedDirectoryFileHeader = linkedDirectoryFileHeader;
 		copy.versionNeededToExtract = versionNeededToExtract.copy();
 		copy.generalPurposeBitFlag = generalPurposeBitFlag.copy();
 		copy.compressionMethod = compressionMethod.copy();
