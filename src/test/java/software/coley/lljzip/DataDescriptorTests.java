@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.fail;
  *
  * @author Matt Coley
  */
+@SuppressWarnings("resource")
 public class DataDescriptorTests {
 	@Test
 	public void validity() {
@@ -55,7 +56,8 @@ public class DataDescriptorTests {
 		// Because the sizes should themselves accommodate for the data-descriptor being present
 		// we do not need any special handling like we do in the JVM local file parser logic.
 		assertDoesNotThrow(() -> handleJar(() -> {
-			try (ZipArchive archive = ZipIO.readStandard(path)) {
+			try {
+				ZipArchive archive = ZipIO.readStandard(path);
 				return archive.withMapping(new CentralAdoptingMapper(new IdentityZipPartMapper()));
 			} catch (IOException ex) {
 				fail(ex);
