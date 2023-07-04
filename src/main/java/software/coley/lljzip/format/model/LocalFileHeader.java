@@ -163,7 +163,7 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 	 * @param endOffset New file data length.
 	 */
 	public void setFileDataEndOffset(long endOffset) {
-		int fileDataStartOffset = fileNameLength.add(extraFieldLength).add(30).get();
+		long fileDataStartOffset = offset + fileNameLength.add(extraFieldLength).add(30).get();
 		long length = endOffset - fileDataStartOffset;
 		setFileDataLength(length);
 	}
