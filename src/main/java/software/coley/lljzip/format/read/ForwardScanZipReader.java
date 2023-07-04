@@ -72,10 +72,10 @@ public class ForwardScanZipReader extends AbstractZipReader {
 			long offset = zipStart + directory.getRelativeOffsetOfLocalHeader();
 			if (!offsets.contains(offset) && data.getInt(offset) == ZipPatterns.LOCAL_FILE_HEADER_QUAD) {
 				LocalFileHeader file = newLocalFileHeader();
+				directory.link(file);
 				file.link(directory);
 				file.read(data, offset);
 				zip.addPart(file);
-				directory.link(file);
 				postProcessLocalFileHeader(file);
 				offsets.add(offset);
 			} else {
