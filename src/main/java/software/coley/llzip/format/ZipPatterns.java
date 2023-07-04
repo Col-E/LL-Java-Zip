@@ -44,11 +44,11 @@ public interface ZipPatterns {
 	 */
 	int END_OF_CENTRAL_DIRECTORY_QUAD = 0x06_05_4B_50;
 	/**
-	 * Option header for the data descriptor section
+	 * Optional header for the data descriptor section
 	 */
 	int[] DATA_DESCRIPTOR = {0x08, 0x07, 0x4b, 0x50};
 	/**
-	 * Option header for the data descriptor section, as a {@code s4/quad/int}
+	 * Optional header for the data descriptor section, as a {@code s4/quad/int}
 	 */
 	int DATA_DESCRIPTOR_QUAD = 0x08_07_4b_50;
 }
