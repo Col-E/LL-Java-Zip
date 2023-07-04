@@ -40,8 +40,8 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 		long dataOffsetStart = offset + MIN_FIXED_SIZE + getFileNameLength() + getExtraFieldLength();
 		// Subtract the length of the data descriptor section from the data end offset
 		int dataDescLength = this.dataDescLength.get();
-		// "Effectively final"
-		Long dataOffsetEnd = ((dataOffsetEnd = offsets.ceiling(dataOffsetStart)) != null) ? dataOffsetEnd - dataDescLength : null;
+		final Long rawDataOffsetEnd = offsets.ceiling(dataOffsetStart);
+		final Long dataOffsetEnd = rawDataOffsetEnd != null ? rawDataOffsetEnd - dataDescLength : null;
 		this.dataOffsetStart = dataOffsetStart;
 		this.dataOffsetEnd = dataOffsetEnd == null ? -1 : dataOffsetEnd;
 		if (dataOffsetEnd != null) {
