@@ -1,5 +1,6 @@
 package software.coley.lljzip.format.model;
 
+import software.coley.lljzip.format.ZipPatterns;
 import software.coley.lljzip.format.compression.ZipCompressions;
 import software.coley.lljzip.util.ByteData;
 import software.coley.lljzip.util.ByteDataUtil;
@@ -37,7 +38,23 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 		// JVM file data reading does NOT use the compressed/uncompressed fields.
 		// Instead, it scans data until the next header.
 		long dataOffsetStart = offset + MIN_FIXED_SIZE + getFileNameLength() + getExtraFieldLength();
-		Long dataOffsetEnd = offsets.ceiling(dataOffsetStart);
+		Long rawDataOffsetEnd = offsets.ceiling(dataOffsetStart);
+
+		// Per section 4.3.9 of the zip file spec:
+		//      This descriptor MUST exist if bit 3 of the general purpose bit flag is set.
+		//      It is byte aligned and immediately follows the last byte of compressed data.
+		//      This descriptor SHOULD be used only when it was not possible to
+		//      seek in the output ZIP file (output can be std-out, or non-seekable device)
+		//
+		// Thus, we subtract the length of the data descriptor section from the data end offset.
+		if (rawDataOffsetEnd != null && (getGeneralPurposeBitFlag() & 8) == 8) {
+			rawDataOffsetEnd -= 12;
+			if (data.getInt(rawDataOffsetEnd - 4) == ZipPatterns.DATA_DESCRIPTOR_QUAD) {
+				rawDataOffsetEnd -= 4;
+			}
+		}
+
+		final Long dataOffsetEnd = rawDataOffsetEnd;
 		this.dataOffsetStart = dataOffsetStart;
 		this.dataOffsetEnd = dataOffsetEnd == null ? -1 : dataOffsetEnd;
 		if (dataOffsetEnd != null) {
