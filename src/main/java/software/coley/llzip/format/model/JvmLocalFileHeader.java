@@ -1,5 +1,6 @@
 package software.coley.llzip.format.model;
 
+import software.coley.llzip.format.ZipPatterns;
 import software.coley.llzip.format.compression.ZipCompressions;
 import software.coley.llzip.util.ByteData;
 import software.coley.llzip.util.lazy.LazyInt;
@@ -37,7 +38,17 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 		// JVM file data reading does NOT use the compressed/uncompressed fields.
 		// Instead, it scans data until the next header.
 		long dataOffsetStart = offset + MIN_FIXED_SIZE + getFileNameLength() + getExtraFieldLength();
-		Long dataOffsetEnd = offsets.ceiling(dataOffsetStart);
+		final Long rawDataOffsetEnd = offsets.ceiling(dataOffsetStart);
+		// Subtract the length of the data descriptor section from the data end offset
+		int dataDescLength = 0;
+		if ((getGeneralPurposeBitFlag() & 8) == 8) {
+			dataDescLength = 12;
+
+			if (data.getInt(offset) == ZipPatterns.DATA_DESCRIPTOR_QUAD) {
+				dataDescLength += 4;
+			}
+		}
+		final Long dataOffsetEnd = rawDataOffsetEnd != null ? rawDataOffsetEnd - dataDescLength : null;
 		this.dataOffsetStart = dataOffsetStart;
 		this.dataOffsetEnd = dataOffsetEnd == null ? -1 : dataOffsetEnd;
 		if (dataOffsetEnd != null) {
