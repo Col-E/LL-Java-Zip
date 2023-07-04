@@ -41,6 +41,9 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 		long relativeDataOffsetEnd;
 		Long absoluteDataOffsetEnd = offsets.ceiling(offset + relativeDataOffsetStart);
 
+		// While we do scan to the next header, we need to consider the optional data-descriptor component.
+		// If it is present, the end range of the data should be cut by 16 bytes (the size of the data-descriptor)
+		//
 		// Per section 4.3.9 of the zip file spec:
 		//      This descriptor MUST exist if bit 3 of the general purpose bit flag is set.
 		//      It is byte aligned and immediately follows the last byte of compressed data.
