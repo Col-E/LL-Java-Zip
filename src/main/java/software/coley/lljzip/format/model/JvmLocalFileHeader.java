@@ -49,9 +49,12 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 		//
 		// Thus, we subtract the length of the data descriptor section from the data end offset.
 		if (absoluteDataOffsetEnd != null && (getGeneralPurposeBitFlag() & 0b1000) == 0b1000) {
-			absoluteDataOffsetEnd -= 12;
-			if (data.getInt(absoluteDataOffsetEnd - 4) == ZipPatterns.DATA_DESCRIPTOR_QUAD) {
-				absoluteDataOffsetEnd -= 4;
+			//  data-descriptor-header  4 bytes 08 07 4b 50
+			//  crc-32                  4 bytes
+			//  compressed size         4 bytes
+			//  uncompressed size       4 bytes
+			if (data.getInt(absoluteDataOffsetEnd - 16) == ZipPatterns.DATA_DESCRIPTOR_QUAD) {
+				absoluteDataOffsetEnd -= 16;
 			}
 		}
 		relativeDataOffsetEnd = absoluteDataOffsetEnd == null ? relativeDataOffsetStart : absoluteDataOffsetEnd - offset;
