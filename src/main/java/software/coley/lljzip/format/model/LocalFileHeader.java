@@ -156,6 +156,33 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 		}
 	}
 
+	/**
+	 * Sets the file data length to go up to the given offset.
+	 *
+	 * @param endOffset New file data length.
+	 */
+	public void setFileDataEndOffset(long endOffset) {
+		int fileDataStartOffset = fileNameLength.add(extraFieldLength).add(30).get();
+		long length = endOffset - fileDataStartOffset;
+		setFileDataLength(length);
+	}
+
+	/**
+	 * @param newLength New file data length.
+	 */
+	public void setFileDataLength(long newLength) {
+		fileDataLength.set(newLength);
+		fileData = ByteDataUtil.readLazyLongSlice(data, offset, fileNameLength.add(extraFieldLength).add(30), newLength);
+	}
+
+	/**
+	 * @param newLength New file data length.
+	 */
+	public void setFileDataLength(@Nonnull LazyLong newLength) {
+		fileDataLength = newLength;
+		fileData = ByteDataUtil.readLazyLongSlice(data, offset, fileNameLength.add(extraFieldLength).add(30), newLength);
+	}
+
 	@Override
 	public long length() {
 		return MIN_FIXED_SIZE +

@@ -507,4 +507,22 @@ public class ByteDataUtil {
 			return data.sliceOf(headerOffset + localOffset.get(), length.get());
 		});
 	}
+
+	/**
+	 * @param data
+	 * 		Content to get long slice from.
+	 * @param headerOffset
+	 * 		Offset of {@link ZipPart} header.
+	 * @param localOffset
+	 * 		Local offset from the header offset.
+	 *
+	 * @return Lazily populated long slice.
+	 */
+	public static LazyByteData readLazyLongSlice(ByteData data, long headerOffset, LazyInt localOffset, long length) {
+		return new LazyByteData(() -> {
+			if (data.isClosed())
+				throw new IllegalStateException("Cannot read from closed data source");
+			return data.sliceOf(headerOffset + localOffset.get(), length);
+		});
+	}
 }
