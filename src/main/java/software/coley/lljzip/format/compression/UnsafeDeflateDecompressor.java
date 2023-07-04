@@ -75,6 +75,12 @@ public class UnsafeDeflateDecompressor implements Decompressor {
 					}
 					int state = entry.state;
 					if (state == 2) {
+						// FIXME: This shouldn't happen, but if you're on JDK 9+ and the new inflate method is not found
+						//  then the existing handling does not properly reset the inflater for some odd reason.
+						//   - If this ever gets fixed, remove this if block.
+						if (!InflaterHackery.NEW_INFLATE) {
+							entry.inflater.reset();
+						}
 						break;
 					}
 					needsInput = state == 1;

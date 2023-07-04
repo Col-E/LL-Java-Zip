@@ -16,9 +16,8 @@ import java.util.zip.Inflater;
  * @author xDark
  */
 public final class InflaterHackery {
+	public static final boolean NEW_INFLATE;
 	private static final Unsafe UNSAFE = UnsafeUtil.get();
-	private static final boolean NEW_INFLATE;
-	private static final boolean OLD_INFLATE;
 	private static final MethodHandle INFLATE;
 	private static final MethodHandle MH_RESET;
 	private static final MethodHandle MH_FINISHED;
@@ -37,7 +36,7 @@ public final class InflaterHackery {
 		long address = u.getLong(u.getObject(inflater, zRef_offset), zRef_address_offset);
 		try {
 			MH_RESET.invokeExact(address);
-			if (OLD_INFLATE)
+			if (!NEW_INFLATE)
 				MH_FINISHED.invokeExact(inflater, false);
 		} catch (Throwable t) {
 			throw new RuntimeException(t);
@@ -110,7 +109,6 @@ public final class InflaterHackery {
 				inflate = null;
 			}
 			NEW_INFLATE = newInflate;
-			OLD_INFLATE = !newInflate;
 			INFLATE = inflate;
 			MH_RESET = l.findStatic(Inflater.class, "reset", MethodType.methodType(void.class, long.class));
 			MH_FINISHED = l.findSetter(Inflater.class, "finished", boolean.class);
