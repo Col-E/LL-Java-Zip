@@ -3,8 +3,6 @@ package software.coley.lljzip;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassWriter;
 import software.coley.lljzip.format.compression.ZipCompressions;
 import software.coley.lljzip.format.model.LocalFileHeader;
 import software.coley.lljzip.format.model.ZipArchive;
@@ -30,14 +28,14 @@ import java.util.zip.ZipInputStream;
 public class ZipComparisonShowcaseTest {
 	@ParameterizedTest
 	@ValueSource(strings = {
-		 "hello-concat.jar",
-		 "hello-concat-junkheader.jar",
-		 "hello-merged.jar",
-		 "hello-merged-junkheader.jar",
-		 "hello-merged-fake-empty.jar",
-		 "hello-secret-trailing-slash.jar",
-		 "hello-secret-trailing-slash-0-length-locals.jar",
-		 "hello-secret-0-length-locals.jar",
+			"hello-concat.jar",
+			"hello-concat-junkheader.jar",
+			"hello-merged.jar",
+			"hello-merged-junkheader.jar",
+			"hello-merged-fake-empty.jar",
+			"hello-secret-trailing-slash.jar",
+			"hello-secret-trailing-slash-0-length-locals.jar",
+			"hello-secret-0-length-locals.jar",
 	})
 	public void testConcatAndMerged(String name) {
 		Path path = Paths.get("src/test/resources/" + name);
@@ -144,16 +142,17 @@ public class ZipComparisonShowcaseTest {
 					}
 				});
 			}
-			
+
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
 	}
 
 	private void handle(String name, byte[] data) {
-		/*System.out.println(name);
 		if (name.contains("Hello")) {
-			System.out.println("Has secret message: " + new String(data).contains("The secret code is: ROSE"));
-		}*/
+			System.out.println(name + " --> Has secret message: " + new String(data).contains("The secret code is: ROSE"));
+		} else {
+			System.out.println(name);
+		}
 	}
 }
