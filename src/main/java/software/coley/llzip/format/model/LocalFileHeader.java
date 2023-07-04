@@ -1,5 +1,6 @@
 package software.coley.llzip.format.model;
 
+import software.coley.llzip.format.ZipPatterns;
 import software.coley.llzip.format.compression.Decompressor;
 import software.coley.llzip.format.read.ZipReaderStrategy;
 import software.coley.llzip.util.ByteData;
@@ -45,6 +46,7 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 	// Caches
 	private transient LazyLong fileDataLength;
 	private transient ByteData data;
+	private transient LazyLong crcOffset;
 
 	@Override
 	public void read(ByteData data, long offset) {
@@ -55,9 +57,6 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 		compressionMethod = readWord(data, 8);
 		lastModFileTime = readWord(data, 10);
 		lastModFileDate = readWord(data, 12);
-		crc32 = readQuad(data, 14);
-		compressedSize = readMaskedLongQuad(data, 18);
-		uncompressedSize = readMaskedLongQuad(data, 22);
 		fileNameLength = readWord(data, 26);
 		extraFieldLength = readWord(data, 28);
 		fileName = readSlice(data, new LazyInt(() -> 30), fileNameLength);
@@ -72,6 +71,23 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 			return fileDataLength;
 		});
 		fileData = readLongSlice(data, fileNameLength.add(extraFieldLength).add(30), fileDataLength);
+		crcOffset = new LazyLong(() -> {
+			long crcOffset;
+			if ((generalPurposeBitFlag.get() & 8) == 8) {
+				crcOffset = 30 + fileNameLength.get() + extraFieldLength.get() + fileDataLength.get();
+				if (data.getInt(crcOffset) == ZipPatterns.DATA_DESCRIPTOR_QUAD) {
+					crcOffset += 4;
+				}
+			} else {
+				crcOffset = 14;
+			}
+
+			return crcOffset;
+		});
+
+		crc32 = readQuad(data, crcOffset);
+		compressedSize = readMaskedLongQuad(data, crcOffset.add(4));
+		uncompressedSize = readMaskedLongQuad(data, crcOffset.add(8));
 	}
 
 	/**

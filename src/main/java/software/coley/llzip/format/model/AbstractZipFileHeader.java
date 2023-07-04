@@ -286,6 +286,14 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 		});
 	}
 
+	protected LazyInt readQuad(ByteData data, LazyLong localOffset) {
+		return new LazyInt(() -> {
+			if (data.isClosed())
+				throw new IllegalStateException("Cannot read from closed data source");
+			return ByteDataUtil.readQuad(data, offset + localOffset.get());
+		});
+	}
+
 	protected LazyInt readMaskedQuad(ByteData data, int localOffset) {
 		return new LazyInt(() -> {
 			if (data.isClosed())
@@ -307,6 +315,14 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 			if (data.isClosed())
 				throw new IllegalStateException("Cannot read from closed data source");
 			return ByteDataUtil.readQuad(data, offset + localOffset) & 0xFFFFFFFFL;
+		});
+	}
+
+	protected LazyLong readMaskedLongQuad(ByteData data, LazyLong localOffset) {
+		return new LazyLong(() -> {
+			if (data.isClosed())
+				throw new IllegalStateException("Cannot read from closed data source");
+			return ByteDataUtil.readQuad(data, offset + localOffset.get()) & 0xFFFFFFFFL;
 		});
 	}
 

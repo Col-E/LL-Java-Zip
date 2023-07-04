@@ -16,6 +16,10 @@ public class LazyLong extends Lazy<LongSupplier> {
 		super(lookup);
 	}
 
+	public LazyLong add(long value) {
+		return new LazyLong(() -> value + lookup.getAsLong());
+	}
+
 	/**
 	 * @param value
 	 * 		Long value.
