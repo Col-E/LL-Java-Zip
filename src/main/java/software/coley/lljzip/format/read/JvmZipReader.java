@@ -152,13 +152,13 @@ public class JvmZipReader extends AbstractZipReader {
 			if (!offsets.contains(offset) && data.getInt(offset) == ZipPatterns.LOCAL_FILE_HEADER_QUAD) {
 				try {
 					LocalFileHeader file = newLocalFileHeader();
+					file.link(directory);
 					if (file instanceof JvmLocalFileHeader) {
 						((JvmLocalFileHeader) file).setOffsets(entryOffsets);
 					}
 					file.read(data, offset);
 					zip.addPart(file);
 					directory.link(file);
-					file.link(directory);
 					postProcessLocalFileHeader(file);
 					offsets.add(offset);
 				} catch (Exception ex) {
