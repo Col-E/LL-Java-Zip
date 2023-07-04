@@ -46,6 +46,7 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 	// Caches
 	private transient LazyLong fileDataLength;
 	private transient ByteData data;
+	protected transient LazyInt dataDescLength;
 	private transient LazyLong crcOffset;
 
 	@Override
@@ -71,20 +72,28 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 			return fileDataLength;
 		});
 		fileData = readLongSlice(data, fileNameLength.add(extraFieldLength).add(30), fileDataLength);
+		dataDescLength = new LazyInt(() -> {
+			int dataDescLength = 0;
+			if ((generalPurposeBitFlag.get() & 8) == 8) {
+				dataDescLength = 12;
+				long dataDescOffset = 30 + fileNameLength.get() + extraFieldLength.get() + fileDataLength.get();
+				if (data.getInt(dataDescOffset) == ZipPatterns.DATA_DESCRIPTOR_QUAD) {
+					dataDescLength += 4;
+				}
+			}
+
+			return dataDescLength;
+		});
 		crcOffset = new LazyLong(() -> {
 			long crcOffset;
 			if ((generalPurposeBitFlag.get() & 8) == 8) {
-				crcOffset = 30 + fileNameLength.get() + extraFieldLength.get() + fileDataLength.get();
-				if (data.getInt(crcOffset) == ZipPatterns.DATA_DESCRIPTOR_QUAD) {
-					crcOffset += 4;
-				}
+				crcOffset = 30 + fileNameLength.get() + extraFieldLength.get() + fileDataLength.get() + dataDescLength.get() - 12;
 			} else {
 				crcOffset = 14;
 			}
 
 			return crcOffset;
 		});
-
 		crc32 = readQuad(data, crcOffset);
 		compressedSize = readMaskedLongQuad(data, crcOffset.add(4));
 		uncompressedSize = readMaskedLongQuad(data, crcOffset.add(8));
@@ -162,7 +171,8 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 		return MIN_FIXED_SIZE +
 				fileNameLength.get() +
 				extraFieldLength.get() +
-				fileDataLength.get();
+				fileDataLength.get() +
+				dataDescLength.get();
 	}
 
 	@Override

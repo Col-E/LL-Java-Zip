@@ -39,14 +39,7 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 		// Instead, it scans data until the next header.
 		long dataOffsetStart = offset + MIN_FIXED_SIZE + getFileNameLength() + getExtraFieldLength();
 		// Subtract the length of the data descriptor section from the data end offset
-		int dataDescLength = 0;
-		if ((getGeneralPurposeBitFlag() & 8) == 8) {
-			dataDescLength = 12;
-
-			if (data.getInt(offset) == ZipPatterns.DATA_DESCRIPTOR_QUAD) {
-				dataDescLength += 4;
-			}
-		}
+		int dataDescLength = this.dataDescLength.get();
 		// "Effectively final"
 		Long dataOffsetEnd = ((dataOffsetEnd = offsets.ceiling(dataOffsetStart)) != null) ? dataOffsetEnd - dataDescLength : null;
 		this.dataOffsetStart = dataOffsetStart;
