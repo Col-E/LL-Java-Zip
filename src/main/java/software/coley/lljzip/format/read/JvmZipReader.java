@@ -145,6 +145,7 @@ public class JvmZipReader extends AbstractZipReader {
 		// last local file header entry's file data contents.
 		entryOffsets.add(earliestCdfh);
 
+		// Create the local file entries
 		for (CentralDirectoryFileHeader directory : zip.getCentralDirectories()) {
 			long relative = directory.getRelativeOffsetOfLocalHeader();
 			long offset = jvmBaseFileOffset + relative;

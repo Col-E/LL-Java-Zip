@@ -19,8 +19,8 @@ import java.util.NavigableSet;
  */
 public class JvmLocalFileHeader extends LocalFileHeader {
 	private NavigableSet<Long> offsets;
-	private long dataOffsetStart;
-	private long dataOffsetEnd;
+	private long relativeDataOffsetStart;
+	private long relativeDataOffsetEnd;
 	private boolean foundData;
 
 	/**
@@ -37,8 +37,9 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 
 		// JVM file data reading does NOT use the compressed/uncompressed fields.
 		// Instead, it scans data until the next header.
-		long dataOffsetStart = offset + MIN_FIXED_SIZE + getFileNameLength() + getExtraFieldLength();
-		Long rawDataOffsetEnd = offsets.ceiling(dataOffsetStart);
+		long relativeDataOffsetStart = MIN_FIXED_SIZE + getFileNameLength() + getExtraFieldLength();
+		long relativeDataOffsetEnd;
+		Long absoluteDataOffsetEnd = offsets.ceiling(offset + relativeDataOffsetStart);
 
 		// Per section 4.3.9 of the zip file spec:
 		//      This descriptor MUST exist if bit 3 of the general purpose bit flag is set.
@@ -47,23 +48,33 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 		//      seek in the output ZIP file (output can be std-out, or non-seekable device)
 		//
 		// Thus, we subtract the length of the data descriptor section from the data end offset.
-		if (rawDataOffsetEnd != null && (getGeneralPurposeBitFlag() & 8) == 8) {
-			rawDataOffsetEnd -= 12;
-			if (data.getInt(rawDataOffsetEnd - 4) == ZipPatterns.DATA_DESCRIPTOR_QUAD) {
-				rawDataOffsetEnd -= 4;
+		if (absoluteDataOffsetEnd != null && (getGeneralPurposeBitFlag() & 0b1000) == 0b1000) {
+			absoluteDataOffsetEnd -= 12;
+			if (data.getInt(absoluteDataOffsetEnd - 4) == ZipPatterns.DATA_DESCRIPTOR_QUAD) {
+				absoluteDataOffsetEnd -= 4;
 			}
 		}
+		relativeDataOffsetEnd = absoluteDataOffsetEnd == null ? relativeDataOffsetStart : absoluteDataOffsetEnd - offset;
 
-		final Long dataOffsetEnd = rawDataOffsetEnd;
-		this.dataOffsetStart = dataOffsetStart;
-		this.dataOffsetEnd = dataOffsetEnd == null ? -1 : dataOffsetEnd;
-		if (dataOffsetEnd != null) {
-			// Valid data range found, map back to (localOffset, range)
-			fileData = ByteDataUtil.readLazyLongSlice(data, offset,
-					new LazyLong(() -> dataOffsetStart - offset),
-					new LazyLong(() -> dataOffsetEnd - dataOffsetStart));
-			foundData = true;
+		// Update the file data ranges
+		this.relativeDataOffsetStart = relativeDataOffsetStart;
+		this.relativeDataOffsetEnd = relativeDataOffsetEnd;
+		fileDataLength = new LazyLong(() -> relativeDataOffsetEnd - relativeDataOffsetStart);
+		fileData = ByteDataUtil.readLazyLongSlice(data, offset,
+				new LazyLong(() -> relativeDataOffsetStart), fileDataLength);
+
+		// Update sizes where possible
+		long size = fileDataLength.get();
+		if (getCompressionMethod() == ZipCompressions.STORED) {
+			setUncompressedSize(size);
+			setCompressedSize(size);
+		} else {
+			setCompressedSize(size);
 		}
+
+		// If we have a size, we can assume we found some data.
+		// Whether its valid, who really knows?
+		foundData = size != 0;
 	}
 
 	@Override
@@ -95,9 +106,9 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 			// Only allow lengths that are within a sensible range.
 			// Data should not be overflowing into adjacent header entries.
 			// - If it is, the data here is likely intentionally tampered with to screw with parsers
-			if (fileDataLength + offset < dataOffsetEnd) {
+			if (fileDataLength < relativeDataOffsetEnd) {
 				fileData = ByteDataUtil.readLazyLongSlice(data, offset,
-						new LazyLong(() -> dataOffsetStart - offset),
+						new LazyLong(() -> relativeDataOffsetStart - offset),
 						new LazyLong(() -> fileDataLength));
 				data = null;
 			}

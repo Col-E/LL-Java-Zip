@@ -45,7 +45,7 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 	protected LazyByteData fileData;
 
 	// Caches
-	private transient LazyLong fileDataLength;
+	protected transient LazyLong fileDataLength;
 
 	/**
 	 * @return Copy.
