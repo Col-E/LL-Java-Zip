@@ -60,6 +60,7 @@ public class CentralDirectoryFileHeader extends AbstractZipFileHeader {
 		CentralDirectoryFileHeader copy = new CentralDirectoryFileHeader();
 		copy.data = data;
 		copy.offset = offset;
+		copy.linkedFileHeader = linkedFileHeader;
 		copy.versionMadeBy = versionMadeBy.copy();
 		copy.versionNeededToExtract = versionNeededToExtract.copy();
 		copy.generalPurposeBitFlag = generalPurposeBitFlag.copy();
