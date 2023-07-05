@@ -1,8 +1,12 @@
 package software.coley.lljzip;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import software.coley.lljzip.format.model.LocalFileHeader;
 import software.coley.lljzip.format.model.ZipArchive;
+import software.coley.lljzip.format.transform.IdentityZipPartMapper;
+import software.coley.lljzip.format.transform.JvmClassDirectoryMapper;
 import software.coley.lljzip.format.write.ZipOutputStreamZipWriter;
 
 import java.io.ByteArrayInputStream;
@@ -14,7 +18,7 @@ import java.nio.file.Paths;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests for patching the <i>"trick"</i> jars, and making them compatible with standard Java ZIP apis.
@@ -43,7 +47,7 @@ public class PatchingTests {
 					if (entry.getName().contains("Hello.class")) {
 						byte[] buffer = new byte[1024];
 						baos = new ByteArrayOutputStream();
-						int len = 0;
+						int len;
 						while ((len = zis.read(buffer)) > 0)
 							baos.write(buffer, 0, len);
 
@@ -67,7 +71,7 @@ public class PatchingTests {
 					if (entry.getName().contains("Hello.class")) {
 						byte[] buffer = new byte[1024];
 						baos = new ByteArrayOutputStream();
-						int len = 0;
+						int len;
 						while ((len = zis.read(buffer)) > 0)
 							baos.write(buffer, 0, len);
 
@@ -80,5 +84,15 @@ public class PatchingTests {
 		} catch (IOException ex) {
 			fail(ex);
 		}
+	}
+
+	@Test
+	@SuppressWarnings("resource")
+	public void testTrailingSlashTransform() {
+		// The 'JvmClassDirectoryMapper' maps 'Name.class/' paths to 'Name.class'
+		Path path = Paths.get("src/test/resources/hello-secret-trailing-slash.jar");
+		ZipArchive zip = assertDoesNotThrow(() -> ZipIO.readStandard(path)
+				.withMapping(new JvmClassDirectoryMapper(new IdentityZipPartMapper())));
+		assertNotNull(zip.getLocalFileByName("Hello.class"), "Trailing slash was not patched");
 	}
 }
