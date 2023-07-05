@@ -127,9 +127,17 @@ public class ZipArchive implements AutoCloseable, Iterable<ZipPart> {
 	 */
 	@Nonnull
 	public List<LocalFileHeader> getNameFilteredLocalFiles(Predicate<String> nameFilter) {
-		return getCentralDirectories().stream()
-				.filter(c -> nameFilter.test(c.getFileNameAsString())) // Use central names, as they are authoritative
-				.map(CentralDirectoryFileHeader::getLinkedFileHeader)
+		// Use central names when possible, as they are authoritative
+		List<CentralDirectoryFileHeader> centralDirectories = getCentralDirectories();
+		if (!centralDirectories.isEmpty())
+			return centralDirectories.stream()
+					.filter(c -> nameFilter.test(c.getFileNameAsString()))
+					.map(CentralDirectoryFileHeader::getLinkedFileHeader)
+					.collect(Collectors.toList());
+
+		// Fallback to using local entries
+		return getLocalFiles().stream()
+				.filter(c -> nameFilter.test(c.getFileNameAsString()))
 				.collect(Collectors.toList());
 	}
 
