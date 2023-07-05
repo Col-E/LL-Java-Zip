@@ -51,3 +51,10 @@ implementation "software.coley:lljzip:${zipVersion}"
 ```
 
 For example usage see the [tests](src/test/java/software/coley/lljzip).
+
+## Building
+
+Due to some `sun.misc.Unsafe` hacks _(For performance and long addressing)_, you will get compiler warnings when first opening the project in IntelliJ.
+You can resolve this by changing the compiler target:
+
+![intellij compiler settings](docs/compiler-settings.png)
