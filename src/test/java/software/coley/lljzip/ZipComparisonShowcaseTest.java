@@ -28,23 +28,28 @@ import java.util.zip.ZipInputStream;
 public class ZipComparisonShowcaseTest {
 	@ParameterizedTest
 	@ValueSource(strings = {
+			"hello.jar",
 			"hello-concat.jar",
 			"hello-concat-junkheader.jar",
 			"hello-junk-dir-length.jar",
 			"hello-junk-eocd.jar",
 			"hello-junk-local-length.jar",
 			"hello-merged.jar",
-			"hello-merged-junkheader.jar",
 			"hello-merged-fake-empty.jar",
+			"hello-merged-junkheader.jar",
 			"hello-no-local-length.jar",
 			"hello-no-local-names.jar",
+			"hello-secret.jar",
+			"hello-secret-0-length-locals.jar",
+			"hello-secret-junkheader.jar",
 			"hello-secret-trailing-slash.jar",
 			"hello-secret-trailing-slash-0-length-locals.jar",
-			"hello-secret-0-length-locals.jar",
 			"hello-total-junk.jar",
 			"hello-total-junk-large.jar",
+			"hello-wrong-local-compression.jar",
+			"hello-zeroed-locals.jar",
 	})
-	public void testConcatAndMerged(String name) {
+	public void test(String name) {
 		Path path = Paths.get("src/test/resources/" + name);
 
 		try {
