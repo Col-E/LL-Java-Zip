@@ -110,6 +110,13 @@ public class PartParseTests {
 
 	@ParameterizedTest
 	@ValueSource(strings = {
+			"hello-junk-dir-length.jar",
+			"hello-junk-eocd.jar",
+			"hello-junk-local-length.jar",
+			"hello-total-junk.jar",
+			"hello-total-junk-large.jar",
+			"hello-wrong-local-compression.jar",
+			"hello-zeroed-locals.jar",
 			"hello-concat.jar",
 			"hello-concat-junkheader.jar",
 			"hello-merged.jar",
@@ -127,11 +134,13 @@ public class PartParseTests {
 			List<LocalFileHeader> localFiles = zip.getNameFilteredLocalFiles(n -> n.contains(".class"));
 			assertEquals(1, localFiles.size(), "More than 1 class");
 			byte[] decompressed = ByteDataUtil.toByteArray(ZipCompressions.decompress(localFiles.get(0)));
+			String decompressedStr = new String(decompressed);
 			assertDoesNotThrow(() -> {
 				ClassWriter cw = new ClassWriter(0);
 				ClassReader cr = new ClassReader(decompressed);
 				cr.accept(cw, 0);
 			}, "Failed to read class, must have failed to decompress");
+			assertTrue(decompressedStr.contains("Hello world") || decompressedStr.contains("The secret code is: ROSE"));
 		} catch (IOException ex) {
 			fail(ex);
 		}
