@@ -3,6 +3,7 @@ package software.coley.lljzip.format.transform;
 import software.coley.lljzip.format.model.*;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 /**
  * Mapper outline for zip parts.
@@ -16,9 +17,9 @@ public interface ZipPartMapper {
 	 * @param part
 	 * 		Part to map.
 	 *
-	 * @return Mapped part.
+	 * @return Mapped part, or {@code null} on removal.
 	 */
-	@Nonnull
+	@Nullable
 	default ZipPart map(@Nonnull ZipArchive archive, @Nonnull ZipPart part) {
 		if (part instanceof LocalFileHeader) {
 			return mapLocal(archive, (LocalFileHeader) part);
@@ -37,9 +38,9 @@ public interface ZipPartMapper {
 	 * @param localFileHeader
 	 * 		Original local file.
 	 *
-	 * @return Mapped local file.
+	 * @return Mapped local file, or {@code null} on removal.
 	 */
-	@Nonnull
+	@Nullable
 	LocalFileHeader mapLocal(@Nonnull ZipArchive archive, @Nonnull LocalFileHeader localFileHeader);
 
 	/**
@@ -48,9 +49,9 @@ public interface ZipPartMapper {
 	 * @param centralDirectoryFileHeader
 	 * 		Original central directory file.
 	 *
-	 * @return Mapped central directory file.
+	 * @return Mapped central directory file, or {@code null} on removal.
 	 */
-	@Nonnull
+	@Nullable
 	CentralDirectoryFileHeader mapCentral(@Nonnull ZipArchive archive, @Nonnull CentralDirectoryFileHeader centralDirectoryFileHeader);
 
 	/**
@@ -59,8 +60,8 @@ public interface ZipPartMapper {
 	 * @param endOfCentralDirectory
 	 * 		Original end.
 	 *
-	 * @return Mapped end.
+	 * @return Mapped end, or {@code null} on removal.
 	 */
-	@Nonnull
+	@Nullable
 	EndOfCentralDirectory mapEnd(@Nonnull ZipArchive archive, @Nonnull EndOfCentralDirectory endOfCentralDirectory);
 }

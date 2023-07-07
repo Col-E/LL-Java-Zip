@@ -5,6 +5,7 @@ import software.coley.lljzip.format.model.LocalFileHeader;
 import software.coley.lljzip.format.model.ZipArchive;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 /**
  * Patches {@link LocalFileHeader} to adopt {@link CentralDirectoryFileHeader} values.
@@ -20,7 +21,7 @@ public class CentralAdoptingMapper extends DelegatingZipPartMapper {
 		super(delegate);
 	}
 
-	@Nonnull
+	@Nullable
 	@Override
 	public LocalFileHeader mapLocal(@Nonnull ZipArchive archive, @Nonnull LocalFileHeader localFileHeader) {
 		if (localFileHeader.getLinkedDirectoryFileHeader() != null) {

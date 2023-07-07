@@ -6,6 +6,7 @@ import software.coley.lljzip.format.model.LocalFileHeader;
 import software.coley.lljzip.format.model.ZipArchive;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 /**
  * Zip part mapper that delegates to another mapper. Useful as a base to implement other mappers.
@@ -23,19 +24,19 @@ public class DelegatingZipPartMapper implements ZipPartMapper {
 		this.delegate = delegate;
 	}
 
-	@Nonnull
+	@Nullable
 	@Override
 	public LocalFileHeader mapLocal(@Nonnull ZipArchive archive, @Nonnull LocalFileHeader localFileHeader) {
 		return delegate.mapLocal(archive, localFileHeader);
 	}
 
-	@Nonnull
+	@Nullable
 	@Override
 	public CentralDirectoryFileHeader mapCentral(@Nonnull ZipArchive archive, @Nonnull CentralDirectoryFileHeader centralDirectoryFileHeader) {
 		return delegate.mapCentral(archive, centralDirectoryFileHeader);
 	}
 
-	@Nonnull
+	@Nullable
 	@Override
 	public EndOfCentralDirectory mapEnd(@Nonnull ZipArchive archive, @Nonnull EndOfCentralDirectory endOfCentralDirectory) {
 		return delegate.mapEnd(archive, endOfCentralDirectory);

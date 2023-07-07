@@ -46,8 +46,10 @@ public class ZipArchive implements AutoCloseable, Iterable<ZipPart> {
 	@Nonnull
 	public ZipArchive withMapping(@Nonnull ZipPartMapper mapper) {
 		ZipArchive copy = new ZipArchive();
-		for (ZipPart part : parts)
-			copy.addPart(mapper.map(this, part));
+		for (ZipPart part : parts) {
+			ZipPart mappedPart = mapper.map(this, part);
+			if (mappedPart != null) copy.addPart(mappedPart);
+		}
 		return copy;
 	}
 
