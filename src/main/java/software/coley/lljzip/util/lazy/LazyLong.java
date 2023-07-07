@@ -23,6 +23,7 @@ public class LazyLong extends Lazy<LongSupplier> {
 	@Nonnull
 	public LazyLong copy() {
 		LazyLong copy = new LazyLong(lookup);
+		copy.id = id;
 		if (set) copy.set(value);
 		return copy;
 	}
@@ -49,7 +50,7 @@ public class LazyLong extends Lazy<LongSupplier> {
 
 	@Override
 	public String toString() {
-		return Long.toString(get());
+		return id + " " + get();
 	}
 
 	@Override

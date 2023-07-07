@@ -70,9 +70,10 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 		// Update the file data ranges
 		this.relativeDataOffsetStart = relativeDataOffsetStart;
 		this.relativeDataOffsetEnd = relativeDataOffsetEnd;
-		fileDataLength = new LazyLong(() -> relativeDataOffsetEnd - relativeDataOffsetStart);
+		fileDataLength = new LazyLong(() -> relativeDataOffsetEnd - relativeDataOffsetStart).withId("fileDataLength");
+
 		fileData = ByteDataUtil.readLazyLongSlice(data, offset,
-				new LazyLong(() -> relativeDataOffsetStart), fileDataLength);
+				new LazyLong(() -> relativeDataOffsetStart), fileDataLength).withId("fileData");
 
 		// Update sizes where possible
 		long size = fileDataLength.get();
@@ -120,8 +121,7 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 			if (fileDataLength < relativeDataOffsetEnd) {
 				fileData = ByteDataUtil.readLazyLongSlice(data, offset,
 						new LazyLong(() -> relativeDataOffsetStart - offset),
-						new LazyLong(() -> fileDataLength));
-				data = null;
+						new LazyLong(() -> fileDataLength)).withId("fileData");
 			}
 		}
 	}

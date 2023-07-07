@@ -23,6 +23,7 @@ public class LazyInt extends Lazy<IntSupplier> {
 	@Nonnull
 	public LazyInt copy() {
 		LazyInt copy = new LazyInt(lookup);
+		copy.id = id;
 		if (set) copy.set(value);
 		return copy;
 	}
@@ -69,7 +70,7 @@ public class LazyInt extends Lazy<IntSupplier> {
 
 	@Override
 	public String toString() {
-		return Integer.toString(get());
+		return id + " " + get();
 	}
 
 	@Override

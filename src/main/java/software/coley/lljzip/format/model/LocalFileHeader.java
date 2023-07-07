@@ -39,7 +39,7 @@ import static software.coley.lljzip.format.compression.ZipCompressions.STORED;
  */
 public class LocalFileHeader extends AbstractZipFileHeader {
 	protected static final int MIN_FIXED_SIZE = 30;
-	private transient CentralDirectoryFileHeader linkedDirectoryFileHeader;
+	protected transient CentralDirectoryFileHeader linkedDirectoryFileHeader;
 
 	// LocalFileHeader spec (plus common elements between this and central file)
 	protected LazyByteData fileData;
@@ -76,18 +76,18 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 	@Override
 	public void read(@Nonnull ByteData data, long offset) {
 		super.read(data, offset);
-		versionNeededToExtract = ByteDataUtil.readLazyWord(data, offset, 4);
-		generalPurposeBitFlag = ByteDataUtil.readLazyWord(data, offset, 6);
-		compressionMethod = ByteDataUtil.readLazyWord(data, offset, 8);
-		lastModFileTime = ByteDataUtil.readLazyWord(data, offset, 10);
-		lastModFileDate = ByteDataUtil.readLazyWord(data, offset, 12);
-		crc32 = ByteDataUtil.readLazyQuad(data, offset, 14);
-		compressedSize = ByteDataUtil.readLazyMaskedLongQuad(data, offset, 18);
-		uncompressedSize = ByteDataUtil.readLazyMaskedLongQuad(data, offset, 22);
-		fileNameLength = ByteDataUtil.readLazyWord(data, offset, 26);
-		extraFieldLength = ByteDataUtil.readLazyWord(data, offset, 28);
-		fileName = ByteDataUtil.readLazySlice(data, offset, new LazyInt(() -> MIN_FIXED_SIZE), fileNameLength);
-		extraField = ByteDataUtil.readLazySlice(data, offset, fileNameLength.add(MIN_FIXED_SIZE), extraFieldLength);
+		versionNeededToExtract = ByteDataUtil.readLazyWord(data, offset, 4).withId("versionNeededToExtract");
+		generalPurposeBitFlag = ByteDataUtil.readLazyWord(data, offset, 6).withId("generalPurposeBitFlag");
+		compressionMethod = ByteDataUtil.readLazyWord(data, offset, 8).withId("compressionMethod");
+		lastModFileTime = ByteDataUtil.readLazyWord(data, offset, 10).withId("lastModFileTime");
+		lastModFileDate = ByteDataUtil.readLazyWord(data, offset, 12).withId("lastModFileDate");
+		crc32 = ByteDataUtil.readLazyQuad(data, offset, 14).withId("crc32");
+		compressedSize = ByteDataUtil.readLazyMaskedLongQuad(data, offset, 18).withId("compressedSize");
+		uncompressedSize = ByteDataUtil.readLazyMaskedLongQuad(data, offset, 22).withId("uncompressedSize");
+		fileNameLength = ByteDataUtil.readLazyWord(data, offset, 26).withId("fileNameLength");
+		extraFieldLength = ByteDataUtil.readLazyWord(data, offset, 28).withId("extraFieldLength");
+		fileName = ByteDataUtil.readLazySlice(data, offset, new LazyInt(() -> MIN_FIXED_SIZE), fileNameLength).withId("fileName");
+		extraField = ByteDataUtil.readLazySlice(data, offset, fileNameLength.add(MIN_FIXED_SIZE), extraFieldLength).withId("extraField");
 		fileDataLength = new LazyLong(() -> {
 			long fileDataLength;
 			if (compressionMethod.get() == STORED) {
@@ -96,8 +96,9 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 				fileDataLength = compressedSize.get();
 			}
 			return fileDataLength;
-		});
-		fileData = ByteDataUtil.readLazyLongSlice(data, offset, fileNameLength.add(extraFieldLength).add(MIN_FIXED_SIZE), fileDataLength);
+		}).withId("fileDataLength");
+		fileData = ByteDataUtil.readLazyLongSlice(data, offset,
+				fileNameLength.add(extraFieldLength).add(MIN_FIXED_SIZE), fileDataLength).withId("fileData");
 	}
 
 	/**
@@ -132,18 +133,22 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 	 * which you may want to adopt.
 	 */
 	public void adoptLinkedCentralDirectoryValues() {
-		if (data != null && linkedDirectoryFileHeader != null) {
-			setVersionNeededToExtract(linkedDirectoryFileHeader.getVersionNeededToExtract());
-			setGeneralPurposeBitFlag(linkedDirectoryFileHeader.getGeneralPurposeBitFlag());
-			setCompressionMethod(linkedDirectoryFileHeader.getCompressionMethod());
-			setLastModFileTime(linkedDirectoryFileHeader.getLastModFileTime());
-			setLastModFileDate(linkedDirectoryFileHeader.getLastModFileDate());
-			setCrc32(linkedDirectoryFileHeader.getCrc32());
-			setCompressedSize(linkedDirectoryFileHeader.getCompressedSize());
-			setUncompressedSize(linkedDirectoryFileHeader.getUncompressedSize());
-			setFileNameLength(linkedDirectoryFileHeader.getFileNameLength());
-			fileName = ByteDataUtil.readLazySlice(data, offset, new LazyInt(() -> MIN_FIXED_SIZE), fileNameLength);
-			extraField = ByteDataUtil.readLazySlice(data, offset, fileNameLength.add(MIN_FIXED_SIZE), extraFieldLength);
+		if (linkedDirectoryFileHeader != null) {
+			versionNeededToExtract = linkedDirectoryFileHeader.versionNeededToExtract;
+			generalPurposeBitFlag = linkedDirectoryFileHeader.generalPurposeBitFlag;
+			compressionMethod = linkedDirectoryFileHeader.compressionMethod;
+			lastModFileTime = linkedDirectoryFileHeader.lastModFileTime;
+			lastModFileDate = linkedDirectoryFileHeader.lastModFileDate;
+			crc32 = linkedDirectoryFileHeader.crc32;
+			compressedSize = linkedDirectoryFileHeader.compressedSize;
+			uncompressedSize = linkedDirectoryFileHeader.uncompressedSize;
+			fileNameLength = linkedDirectoryFileHeader.fileNameLength;
+			fileName = linkedDirectoryFileHeader.fileName;
+			extraField = linkedDirectoryFileHeader.extraField;
+			// We're using the same slices/data locations from the central directory.
+			// If we wanted to use local data but with updated offsets from the central directory it would look like this:
+			//  fileName = ByteDataUtil.readLazySlice(data, offset, new LazyInt(() -> MIN_FIXED_SIZE), fileNameLength).withId("fileName");
+			//  extraField = ByteDataUtil.readLazySlice(data, offset, fileNameLength.add(MIN_FIXED_SIZE), extraFieldLength).withId("extraField");
 			fileDataLength = new LazyLong(() -> {
 				long fileDataLength;
 				if (compressionMethod.get() == STORED) {
@@ -152,8 +157,9 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 					fileDataLength = compressedSize.get();
 				}
 				return fileDataLength;
-			});
-			fileData = ByteDataUtil.readLazyLongSlice(data, offset, fileNameLength.add(extraFieldLength).add(30), fileDataLength);
+			}).withId("fileDataLength");
+			if (data != null)
+				fileData = ByteDataUtil.readLazyLongSlice(data, offset, fileNameLength.add(extraFieldLength).add(MIN_FIXED_SIZE), fileDataLength).withId("fileData");
 		}
 	}
 
@@ -163,7 +169,7 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 	 * @param endOffset New file data length.
 	 */
 	public void setFileDataEndOffset(long endOffset) {
-		long fileDataStartOffset = offset + fileNameLength.add(extraFieldLength).add(30).get();
+		long fileDataStartOffset = offset + fileNameLength.add(extraFieldLength).add(MIN_FIXED_SIZE).get();
 		long length = endOffset - fileDataStartOffset;
 		setFileDataLength(length);
 	}
@@ -173,7 +179,7 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 	 */
 	public void setFileDataLength(long newLength) {
 		fileDataLength.set(newLength);
-		fileData = ByteDataUtil.readLazyLongSlice(data, offset, fileNameLength.add(extraFieldLength).add(30), newLength);
+		fileData = ByteDataUtil.readLazyLongSlice(data, offset, fileNameLength.add(extraFieldLength).add(MIN_FIXED_SIZE), newLength).withId("fileData");
 	}
 
 	/**
@@ -181,7 +187,7 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 	 */
 	public void setFileDataLength(@Nonnull LazyLong newLength) {
 		fileDataLength = newLength;
-		fileData = ByteDataUtil.readLazyLongSlice(data, offset, fileNameLength.add(extraFieldLength).add(30), newLength);
+		fileData = ByteDataUtil.readLazyLongSlice(data, offset, fileNameLength.add(extraFieldLength).add(MIN_FIXED_SIZE), newLength).withId("fileData");
 	}
 
 	@Override

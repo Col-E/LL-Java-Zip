@@ -86,25 +86,25 @@ public class CentralDirectoryFileHeader extends AbstractZipFileHeader {
 	@Override
 	public void read(@Nonnull ByteData data, long offset) {
 		super.read(data, offset);
-		versionMadeBy = ByteDataUtil.readLazyWord(data, offset, 4);
-		versionNeededToExtract = ByteDataUtil.readLazyWord(data, offset, 6);
-		generalPurposeBitFlag = ByteDataUtil.readLazyWord(data, offset, 8);
-		compressionMethod = ByteDataUtil.readLazyWord(data, offset, 10);
-		lastModFileTime = ByteDataUtil.readLazyWord(data, offset, 12);
-		lastModFileDate = ByteDataUtil.readLazyWord(data, offset, 14);
-		crc32 = ByteDataUtil.readLazyQuad(data, offset, 16);
-		compressedSize = ByteDataUtil.readLazyMaskedLongQuad(data, offset, 20);
-		uncompressedSize = ByteDataUtil.readLazyMaskedLongQuad(data, offset, 24);
-		fileNameLength = ByteDataUtil.readLazyWord(data, offset, 28);
-		extraFieldLength = ByteDataUtil.readLazyWord(data, offset, 30);
-		fileCommentLength = ByteDataUtil.readLazyWord(data, offset, 32);
-		diskNumberStart = ByteDataUtil.readLazyWord(data, offset, 34);
-		internalFileAttributes = ByteDataUtil.readLazyWord(data, offset, 36);
-		externalFileAttributes = ByteDataUtil.readLazyQuad(data, offset, 38);
-		relativeOffsetOfLocalHeader = ByteDataUtil.readLazyMaskedLongQuad(data, offset, 42);
-		fileName = ByteDataUtil.readLazySlice(data, offset, new LazyInt(() -> 46), fileNameLength);
-		extraField = ByteDataUtil.readLazySlice(data, offset, fileNameLength.add(46), extraFieldLength);
-		fileComment = ByteDataUtil.readLazySlice(data, offset, fileNameLength.add(46).add(extraFieldLength), fileCommentLength);
+		versionMadeBy = ByteDataUtil.readLazyWord(data, offset, 4).withId("versionMadeBy");
+		versionNeededToExtract = ByteDataUtil.readLazyWord(data, offset, 6).withId("versionNeededToExtract");
+		generalPurposeBitFlag = ByteDataUtil.readLazyWord(data, offset, 8).withId("generalPurposeBitFlag");
+		compressionMethod = ByteDataUtil.readLazyWord(data, offset, 10).withId("compressionMethod");
+		lastModFileTime = ByteDataUtil.readLazyWord(data, offset, 12).withId("lastModFileTime");
+		lastModFileDate = ByteDataUtil.readLazyWord(data, offset, 14).withId("lastModFileDate");
+		crc32 = ByteDataUtil.readLazyQuad(data, offset, 16).withId("crc32");
+		compressedSize = ByteDataUtil.readLazyMaskedLongQuad(data, offset, 20).withId("compressedSize");
+		uncompressedSize = ByteDataUtil.readLazyMaskedLongQuad(data, offset, 24).withId("uncompressedSize");
+		fileNameLength = ByteDataUtil.readLazyWord(data, offset, 28).withId("fileNameLength");
+		extraFieldLength = ByteDataUtil.readLazyWord(data, offset, 30).withId("extraFieldLength");
+		fileCommentLength = ByteDataUtil.readLazyWord(data, offset, 32).withId("fileCommentLength");
+		diskNumberStart = ByteDataUtil.readLazyWord(data, offset, 34).withId("diskNumberStart");
+		internalFileAttributes = ByteDataUtil.readLazyWord(data, offset, 36).withId("internalFileAttributes");
+		externalFileAttributes = ByteDataUtil.readLazyQuad(data, offset, 38).withId("externalFileAttributes");
+		relativeOffsetOfLocalHeader = ByteDataUtil.readLazyMaskedLongQuad(data, offset, 42).withId("relativeOffsetOfLocalHeader");
+		fileName = ByteDataUtil.readLazySlice(data, offset, new LazyInt(() -> 46), fileNameLength).withId("fileName");
+		extraField = ByteDataUtil.readLazySlice(data, offset, fileNameLength.add(46), extraFieldLength).withId("extraField");
+		fileComment = ByteDataUtil.readLazySlice(data, offset, fileNameLength.add(46).add(extraFieldLength), fileCommentLength).withId("fileComment");
 	}
 
 	@Override
