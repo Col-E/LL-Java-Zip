@@ -26,6 +26,7 @@ public class LazyByteData extends Lazy<Supplier<ByteData>> {
 	@Nonnull
 	public LazyByteData copy() {
 		LazyByteData copy = new LazyByteData(lookup);
+		copy.id = id;
 		if (set) copy.set(value);
 		return copy;
 	}
@@ -53,7 +54,7 @@ public class LazyByteData extends Lazy<Supplier<ByteData>> {
 
 	@Override
 	public String toString() {
-		return "data[" + get().length() + "]";
+		return id + " data[" + get().length() + "]";
 	}
 
 	@Override

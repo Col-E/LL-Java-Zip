@@ -144,6 +144,8 @@ public class JvmZipReader extends AbstractZipReader {
 		// Add the earliest central directory offset, which serves as the upper bound to search against for the
 		// last local file header entry's file data contents.
 		entryOffsets.add(earliestCdfh);
+		// Add the end of central directory
+		entryOffsets.add(endOfCentralDirectoryOffset);
 
 		// Create the local file entries
 		for (CentralDirectoryFileHeader directory : zip.getCentralDirectories()) {
@@ -152,12 +154,12 @@ public class JvmZipReader extends AbstractZipReader {
 			if (!offsets.contains(offset) && data.getInt(offset) == ZipPatterns.LOCAL_FILE_HEADER_QUAD) {
 				try {
 					LocalFileHeader file = newLocalFileHeader();
-					directory.link(file);
-					file.link(directory);
 					if (file instanceof JvmLocalFileHeader) {
 						((JvmLocalFileHeader) file).setOffsets(entryOffsets);
 					}
 					file.read(data, offset);
+					directory.link(file);
+					file.link(directory);
 					file.adoptLinkedCentralDirectoryValues();
 					zip.addPart(file);
 					postProcessLocalFileHeader(file);

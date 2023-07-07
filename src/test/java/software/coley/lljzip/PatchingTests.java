@@ -3,7 +3,6 @@ package software.coley.lljzip;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import software.coley.lljzip.format.model.LocalFileHeader;
 import software.coley.lljzip.format.model.ZipArchive;
 import software.coley.lljzip.format.transform.IdentityZipPartMapper;
 import software.coley.lljzip.format.transform.JvmClassDirectoryMapper;
@@ -59,7 +58,7 @@ public class PatchingTests {
 			}
 
 			// Parse the zip with LL-Java zip, then write back using std java apis
-			// in order to create a std java complaint jar.
+			// in order to create a std java compliant jar.
 			ZipArchive zip = ZipIO.readJvm(path);
 			new ZipOutputStreamZipWriter().write(zip, baos);
 			byte[] fixed = baos.toByteArray();

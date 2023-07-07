@@ -3,6 +3,8 @@ package software.coley.lljzip;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassWriter;
 import software.coley.lljzip.format.compression.ZipCompressions;
 import software.coley.lljzip.format.model.LocalFileHeader;
 import software.coley.lljzip.format.model.ZipArchive;
@@ -14,6 +16,7 @@ import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -96,8 +99,39 @@ public class PartParseTests {
 			assertNotEquals(stdHello, jvmHello);
 			String stdHelloRaw = ByteDataUtil.toString(ZipCompressions.decompress(stdHello));
 			String jvmHelloRaw = ByteDataUtil.toString(ZipCompressions.decompress(jvmHello));
+			assertFalse(stdHelloRaw.isEmpty());
+			assertFalse(jvmHelloRaw.isEmpty());
 			assertTrue(stdHelloRaw.contains("Hello world"));
 			assertTrue(jvmHelloRaw.contains("The secret code is: ROSE"));
+		} catch (IOException ex) {
+			fail(ex);
+		}
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = {
+			"hello-concat.jar",
+			"hello-concat-junkheader.jar",
+			"hello-merged.jar",
+			"hello-merged-fake-empty.jar",
+			"hello-merged-junkheader.jar",
+			"hello-secret-0-length-locals.jar",
+			"hello-secret-junkheader.jar",
+			"hello-secret-trailing-slash.jar",
+			"hello-secret-trailing-slash-0-length-locals.jar",
+	})
+	public void testJvmCanRecoverData(String name) {
+		try {
+			Path path = Paths.get("src/test/resources/" + name);
+			ZipArchive zip = ZipIO.readJvm(path);
+			List<LocalFileHeader> localFiles = zip.getNameFilteredLocalFiles(n -> n.contains(".class"));
+			assertEquals(1, localFiles.size(), "More than 1 class");
+			byte[] decompressed = ByteDataUtil.toByteArray(ZipCompressions.decompress(localFiles.get(0)));
+			assertDoesNotThrow(() -> {
+				ClassWriter cw = new ClassWriter(0);
+				ClassReader cr = new ClassReader(decompressed);
+				cr.accept(cw, 0);
+			}, "Failed to read class, must have failed to decompress");
 		} catch (IOException ex) {
 			fail(ex);
 		}
@@ -115,6 +149,7 @@ public class PartParseTests {
 
 			LocalFileHeader hello = zipStd.getLocalFileByName("Hello.class");
 			assertNotNull(hello);
+			assertEquals(0, hello.getFileData().length()); // Should be empty
 
 			// The local file header says the contents are 0 bytes, but the central header has the real length
 			assertTrue(hello.hasDifferentValuesThanCentralDirectoryHeader());
@@ -128,11 +163,12 @@ public class PartParseTests {
 			});
 			LocalFileHeader helloAdopted = zipStdAndAdopt.getLocalFileByName("Hello.class");
 			assertFalse(helloAdopted.hasDifferentValuesThanCentralDirectoryHeader());
+			assertNotEquals(0, helloAdopted.getFileData().length()); // Should have data
 
-			// Alternatively, just use the JVM strategy
+			// The JVM strategy copies most properties, except for size.
 			ZipArchive zipJvm = ZipIO.readJvm(path);
 			helloAdopted = zipJvm.getLocalFileByName("Hello.class");
-			assertFalse(helloAdopted.hasDifferentValuesThanCentralDirectoryHeader());
+			assertNotEquals(0, helloAdopted.getFileData().length()); // Should have data, even if not sourced from values in the CEN
 		} catch (IOException ex) {
 			fail(ex);
 		}
