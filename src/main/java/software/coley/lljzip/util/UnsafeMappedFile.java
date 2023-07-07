@@ -150,7 +150,8 @@ final class UnsafeMappedFile implements ByteData {
 		}
 		position += address;
 		if (position > end) {
-			throw new IllegalArgumentException(Long.toString(position));
+			long diff = position - end;
+			throw new IllegalArgumentException("positon beyond max bounds: " + position + " > " + end + " diff: " + diff);
 		}
 		return position;
 	}
