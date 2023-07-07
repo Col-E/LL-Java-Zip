@@ -41,6 +41,7 @@ public class ZipComparisonShowcaseTest {
 			"hello-secret-trailing-slash.jar",
 			"hello-secret-trailing-slash-0-length-locals.jar",
 			"hello-secret-0-length-locals.jar",
+			"hello-total-junk.jar",
 	})
 	public void testConcatAndMerged(String name) {
 		Path path = Paths.get("src/test/resources/" + name);
