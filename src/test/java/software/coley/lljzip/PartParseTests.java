@@ -96,6 +96,8 @@ public class PartParseTests {
 			assertNotEquals(stdHello, jvmHello);
 			String stdHelloRaw = ByteDataUtil.toString(ZipCompressions.decompress(stdHello));
 			String jvmHelloRaw = ByteDataUtil.toString(ZipCompressions.decompress(jvmHello));
+			assertFalse(stdHelloRaw.isEmpty());
+			assertFalse(jvmHelloRaw.isEmpty());
 			assertTrue(stdHelloRaw.contains("Hello world"));
 			assertTrue(jvmHelloRaw.contains("The secret code is: ROSE"));
 		} catch (IOException ex) {
@@ -115,6 +117,7 @@ public class PartParseTests {
 
 			LocalFileHeader hello = zipStd.getLocalFileByName("Hello.class");
 			assertNotNull(hello);
+			assertEquals(0, hello.getFileData().length()); // Should be empty
 
 			// The local file header says the contents are 0 bytes, but the central header has the real length
 			assertTrue(hello.hasDifferentValuesThanCentralDirectoryHeader());
@@ -128,11 +131,12 @@ public class PartParseTests {
 			});
 			LocalFileHeader helloAdopted = zipStdAndAdopt.getLocalFileByName("Hello.class");
 			assertFalse(helloAdopted.hasDifferentValuesThanCentralDirectoryHeader());
+			assertNotEquals(0, helloAdopted.getFileData().length()); // Should have data
 
-			// Alternatively, just use the JVM strategy
+			// The JVM strategy copies most properties, except for size.
 			ZipArchive zipJvm = ZipIO.readJvm(path);
 			helloAdopted = zipJvm.getLocalFileByName("Hello.class");
-			assertFalse(helloAdopted.hasDifferentValuesThanCentralDirectoryHeader());
+			assertNotEquals(0, helloAdopted.getFileData().length()); // Should have data, even if not sourced from values in the CEN
 		} catch (IOException ex) {
 			fail(ex);
 		}
