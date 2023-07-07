@@ -90,20 +90,32 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 	}
 
 	@Override
-	public void link(CentralDirectoryFileHeader directoryFileHeader) {
-		super.link(directoryFileHeader);
+	public void adoptLinkedCentralDirectoryValues() {
+		CentralDirectoryFileHeader directoryFileHeader = linkedDirectoryFileHeader;
+		if (directoryFileHeader == null)
+			return;
 
 		// JVM trusts central directory file header contents over local
 		//  - Using fields as this maintains the lazy model
-		compressionMethod = directoryFileHeader.compressionMethod;
-		compressedSize = directoryFileHeader.compressedSize;
-		uncompressedSize = directoryFileHeader.uncompressedSize;
-		fileName = directoryFileHeader.fileName;
-		generalPurposeBitFlag = directoryFileHeader.generalPurposeBitFlag;
-		crc32 = directoryFileHeader.crc32;
-		lastModFileDate = directoryFileHeader.lastModFileDate;
-		lastModFileTime = directoryFileHeader.lastModFileTime;
+		versionNeededToExtract = linkedDirectoryFileHeader.versionNeededToExtract;
+		generalPurposeBitFlag = linkedDirectoryFileHeader.generalPurposeBitFlag;
+		compressionMethod = linkedDirectoryFileHeader.compressionMethod;
+		lastModFileTime = linkedDirectoryFileHeader.lastModFileTime;
+		lastModFileDate = linkedDirectoryFileHeader.lastModFileDate;
+		crc32 = linkedDirectoryFileHeader.crc32;
+		fileNameLength = linkedDirectoryFileHeader.fileNameLength;
+		fileName = linkedDirectoryFileHeader.fileName;
+		extraField = linkedDirectoryFileHeader.extraField;
 
+		// The sizes are not used by the JVM parser.
+		// It just says 'go until the next header'.
+		//
+		//   compressedSize = directoryFileHeader.compressedSize;
+		//   uncompressedSize = directoryFileHeader.uncompressedSize;
+		//
+		// That being said, we want a fallback if no data is found.
+		// This may occur if something with offset detection fails.
+		//
 		// Update file data with new compressed/uncompressed size if it was not able to be found previously
 		// with only the local data available.
 		if (!foundData) {
