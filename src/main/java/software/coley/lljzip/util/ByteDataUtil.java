@@ -5,6 +5,7 @@ import software.coley.lljzip.util.lazy.LazyByteData;
 import software.coley.lljzip.util.lazy.LazyInt;
 import software.coley.lljzip.util.lazy.LazyLong;
 
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
@@ -297,7 +298,7 @@ public class ByteDataUtil {
 	 */
 	public static ByteBuffer sliceExact(ByteBuffer data, int start, int end) {
 		ByteBuffer slice = data.slice();
-		slice = ((ByteBuffer) slice.position(start)).slice();
+		slice = ((ByteBuffer) ((Buffer)slice).position(start)).slice();
 		slice.limit(end - start);
 		return slice.order(data.order());
 	}
