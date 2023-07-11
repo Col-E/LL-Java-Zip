@@ -126,6 +126,8 @@ public class PartParseTests {
 			"hello-secret-junkheader.jar",
 			"hello-secret-trailing-slash.jar",
 			"hello-secret-trailing-slash-0-length-locals.jar",
+			"hello-txt-stored.jar",
+			"hello-txt-type-0.jar",
 	})
 	public void testJvmCanRecoverData(String name) {
 		try {

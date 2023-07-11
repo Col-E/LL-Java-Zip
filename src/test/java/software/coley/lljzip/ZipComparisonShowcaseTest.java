@@ -46,6 +46,8 @@ public class ZipComparisonShowcaseTest {
 			"hello-secret-trailing-slash-0-length-locals.jar",
 			"hello-total-junk.jar",
 			"hello-total-junk-large.jar",
+			"hello-txt-stored.jar",
+			"hello-txt-type-0.jar",
 			"hello-wrong-local-compression.jar",
 			"hello-zeroed-locals.jar",
 	})
