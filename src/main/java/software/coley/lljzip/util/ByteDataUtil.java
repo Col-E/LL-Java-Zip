@@ -299,7 +299,7 @@ public class ByteDataUtil {
 	public static ByteBuffer sliceExact(ByteBuffer data, int start, int end) {
 		ByteBuffer slice = data.slice();
 		slice = ((ByteBuffer) ((Buffer)slice).position(start)).slice();
-		slice.limit(end - start);
+		((Buffer)slice).limit(end - start);
 		return slice.order(data.order());
 	}
 
