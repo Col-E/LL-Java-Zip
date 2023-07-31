@@ -65,7 +65,7 @@ public final class BufferData implements ByteData {
 		if (buffer.hasArray()) {
 			out.write(buffer.array(), buffer.arrayOffset() + buffer.position(), remaining);
 		} else {
-			buffer.mark();
+			((Buffer)buffer).mark();
 			int copyThreshold = buf.length;
 			while (remaining != 0) {
 				int length = Math.min(copyThreshold, remaining);
@@ -73,7 +73,7 @@ public final class BufferData implements ByteData {
 				out.write(buf, 0, length);
 				remaining -= length;
 			}
-			buffer.reset();
+			((Buffer)buffer).reset();
 		}
 	}
 
