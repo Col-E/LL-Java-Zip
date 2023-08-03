@@ -59,10 +59,11 @@ public class JvmZipReader extends AbstractZipReader {
 		zip.addPart(end);
 
 		// Read central directories (going from the back to the front) up until the preceding ZIP file (if any)
+		// but not surpassing the declared cen directory offset in the end of central directory header.
 		long len = data.length();
 		long centralDirectoryOffset = len - ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER.length;
 		long maxRelativeOffset = 0;
-		long centralDirectoryOffsetScanEnd = Math.max(precedingEndOfCentralDirectory, 0);
+		long centralDirectoryOffsetScanEnd = Math.max(Math.max(precedingEndOfCentralDirectory, 0), end.getCentralDirectoryOffset());
 		while (centralDirectoryOffset > centralDirectoryOffsetScanEnd) {
 			centralDirectoryOffset = ByteDataUtil.lastIndexOfQuad(data, centralDirectoryOffset - 1L, ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER_QUAD);
 			if (centralDirectoryOffset >= 0L) {
