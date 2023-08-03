@@ -31,6 +31,8 @@ public class ZipComparisonShowcaseTest {
 			"hello.jar",
 			"hello-concat.jar",
 			"hello-concat-junkheader.jar",
+			"hello-end-declares-0-entries.jar",
+			"hello-end-declares-0-entries-0-offset.jar",
 			"hello-junk-dir-length.jar",
 			"hello-junk-eocd.jar",
 			"hello-junk-local-length.jar",

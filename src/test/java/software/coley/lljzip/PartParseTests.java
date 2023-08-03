@@ -110,6 +110,8 @@ public class PartParseTests {
 
 	@ParameterizedTest
 	@ValueSource(strings = {
+			"hello-end-declares-0-entries.jar",
+			"hello-end-declares-0-entries-0-offset.jar",
 			"hello-junk-dir-length.jar",
 			"hello-junk-eocd.jar",
 			"hello-junk-local-length.jar",
