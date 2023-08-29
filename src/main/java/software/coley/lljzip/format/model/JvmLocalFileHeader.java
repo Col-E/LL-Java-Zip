@@ -105,7 +105,6 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 		crc32 = linkedDirectoryFileHeader.crc32;
 		fileNameLength = linkedDirectoryFileHeader.fileNameLength;
 		fileName = linkedDirectoryFileHeader.fileName;
-		extraField = linkedDirectoryFileHeader.extraField;
 
 		// The sizes are not used by the JVM parser.
 		// It just says 'go until the next header'.
