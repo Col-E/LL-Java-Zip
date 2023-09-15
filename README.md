@@ -50,7 +50,45 @@ implementation group: 'software.coley', name: 'lljzip', version: zipVersion
 implementation "software.coley:lljzip:${zipVersion}"
 ```
 
-For example usage see the [tests](src/test/java/software/coley/lljzip).
+```java
+// ZipIO offers a number of different utility calls for using different ZipReader implementations
+ZipArchive archive = ZipIO.readJvm(path);
+
+// Local files have the actual file data/bytes.
+// These entries mirror data also declared in central directory entries.
+List<LocalFileHeader> localFiles = archive.getLocalFiles();
+for (LocalFileHeader localFile : localFiles) {
+	// Data model mirrors how a byte-buffer works.
+	ByteData data = localFile.getFileData();
+	
+	// You can extract the data to raw byte[]
+	byte[] decompressed = ZipCompressions.decompress(localFile);
+	
+	// Or do so with a specific decompressor implementation
+	byte[] decompressed = localFile.decompress(DeflateDecompressor.INSTANCE);
+}
+
+// Typically used for authoritative definitions of properties.
+// Some ZIP logic will ignore properties of 'LocalFileHeader' values and use these instead.
+//  - Try using a hex editor to play around with this idea. Plenty of samples in the test cases to look at.
+List<CentralDirectoryFileHeader> centralDirectories = archive.getCentralDirectories();
+
+// Information about the archive and its contents.
+EndOfCentralDirectory end = archive.getEnd();
+```
+
+For more detailed example usage see the [tests](src/test/java/software/coley/lljzip).
+
+> How does each `ZipReader` implementation map to standard Java ZIP handling?
+
+If you're looking to see which implementation models different ways of reading ZIP files in Java, here's a table for reference:
+
+| Java closest equivalent | LL-Java-Zip                                        |
+|-------------------------|----------------------------------------------------|
+| `ZipFile`               | `JvmZipReader` / `ZipIO.readJvm(...)`              |
+| `ZipInputSstream`       | `ForwardScanZipReader` / `ZipIO.readStandard(...)` |
+| N/A                     | `NaiveLocalFileZipReader` / `ZipIO.readNaive(...)` |
+
 
 ## Building
 
