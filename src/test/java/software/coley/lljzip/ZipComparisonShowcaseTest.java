@@ -32,6 +32,7 @@ public class ZipComparisonShowcaseTest {
 	@ParameterizedTest
 	@ValueSource(strings = {
 			"hello.jar",
+			"hello.png",
 			"hello-concat.jar",
 			"hello-concat-junkheader.jar",
 			"hello-copyjar-at-head.jar",
