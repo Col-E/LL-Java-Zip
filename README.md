@@ -9,7 +9,7 @@ A closer to the spec implementation of ZIP parsing for Java.
 
 The notes and structure outlines are the basis for most of LLJ-ZIP.
 
-**[JVM zip parsing](https://github.com/openjdk/jdk/blob/739769c8fc4b496f08a92225a12d07414537b6c0/src/java.base/share/native/libjli/parse_manifest.c#L120)**
+**[JVM zip parsing](https://github.com/openjdk/jdk/tree/6701eba736ac51db4b0d0d7db6c7bdd4ae8a1c16/src/java.base/share/native/libzip) & [JLI](https://github.com/openjdk/jdk/blob/739769c8fc4b496f08a92225a12d07414537b6c0/src/java.base/share/native/libjli/parse_manifest.c#L120)**
 
 The JVM zip reader implementation is based off this piece.
 
