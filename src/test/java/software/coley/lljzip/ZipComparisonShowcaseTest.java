@@ -26,6 +26,9 @@ import java.util.zip.ZipInputStream;
 @SuppressWarnings("ConstantValue")
 @Disabled("only used for demonstration purposes, and does not make any assertions")
 public class ZipComparisonShowcaseTest {
+	// Flag to toggle skipping ZipEntry.isDirectory() values, which you see a lot of in application usage.
+	private static final boolean SKIP_DIRS = true;
+
 	@ParameterizedTest
 	@ValueSource(strings = {
 			"hello.jar",
@@ -33,6 +36,7 @@ public class ZipComparisonShowcaseTest {
 			"hello-concat-junkheader.jar",
 			"hello-copyjar-at-head.jar",
 			"hello-copyjar-at-tail.jar",
+			"hello-deceptive.jar",
 			"hello-end-declares-0-entries.jar",
 			"hello-end-declares-0-entries-0-offset.jar",
 			"hello-jar-in-in-jar-in-jar-in-jar-in-jar.jar",
@@ -53,6 +57,9 @@ public class ZipComparisonShowcaseTest {
 			"hello-total-junk-large.jar",
 			"hello-txt-stored.jar",
 			"hello-txt-type-0.jar",
+			"hello-wrong-crc-both.jar",
+			"hello-wrong-crc-central.jar",
+			"hello-wrong-crc-local.jar",
 			"hello-wrong-local-compression.jar",
 			"hello-zeroed-locals.jar",
 	})
@@ -100,7 +107,7 @@ public class ZipComparisonShowcaseTest {
 			ZipInputStream zipInputStream = new ZipInputStream(Files.newInputStream(path));
 			ZipEntry entry;
 			while ((entry = zipInputStream.getNextEntry()) != null) {
-				if (entry.isDirectory())
+				if (SKIP_DIRS && entry.isDirectory())
 					continue;
 				ByteArrayOutputStream dataOut = new ByteArrayOutputStream();
 				byte[] buffer = new byte[2048];
@@ -123,7 +130,7 @@ public class ZipComparisonShowcaseTest {
 				Enumeration<? extends ZipEntry> zipEntries = zipFile.entries();
 				while (zipEntries.hasMoreElements()) {
 					ZipEntry entry = zipEntries.nextElement();
-					if (entry.isDirectory())
+					if (SKIP_DIRS && entry.isDirectory())
 						continue;
 					InputStream inputStream = zipFile.getInputStream(entry);
 					ByteArrayOutputStream dataOut = new ByteArrayOutputStream();
