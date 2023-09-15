@@ -59,14 +59,14 @@ ZipArchive archive = ZipIO.readJvm(path);
 // These entries mirror data also declared in central directory entries.
 List<LocalFileHeader> localFiles = archive.getLocalFiles();
 for (LocalFileHeader localFile : localFiles) {
-	// Data model mirrors how a byte-buffer works.
-	ByteData data = localFile.getFileData();
-	
-	// You can extract the data to raw byte[]
-	byte[] decompressed = ZipCompressions.decompress(localFile);
-	
-	// Or do so with a specific decompressor implementation
-	byte[] decompressed = localFile.decompress(DeflateDecompressor.INSTANCE);
+    // Data model mirrors how a byte-buffer works.
+    ByteData data = localFile.getFileData();
+    
+    // You can extract the data to raw byte[]
+    byte[] decompressed = ZipCompressions.decompress(localFile);
+    
+    // Or do so with a specific decompressor implementation
+    byte[] decompressed = localFile.decompress(DeflateDecompressor.INSTANCE);
 }
 
 // Typically used for authoritative definitions of properties.
