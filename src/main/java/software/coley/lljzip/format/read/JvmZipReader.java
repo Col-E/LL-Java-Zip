@@ -111,9 +111,13 @@ public class JvmZipReader extends AbstractZipReader {
 			while (jvmBaseFileOffset >= 0L) {
 				// Check that the PK discovered represents a valid zip part
 				try {
-					if (data.getInt(jvmBaseFileOffset) == ZipPatterns.LOCAL_FILE_HEADER_QUAD)
-						new LocalFileHeader().read(data, jvmBaseFileOffset);
-					else if (data.getInt(jvmBaseFileOffset) == ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER_QUAD)
+					if (data.getInt(jvmBaseFileOffset) == ZipPatterns.LOCAL_FILE_HEADER_QUAD) {
+						LocalFileHeader localFileHeader = new LocalFileHeader();
+						localFileHeader.read(data, jvmBaseFileOffset);
+						if (localFileHeader.getVersionNeededToExtract() > 80) {
+							throw new IllegalStateException("Bogus LocalFileHeader");
+						}
+					} else if (data.getInt(jvmBaseFileOffset) == ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER_QUAD)
 						new CentralDirectoryFileHeader().read(data, jvmBaseFileOffset);
 					else
 						throw new IllegalStateException("No match for LocalFileHeader/CentralDirectoryFileHeader");

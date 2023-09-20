@@ -198,6 +198,17 @@ public class PartParseTests {
 		}
 	}
 
+	@Test
+	void testResourcePack() {
+		try (ZipArchive zipJvm = ZipIO.readJvm(Paths.get("src/test/resources/resource-pack"))) {
+			assertNotNull(zipJvm);
+			assertTrue(hasFile(zipJvm, "pack.png"));
+			assertEquals(2845, zipJvm.getLocalFileByName("pack.png").getFileData().length());
+		} catch (IOException ex) {
+			fail(ex);
+		}
+	}
+
 	private static boolean hasFile(ZipArchive zip, String name) {
 		return !zip.getNameFilteredLocalFiles(name::equals).isEmpty();
 	}
