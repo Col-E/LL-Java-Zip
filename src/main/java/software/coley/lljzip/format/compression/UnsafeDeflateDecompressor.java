@@ -90,7 +90,7 @@ public class UnsafeDeflateDecompressor implements Decompressor {
 			} while (true);
 		} catch (DataFormatException e) {
 			String s = e.getMessage();
-			throw (ZipException) new ZipException(s != null ? null : "Invalid ZLIB data format").initCause(e);
+			throw (ZipException) new ZipException(s != null ? s : "Invalid ZLIB data format").initCause(e);
 		} finally {
 			end:
 			{
