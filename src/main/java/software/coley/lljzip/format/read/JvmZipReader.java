@@ -37,7 +37,8 @@ public class JvmZipReader extends AbstractZipReader {
 	/**
 	 * New reader with given allocator.
 	 *
-	 * @param allocator Allocator to use.
+	 * @param allocator
+	 * 		Allocator to use.
 	 */
 	public JvmZipReader(@Nonnull ZipPartAllocator allocator) {
 		super(allocator);
@@ -107,7 +108,13 @@ public class JvmZipReader extends AbstractZipReader {
 		// or if the prior ZIP detection was bogus.
 		if (priorZipEndWasBogus || precedingEndOfCentralDirectory == -1L) {
 			// There was no match for a prior end part. We will seek forwards until finding a *VALID* PK starting header.
-			jvmBaseFileOffset = ByteDataUtil.indexOfWord(data, 0, ZipPatterns.PK_WORD);
+			//  - Java's zip parser does not always start from zero. It uses the computation:
+			//      locpos = (end.endpos - end.cenlen) - end.cenoff;
+			//  - This computation is taken from: ZipFile.Source#initCEN
+			jvmBaseFileOffset = (end.offset() - end.getCentralDirectorySize()) - end.getCentralDirectoryOffset();
+
+			// Now that we have the start offset, scan forward. We can match the current value as well.
+			jvmBaseFileOffset = ByteDataUtil.indexOfWord(data, jvmBaseFileOffset, ZipPatterns.PK_WORD);
 			while (jvmBaseFileOffset >= 0L) {
 				// Check that the PK discovered represents a valid zip part
 				try {
