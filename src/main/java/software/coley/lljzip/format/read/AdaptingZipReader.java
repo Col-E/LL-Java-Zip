@@ -15,7 +15,7 @@ import java.util.zip.ZipFile;
 
 /**
  * A zip reader implementation delegating all the work to {@link ZipFile}.
- * <p/>
+ * <br>
  * This will write temporary files to disk in order to satisfy constructor requirements if you use
  * the standard {@link ZipReader} methods. Instead directly call {@link #fill(ZipArchive, File)} or
  * {@link #fill(ZipArchive, ZipFile)}.
