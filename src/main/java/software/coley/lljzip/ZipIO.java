@@ -3,10 +3,7 @@ package software.coley.lljzip;
 import software.coley.lljzip.format.model.CentralDirectoryFileHeader;
 import software.coley.lljzip.format.model.EndOfCentralDirectory;
 import software.coley.lljzip.format.model.ZipArchive;
-import software.coley.lljzip.format.read.ForwardScanZipReader;
-import software.coley.lljzip.format.read.JvmZipReader;
-import software.coley.lljzip.format.read.NaiveLocalFileZipReader;
-import software.coley.lljzip.format.read.ZipReader;
+import software.coley.lljzip.format.read.*;
 import software.coley.lljzip.util.BufferData;
 import software.coley.lljzip.util.ByteData;
 import software.coley.lljzip.util.FileMapUtil;
@@ -15,6 +12,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.zip.ZipFile;
 
 /**
  * IO wrappers for reading {@link ZipArchive} contents.
@@ -64,7 +62,7 @@ public class ZipIO {
 	 * @param data
 	 * 		Zip path.
 	 *
-	 * @return Archive from bytes.
+	 * @return Archive from path.
 	 *
 	 * @throws IOException
 	 * 		When the archive bytes cannot be read from, usually indicating a malformed zip.
@@ -109,7 +107,7 @@ public class ZipIO {
 	 * @param data
 	 * 		Zip path.
 	 *
-	 * @return Archive from bytes.
+	 * @return Archive from path.
 	 *
 	 * @throws IOException
 	 * 		When the archive bytes cannot be read from, usually indicating a malformed zip.
@@ -157,13 +155,29 @@ public class ZipIO {
 	 * @param path
 	 * 		Zip path.
 	 *
-	 * @return Archive from bytes.
+	 * @return Archive from path.
 	 *
 	 * @throws IOException
 	 * 		When the archive bytes cannot be read from, usually indicating a malformed zip.
 	 */
 	public static ZipArchive readJvm(Path path) throws IOException {
 		return read(path, new JvmZipReader());
+	}
+
+	/**
+	 * Creates an archive using the {@link AdaptingZipReader} which delegates work to {@link ZipFile}.
+	 *
+	 * @param path
+	 * 		Zip path.
+	 *
+	 * @return Archive from path.
+	 *
+	 * @throws IOException
+	 */
+	public static ZipArchive readAdaptingIO(Path path) throws IOException {
+		ZipArchive archive = new ZipArchive();
+		AdaptingZipReader.fill(archive, path.toFile());
+		return archive;
 	}
 
 	/**
@@ -189,7 +203,7 @@ public class ZipIO {
 	 * @param strategy
 	 * 		Zip reader implementation.
 	 *
-	 * @return Archive from bytes.
+	 * @return Archive from path.
 	 *
 	 * @throws IOException
 	 * 		When the archive bytes cannot be read from, usually indicating a malformed zip.

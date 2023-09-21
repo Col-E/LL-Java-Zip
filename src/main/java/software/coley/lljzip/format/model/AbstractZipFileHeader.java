@@ -251,7 +251,7 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 */
 	public String getFileNameAsString() {
 		String fileNameCache = this.fileNameCache;
-		if (fileNameCache == null) {
+		if (fileNameCache == null && fileName != null) {
 			return this.fileNameCache = ByteDataUtil.toString(fileName.get());
 		}
 		return fileNameCache;
@@ -278,7 +278,7 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 */
 	public String getExtraFieldAsString() {
 		String fileCommentCache = this.extraFieldCache;
-		if (fileCommentCache == null) {
+		if (fileCommentCache == null && extraField != null) {
 			return this.extraFieldCache = ByteDataUtil.toString(extraField.get());
 		}
 		return fileCommentCache;
