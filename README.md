@@ -25,13 +25,14 @@ But that's not all it does. That's just what that one comment says. Some other f
 
 ## Additional features
 
-- Reads ZIP files using Unsafe backed mapped files.
+- Reads ZIP files using `Unsafe` backed mapped files.
     - Using `FileChannel.map` yields `MappedByteBuffer` which uses `int` values, limiting files up to about 2GB
     - Our `UnsafeMappedFile` implementation uses `long` which far exceeds the GB file size range
 - Highly configurable, offering 3 ZIP reading strategies out of the box _(See `ZipIO` for convenience calls)_
     - Std / Forward scanning: Scans for `EndOfCentralDirectory` from the front of the file, like many other tools
     - Naive: Scans only for `LocalFileHeader` values from the front of the file, the fastest implementation, but obviously naive
     - JVM: Matches the behavior of the JVM's ZIP parser, including a number of odd edge cases. Useful for opening JAR files to mirror `java -jar <path>` behavior.
+- Inputs do not have to be on-disk to be read, you can supply zip data in-memory.
 
 ## Usage
 
@@ -90,6 +91,7 @@ If you're looking to see which implementation models different ways of reading Z
 | `ZipInputSstream`       | `ForwardScanZipReader` / `ZipIO.readStandard(...)` |
 | N/A                     | `NaiveLocalFileZipReader` / `ZipIO.readNaive(...)` |
 
+There is also a `ZipFile` delegating reader `AdaptingZipReader` but it should primarily be used only for debugging purposes.
 
 ## Building
 
