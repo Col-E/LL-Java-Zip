@@ -26,12 +26,24 @@ import java.util.TreeSet;
  */
 public class JvmZipReader extends AbstractZipReader {
 	private static final Logger logger = LoggerFactory.getLogger(JvmZipReader.class);
+	private final boolean skipRevisitedCenToLocalLinks;
 
 	/**
 	 * New reader with jvm allocator.
 	 */
 	public JvmZipReader() {
-		this(new JvmZipPartAllocator());
+		this(new JvmZipPartAllocator(), true);
+	}
+
+	/**
+	 * New reader with jvm allocator.
+	 *
+	 * @param skipRevisitedCenToLocalLinks
+	 * 		Flag to skip creating duplicate {@link LocalFileHeader} entries if multiple
+	 * 		{@link CentralDirectoryFileHeader} point to the same location.
+	 */
+	public JvmZipReader(boolean skipRevisitedCenToLocalLinks) {
+		this(new JvmZipPartAllocator(), skipRevisitedCenToLocalLinks);
 	}
 
 	/**
@@ -39,9 +51,13 @@ public class JvmZipReader extends AbstractZipReader {
 	 *
 	 * @param allocator
 	 * 		Allocator to use.
+	 * @param skipRevisitedCenToLocalLinks
+	 * 		Flag to skip creating duplicate {@link LocalFileHeader} entries if multiple
+	 * 		{@link CentralDirectoryFileHeader} point to the same location.
 	 */
-	public JvmZipReader(@Nonnull ZipPartAllocator allocator) {
+	public JvmZipReader(@Nonnull ZipPartAllocator allocator, boolean skipRevisitedCenToLocalLinks) {
 		super(allocator);
+		this.skipRevisitedCenToLocalLinks = skipRevisitedCenToLocalLinks;
 	}
 
 	@Override
@@ -159,24 +175,31 @@ public class JvmZipReader extends AbstractZipReader {
 		for (CentralDirectoryFileHeader directory : zip.getCentralDirectories()) {
 			long relative = directory.getRelativeOffsetOfLocalHeader();
 			long offset = jvmBaseFileOffset + relative;
-			if (!offsets.contains(offset) && data.getInt(offset) == ZipPatterns.LOCAL_FILE_HEADER_QUAD) {
-				try {
-					LocalFileHeader file = newLocalFileHeader();
-					if (file instanceof JvmLocalFileHeader) {
-						((JvmLocalFileHeader) file).setOffsets(entryOffsets);
-					}
-					file.read(data, offset);
-					directory.link(file);
-					file.link(directory);
-					file.adoptLinkedCentralDirectoryValues();
-					zip.addPart(file);
-					postProcessLocalFileHeader(file);
-					offsets.add(offset);
-				} catch (Exception ex) {
-					logger.warn("Failed to read 'local file header' at offset[{}]", offset, ex);
-				}
-			} else {
+			boolean isNewOffset = offsets.add(offset);
+			if (!isNewOffset) {
+				logger.warn("Central-Directory-File-Header's offset[{}] was already visited", offset);
+				if (skipRevisitedCenToLocalLinks)
+					continue;
+			}
+
+			if (data.getInt(offset) != ZipPatterns.LOCAL_FILE_HEADER_QUAD) {
 				logger.warn("Central-Directory-File-Header's offset[{}] to Local-File-Header does not match the Local-File-Header magic!", offset);
+				continue;
+			}
+
+			try {
+				LocalFileHeader file = newLocalFileHeader();
+				if (file instanceof JvmLocalFileHeader) {
+					((JvmLocalFileHeader) file).setOffsets(entryOffsets);
+				}
+				file.read(data, offset);
+				directory.link(file);
+				file.link(directory);
+				file.adoptLinkedCentralDirectoryValues();
+				zip.addPart(file);
+				postProcessLocalFileHeader(file);
+			} catch (Exception ex) {
+				logger.warn("Failed to read 'local file header' at offset[{}]", offset, ex);
 			}
 		}
 
