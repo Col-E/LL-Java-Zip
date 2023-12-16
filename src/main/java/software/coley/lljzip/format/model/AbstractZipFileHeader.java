@@ -225,8 +225,9 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	}
 
 	/**
-	 * Should match {@link LocalFileHeader#getFileName()} but is not a strict requirement.
-	 * If they do not match, trust this value instead.
+	 * The return value of the CentralDirectoryFileHeader should match the file name of the
+	 * LocalFileHeader but is not a strict requirement.
+	 * If they do not match, the central directory file name should be trusted instead.
 	 *
 	 * @return File name.
 	 */
@@ -244,7 +245,8 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	}
 
 	/**
-	 * Should match {@link CentralDirectoryFileHeader#getFileName()} but is not a strict requirement.
+	 * The return value of the CentralDirectoryFileHeader should match the file name of the
+	 * LocalFileHeader but is not a strict requirement.
 	 * If they do not match, the central directory file name should be trusted instead.
 	 *
 	 * @return File name.
