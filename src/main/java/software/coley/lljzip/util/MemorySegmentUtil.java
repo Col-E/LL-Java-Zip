@@ -1,7 +1,7 @@
 package software.coley.lljzip.util;
 
 import software.coley.lljzip.format.model.ZipPart;
-import software.coley.lljzip.util.lazy.LazyByteData;
+import software.coley.lljzip.util.lazy.LazyMemorySegment;
 import software.coley.lljzip.util.lazy.LazyInt;
 import software.coley.lljzip.util.lazy.LazyLong;
 
@@ -399,8 +399,8 @@ public class MemorySegmentUtil {
 	 *
 	 * @return Lazily populated slice.
 	 */
-	public static LazyByteData readLazySlice(MemorySegment data, long headerOffset, LazyInt localOffset, LazyInt length) {
-		return new LazyByteData(() -> {
+	public static LazyMemorySegment readLazySlice(MemorySegment data, long headerOffset, LazyInt localOffset, LazyInt length) {
+		return new LazyMemorySegment(() -> {
 			return data.asSlice(headerOffset + localOffset.get(), length.get());
 		});
 	}
@@ -415,8 +415,8 @@ public class MemorySegmentUtil {
 	 *
 	 * @return Lazily populated long slice.
 	 */
-	public static LazyByteData readLazyLongSlice(MemorySegment data, long headerOffset, LazyInt localOffset, LazyLong length) {
-		return new LazyByteData(() -> {
+	public static LazyMemorySegment readLazyLongSlice(MemorySegment data, long headerOffset, LazyInt localOffset, LazyLong length) {
+		return new LazyMemorySegment(() -> {
 			return data.asSlice(headerOffset + localOffset.get(), length.get());
 		});
 	}
@@ -431,8 +431,8 @@ public class MemorySegmentUtil {
 	 *
 	 * @return Lazily populated long slice.
 	 */
-	public static LazyByteData readLazyLongSlice(MemorySegment data, long headerOffset, LazyLong localOffset, LazyLong length) {
-		return new LazyByteData(() -> {
+	public static LazyMemorySegment readLazyLongSlice(MemorySegment data, long headerOffset, LazyLong localOffset, LazyLong length) {
+		return new LazyMemorySegment(() -> {
 			return data.asSlice(headerOffset + localOffset.get(), length.get());
 		});
 	}
@@ -447,8 +447,8 @@ public class MemorySegmentUtil {
 	 *
 	 * @return Lazily populated long slice.
 	 */
-	public static LazyByteData readLazyLongSlice(MemorySegment data, long headerOffset, LazyInt localOffset, long length) {
-		return new LazyByteData(() -> {
+	public static LazyMemorySegment readLazyLongSlice(MemorySegment data, long headerOffset, LazyInt localOffset, long length) {
+		return new LazyMemorySegment(() -> {
 			return data.asSlice(headerOffset + localOffset.get(), length);
 		});
 	}

@@ -3,7 +3,7 @@ package software.coley.lljzip.format.model;
 import software.coley.lljzip.format.compression.Decompressor;
 import software.coley.lljzip.format.compression.ZipCompressions;
 import software.coley.lljzip.util.MemorySegmentUtil;
-import software.coley.lljzip.util.lazy.LazyByteData;
+import software.coley.lljzip.util.lazy.LazyMemorySegment;
 import software.coley.lljzip.util.lazy.LazyInt;
 import software.coley.lljzip.util.lazy.LazyLong;
 
@@ -28,8 +28,8 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	protected LazyLong uncompressedSize;
 	protected LazyInt fileNameLength;
 	protected LazyInt extraFieldLength;
-	protected LazyByteData fileName;
-	protected LazyByteData extraField;
+	protected LazyMemorySegment fileName;
+	protected LazyMemorySegment extraField;
 
 	// Offset into the data this part is read from
 	protected transient long offset = -1L;

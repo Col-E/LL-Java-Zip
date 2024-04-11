@@ -3,7 +3,7 @@ package software.coley.lljzip.format.model;
 import software.coley.lljzip.format.compression.Decompressor;
 import software.coley.lljzip.format.read.ZipReader;
 import software.coley.lljzip.util.MemorySegmentUtil;
-import software.coley.lljzip.util.lazy.LazyByteData;
+import software.coley.lljzip.util.lazy.LazyMemorySegment;
 import software.coley.lljzip.util.lazy.LazyInt;
 import software.coley.lljzip.util.lazy.LazyLong;
 
@@ -42,7 +42,7 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 	protected transient CentralDirectoryFileHeader linkedDirectoryFileHeader;
 
 	// LocalFileHeader spec (plus common elements between this and central file)
-	protected LazyByteData fileData;
+	protected LazyMemorySegment fileData;
 
 	// Caches
 	protected transient LazyLong fileDataLength;

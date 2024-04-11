@@ -1,7 +1,7 @@
 package software.coley.lljzip.format.model;
 
 import software.coley.lljzip.util.MemorySegmentUtil;
-import software.coley.lljzip.util.lazy.LazyByteData;
+import software.coley.lljzip.util.lazy.LazyMemorySegment;
 import software.coley.lljzip.util.lazy.LazyInt;
 import software.coley.lljzip.util.lazy.LazyLong;
 
@@ -43,7 +43,7 @@ public class CentralDirectoryFileHeader extends AbstractZipFileHeader {
 	// CentralDirectoryFileHeader spec (plus common elements between this and local file)
 	private LazyInt versionMadeBy;
 	private LazyInt fileCommentLength;
-	private LazyByteData fileComment;
+	private LazyMemorySegment fileComment;
 	private LazyInt diskNumberStart;
 	private LazyInt internalFileAttributes;
 	private LazyInt externalFileAttributes;

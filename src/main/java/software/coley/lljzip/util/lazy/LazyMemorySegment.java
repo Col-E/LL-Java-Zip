@@ -8,14 +8,14 @@ import java.util.function.Supplier;
 /**
  * Lazy {@link MemorySegment} getter.
  */
-public class LazyByteData extends Lazy<Supplier<MemorySegment>> {
+public class LazyMemorySegment extends Lazy<Supplier<MemorySegment>> {
 	private MemorySegment value;
 
 	/**
 	 * @param lookup
 	 * 		Lazy lookup.
 	 */
-	public LazyByteData(@Nonnull Supplier<MemorySegment> lookup) {
+	public LazyMemorySegment(@Nonnull Supplier<MemorySegment> lookup) {
 		super(lookup);
 	}
 
@@ -23,8 +23,8 @@ public class LazyByteData extends Lazy<Supplier<MemorySegment>> {
 	 * @return Copy.
 	 */
 	@Nonnull
-	public LazyByteData copy() {
-		LazyByteData copy = new LazyByteData(lookup);
+	public LazyMemorySegment copy() {
+		LazyMemorySegment copy = new LazyMemorySegment(lookup);
 		copy.id = id;
 		if (set) copy.set(value);
 		return copy;
@@ -61,7 +61,7 @@ public class LazyByteData extends Lazy<Supplier<MemorySegment>> {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 
-		LazyByteData that = (LazyByteData) o;
+		LazyMemorySegment that = (LazyMemorySegment) o;
 
 		return Objects.equals(get(), that.get());
 	}
