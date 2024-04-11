@@ -1,10 +1,9 @@
 package software.coley.lljzip.format.model;
 
-import software.coley.lljzip.util.BufferData;
-import software.coley.lljzip.util.ByteData;
-import software.coley.lljzip.util.ByteDataUtil;
+import software.coley.lljzip.util.MemorySegmentUtil;
 
 import javax.annotation.Nonnull;
+import java.lang.foreign.MemorySegment;
 import java.util.Objects;
 
 
@@ -36,7 +35,7 @@ public class EndOfCentralDirectory implements ZipPart, ZipRead {
 	private long centralDirectorySize;
 	private long centralDirectoryOffset;
 	private int zipCommentLength;
-	private ByteData zipComment;
+	private MemorySegment zipComment;
 	private transient String zipCommentCache;
 
 	/**
@@ -59,21 +58,21 @@ public class EndOfCentralDirectory implements ZipPart, ZipRead {
 	}
 
 	@Override
-	public void read(@Nonnull ByteData data, long offset) {
+	public void read(@Nonnull MemorySegment data, long offset) {
 		this.offset = offset;
-		diskNumber = ByteDataUtil.readWord(data, offset + 4);
-		centralDirectoryStartDisk = ByteDataUtil.readWord(data, offset + 6);
-		centralDirectoryStartOffset = ByteDataUtil.readWord(data, offset + 8);
-		numEntries = ByteDataUtil.readWord(data, offset + 10);
-		setCentralDirectorySize(ByteDataUtil.readQuad(data, offset + 12));
-		setCentralDirectoryOffset(ByteDataUtil.readQuad(data, offset + 16));
-		setZipCommentLength(ByteDataUtil.readWord(data, offset + 20));
-		zipComment = data.sliceOf(offset + 22, zipCommentLength);
+		diskNumber = MemorySegmentUtil.readWord(data, offset + 4);
+		centralDirectoryStartDisk = MemorySegmentUtil.readWord(data, offset + 6);
+		centralDirectoryStartOffset = MemorySegmentUtil.readWord(data, offset + 8);
+		numEntries = MemorySegmentUtil.readWord(data, offset + 10);
+		setCentralDirectorySize(MemorySegmentUtil.readQuad(data, offset + 12));
+		setCentralDirectoryOffset(MemorySegmentUtil.readQuad(data, offset + 16));
+		setZipCommentLength(MemorySegmentUtil.readWord(data, offset + 20));
+		zipComment = data.asSlice(offset + 22, zipCommentLength);
 	}
 
 	@Override
 	public long length() {
-		return 22L + zipComment.length();
+		return 22L + zipComment.byteSize();
 	}
 
 	@Nonnull
@@ -197,7 +196,7 @@ public class EndOfCentralDirectory implements ZipPart, ZipRead {
 	/**
 	 * @return Optional comment, or empty string.
 	 */
-	public ByteData getZipComment() {
+	public MemorySegment getZipComment() {
 		return zipComment;
 	}
 
@@ -205,9 +204,9 @@ public class EndOfCentralDirectory implements ZipPart, ZipRead {
 	 * @param zipComment
 	 * 		Optional comment, or empty string.
 	 */
-	public void setZipComment(ByteData zipComment) {
+	public void setZipComment(MemorySegment zipComment) {
 		if (zipComment == null)
-			zipComment = BufferData.wrap(new byte[0]);
+			zipComment = MemorySegment.ofArray(new byte[0]);
 		this.zipComment = zipComment;
 	}
 
@@ -217,7 +216,7 @@ public class EndOfCentralDirectory implements ZipPart, ZipRead {
 	public String getZipCommentAsString() {
 		String zipCommentCache = this.zipCommentCache;
 		if (zipCommentCache == null) {
-			return this.zipCommentCache = ByteDataUtil.toString(zipComment);
+			return this.zipCommentCache = MemorySegmentUtil.toString(zipComment);
 		}
 		return zipCommentCache;
 	}

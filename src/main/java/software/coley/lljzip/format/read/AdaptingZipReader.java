@@ -2,12 +2,12 @@ package software.coley.lljzip.format.read;
 
 import software.coley.lljzip.format.model.AdaptingLocalFileHeader;
 import software.coley.lljzip.format.model.ZipArchive;
-import software.coley.lljzip.util.ByteData;
-import software.coley.lljzip.util.ByteDataUtil;
 
 import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.lang.foreign.MemorySegment;
 import java.nio.file.Files;
 import java.util.Enumeration;
 import java.util.zip.ZipEntry;
@@ -24,11 +24,23 @@ import java.util.zip.ZipFile;
  */
 public class AdaptingZipReader implements ZipReader {
 	@Override
-	public void read(@Nonnull ZipArchive zip, @Nonnull ByteData data) throws IOException {
+	public void read(@Nonnull ZipArchive zip, @Nonnull MemorySegment data) throws IOException {
 		// Java's ZipFile requires the data be on-disk
 		File temp = File.createTempFile("lljzip", ".tempzip");
 		try {
-			Files.write(temp.toPath(), ByteDataUtil.toByteArray(data));
+			try (OutputStream os = Files.newOutputStream(temp.toPath())) {
+				final int BUFFER_SIZE = 16384;
+				byte[] buf = new byte[BUFFER_SIZE];
+				MemorySegment wrapper = MemorySegment.ofArray(buf);
+				long offset = 0L;
+				long length = data.byteSize();
+				while (offset < length) {
+					int copyable = (int) Math.min(BUFFER_SIZE, length - offset);
+					MemorySegment.copy(data, offset, wrapper, 0, copyable);
+					os.write(buf, 0, copyable);
+					offset += length;
+				}
+			}
 			fill(zip, temp);
 		} finally {
 			temp.delete();

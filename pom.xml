@@ -97,13 +97,9 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <!-- When attempting to compile on higher Java versions, you may encounter
-                     some issues with Unsafe. In Intellij unset the 'use -release' under the
-                     javac compiler page and it'll happily compile once again
-                     -->
                 <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
+                    <source>22</source>
+                    <target>22</target>
                 </configuration>
             </plugin>
             <plugin>

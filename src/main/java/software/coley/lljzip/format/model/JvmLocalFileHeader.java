@@ -2,11 +2,11 @@ package software.coley.lljzip.format.model;
 
 import software.coley.lljzip.format.ZipPatterns;
 import software.coley.lljzip.format.compression.ZipCompressions;
-import software.coley.lljzip.util.ByteData;
-import software.coley.lljzip.util.ByteDataUtil;
+import software.coley.lljzip.util.MemorySegmentUtil;
 import software.coley.lljzip.util.lazy.LazyLong;
 
 import javax.annotation.Nonnull;
+import java.lang.foreign.MemorySegment;
 import java.util.NavigableSet;
 
 
@@ -32,7 +32,7 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 	}
 
 	@Override
-	public void read(@Nonnull ByteData data, long offset) {
+	public void read(@Nonnull MemorySegment data, long offset) {
 		super.read(data, offset);
 
 		// JVM file data reading does NOT use the compressed/uncompressed fields.
@@ -61,7 +61,7 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 			// The JVM technically allows the header to be excluded, so we split the offset fixing
 			// into two parts.
 			absoluteDataOffsetEnd -= 12;
-			if (data.getInt(absoluteDataOffsetEnd) == ZipPatterns.DATA_DESCRIPTOR_QUAD) {
+			if (MemorySegmentUtil.readQuad(data, absoluteDataOffsetEnd) == ZipPatterns.DATA_DESCRIPTOR_QUAD) {
 				absoluteDataOffsetEnd -= 4;
 			}
 		}
@@ -72,7 +72,7 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 		this.relativeDataOffsetEnd = relativeDataOffsetEnd;
 		fileDataLength = new LazyLong(() -> relativeDataOffsetEnd - relativeDataOffsetStart).withId("fileDataLength");
 
-		fileData = ByteDataUtil.readLazyLongSlice(data, offset,
+		fileData = MemorySegmentUtil.readLazyLongSlice(data, offset,
 				new LazyLong(() -> relativeDataOffsetStart), fileDataLength).withId("fileData");
 
 		// Update sizes where possible
@@ -130,7 +130,7 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 			// Data should not be overflowing into adjacent header entries.
 			// - If it is, the data here is likely intentionally tampered with to screw with parsers
 			if (fileDataLength < relativeDataOffsetEnd) {
-				fileData = ByteDataUtil.readLazyLongSlice(data, offset,
+				fileData = MemorySegmentUtil.readLazyLongSlice(data, offset,
 						new LazyLong(() -> relativeDataOffsetStart - offset),
 						new LazyLong(() -> fileDataLength)).withId("fileData");
 			}

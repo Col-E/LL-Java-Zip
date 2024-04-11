@@ -1,22 +1,21 @@
 package software.coley.lljzip.util.lazy;
 
-import software.coley.lljzip.util.ByteData;
-
 import javax.annotation.Nonnull;
+import java.lang.foreign.MemorySegment;
 import java.util.Objects;
 import java.util.function.Supplier;
 
 /**
- * Lazy {@link ByteData} getter.
+ * Lazy {@link MemorySegment} getter.
  */
-public class LazyByteData extends Lazy<Supplier<ByteData>> {
-	private ByteData value;
+public class LazyByteData extends Lazy<Supplier<MemorySegment>> {
+	private MemorySegment value;
 
 	/**
 	 * @param lookup
 	 * 		Lazy lookup.
 	 */
-	public LazyByteData(@Nonnull Supplier<ByteData> lookup) {
+	public LazyByteData(@Nonnull Supplier<MemorySegment> lookup) {
 		super(lookup);
 	}
 
@@ -35,7 +34,7 @@ public class LazyByteData extends Lazy<Supplier<ByteData>> {
 	 * @param value
 	 * 		Data value.
 	 */
-	public void set(@Nonnull ByteData value) {
+	public void set(@Nonnull MemorySegment value) {
 		set = true;
 		this.value = value;
 	}
@@ -44,7 +43,7 @@ public class LazyByteData extends Lazy<Supplier<ByteData>> {
 	 * @return Data value.
 	 */
 	@Nonnull
-	public ByteData get() {
+	public MemorySegment get() {
 		if (!set) {
 			value = lookup.get();
 			set = true;
@@ -54,7 +53,7 @@ public class LazyByteData extends Lazy<Supplier<ByteData>> {
 
 	@Override
 	public String toString() {
-		return id + " data[" + get().length() + "]";
+		return id + " data[" + get().byteSize() + "]";
 	}
 
 	@Override

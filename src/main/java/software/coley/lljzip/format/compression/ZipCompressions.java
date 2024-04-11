@@ -1,9 +1,9 @@
 package software.coley.lljzip.format.compression;
 
 import software.coley.lljzip.format.model.LocalFileHeader;
-import software.coley.lljzip.util.ByteData;
 
 import java.io.IOException;
+import java.lang.foreign.MemorySegment;
 
 /**
  * Constants for {@link LocalFileHeader#getCompressionMethod()}.
@@ -202,7 +202,7 @@ public interface ZipCompressions {
 	 * @throws IOException
 	 * 		When the decompression failed.
 	 */
-	static ByteData decompress(LocalFileHeader header) throws IOException {
+	static MemorySegment decompress(LocalFileHeader header) throws IOException {
 		int method = header.getCompressionMethod();
 		switch (method) {
 			case STORED:

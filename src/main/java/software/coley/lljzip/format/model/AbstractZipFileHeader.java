@@ -2,14 +2,14 @@ package software.coley.lljzip.format.model;
 
 import software.coley.lljzip.format.compression.Decompressor;
 import software.coley.lljzip.format.compression.ZipCompressions;
-import software.coley.lljzip.util.ByteData;
-import software.coley.lljzip.util.ByteDataUtil;
+import software.coley.lljzip.util.MemorySegmentUtil;
 import software.coley.lljzip.util.lazy.LazyByteData;
 import software.coley.lljzip.util.lazy.LazyInt;
 import software.coley.lljzip.util.lazy.LazyLong;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.lang.foreign.MemorySegment;
 
 /**
  * Common base for shared elements of {@link CentralDirectoryFileHeader} and {@link LocalFileHeader}.
@@ -35,7 +35,7 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	protected transient long offset = -1L;
 
 	// Data source that contents were read from.
-	protected transient ByteData data;
+	protected transient MemorySegment data;
 
 	// String cache values
 	private transient String fileNameCache;
@@ -45,7 +45,7 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * @return The associated backing data that this file header was read from.
 	 */
 	@Nullable
-	public ByteData getBackingData() {
+	public MemorySegment getBackingData() {
 		return data;
 	}
 
@@ -55,7 +55,7 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	}
 
 	@Override
-	public void read(@Nonnull ByteData data, long offset) {
+	public void read(@Nonnull MemorySegment data, long offset) {
 		this.data = data;
 		this.offset = offset;
 	}
@@ -230,7 +230,7 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 *
 	 * @return File name.
 	 */
-	public ByteData getFileName() {
+	public MemorySegment getFileName() {
 		return fileName.get();
 	}
 
@@ -238,7 +238,7 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * @param fileName
 	 * 		File name.
 	 */
-	public void setFileName(ByteData fileName) {
+	public void setFileName(MemorySegment fileName) {
 		this.fileName.set(fileName);
 		fileNameCache = null;
 	}
@@ -252,7 +252,7 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	public String getFileNameAsString() {
 		String fileNameCache = this.fileNameCache;
 		if (fileNameCache == null && fileName != null) {
-			return this.fileNameCache = ByteDataUtil.toString(fileName.get());
+			return this.fileNameCache = MemorySegmentUtil.toString(fileName.get());
 		}
 		return fileNameCache;
 	}
@@ -261,7 +261,7 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * @return May be used for extra compression information,
 	 * depending on the {@link #getCompressionMethod() compression method} used.
 	 */
-	public ByteData getExtraField() {
+	public MemorySegment getExtraField() {
 		return extraField.get();
 	}
 
@@ -269,7 +269,7 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * @param extraField
 	 * 		Extra field bytes.
 	 */
-	public void setExtraField(ByteData extraField) {
+	public void setExtraField(MemorySegment extraField) {
 		this.extraField.set(extraField);
 	}
 
@@ -279,7 +279,7 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	public String getExtraFieldAsString() {
 		String fileCommentCache = this.extraFieldCache;
 		if (fileCommentCache == null && extraField != null) {
-			return this.extraFieldCache = ByteDataUtil.toString(extraField.get());
+			return this.extraFieldCache = MemorySegmentUtil.toString(extraField.get());
 		}
 		return fileCommentCache;
 	}

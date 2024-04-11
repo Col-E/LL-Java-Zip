@@ -5,10 +5,10 @@ import org.objectweb.asm.ClassWriter;
 import software.coley.lljzip.format.compression.ZipCompressions;
 import software.coley.lljzip.format.model.LocalFileHeader;
 import software.coley.lljzip.format.model.ZipArchive;
-import software.coley.lljzip.util.ByteData;
-import software.coley.lljzip.util.ByteDataUtil;
+import software.coley.lljzip.util.MemorySegmentUtil;
 
 import java.io.IOException;
+import java.lang.foreign.MemorySegment;
 import java.util.function.Supplier;
 
 /**
@@ -38,7 +38,7 @@ public class JarInJarUtils {
 				// as we do on the root (that classes can be parsed)
 				handleJar(() -> {
 					try {
-						ByteData decompressed = ZipCompressions.decompress(lfh);
+						MemorySegment decompressed = ZipCompressions.decompress(lfh);
 						return ZipIO.readStandard(decompressed);
 					} catch (IOException ex) {
 						throw new IllegalStateException("Failed to read inner jar: " + entryName, ex);
@@ -58,7 +58,7 @@ public class JarInJarUtils {
 	 * 		When the class couldn't be parsed.
 	 */
 	public static void handleClass(String name, LocalFileHeader localFileHeader) throws IOException {
-		byte[] entryData = ByteDataUtil.toByteArray(ZipCompressions.decompress(localFileHeader));
+		byte[] entryData = MemorySegmentUtil.toByteArray(ZipCompressions.decompress(localFileHeader));
 		try {
 			ClassReader reader = new ClassReader(entryData);
 			reader.accept(new ClassWriter(0), 0);

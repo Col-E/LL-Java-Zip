@@ -10,7 +10,7 @@ import software.coley.lljzip.format.model.LocalFileHeader;
 import software.coley.lljzip.format.model.ZipArchive;
 import software.coley.lljzip.format.model.ZipPart;
 import software.coley.lljzip.format.read.ForwardScanZipReader;
-import software.coley.lljzip.util.ByteDataUtil;
+import software.coley.lljzip.util.MemorySegmentUtil;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
@@ -97,8 +97,8 @@ public class PartParseTests {
 			LocalFileHeader stdHello = zipStd.getLocalFileByName("Hello.class");
 			LocalFileHeader jvmHello = zipJvm.getLocalFileByName("Hello.class");
 			assertNotEquals(stdHello, jvmHello);
-			String stdHelloRaw = ByteDataUtil.toString(ZipCompressions.decompress(stdHello));
-			String jvmHelloRaw = ByteDataUtil.toString(ZipCompressions.decompress(jvmHello));
+			String stdHelloRaw = MemorySegmentUtil.toString(ZipCompressions.decompress(stdHello));
+			String jvmHelloRaw = MemorySegmentUtil.toString(ZipCompressions.decompress(jvmHello));
 			assertFalse(stdHelloRaw.isEmpty());
 			assertFalse(jvmHelloRaw.isEmpty());
 			assertTrue(stdHelloRaw.contains("Hello world"));
@@ -137,7 +137,7 @@ public class PartParseTests {
 			ZipArchive zip = ZipIO.readJvm(path);
 			List<LocalFileHeader> localFiles = zip.getNameFilteredLocalFiles(n -> n.contains(".class"));
 			assertEquals(1, localFiles.size(), "More than 1 class");
-			byte[] decompressed = ByteDataUtil.toByteArray(ZipCompressions.decompress(localFiles.get(0)));
+			byte[] decompressed = MemorySegmentUtil.toByteArray(ZipCompressions.decompress(localFiles.get(0)));
 			String decompressedStr = new String(decompressed);
 			assertDoesNotThrow(() -> {
 				ClassWriter cw = new ClassWriter(0);
@@ -162,7 +162,7 @@ public class PartParseTests {
 
 			LocalFileHeader hello = zipStd.getLocalFileByName("Hello.class");
 			assertNotNull(hello);
-			assertEquals(0, hello.getFileData().length()); // Should be empty
+			assertEquals(0, hello.getFileData().byteSize()); // Should be empty
 
 			// The local file header says the contents are 0 bytes, but the central header has the real length
 			assertTrue(hello.hasDifferentValuesThanCentralDirectoryHeader());
@@ -176,12 +176,12 @@ public class PartParseTests {
 			});
 			LocalFileHeader helloAdopted = zipStdAndAdopt.getLocalFileByName("Hello.class");
 			assertFalse(helloAdopted.hasDifferentValuesThanCentralDirectoryHeader());
-			assertNotEquals(0, helloAdopted.getFileData().length()); // Should have data
+			assertNotEquals(0, helloAdopted.getFileData().byteSize()); // Should have data
 
 			// The JVM strategy copies most properties, except for size.
 			ZipArchive zipJvm = ZipIO.readJvm(path);
 			helloAdopted = zipJvm.getLocalFileByName("Hello.class");
-			assertNotEquals(0, helloAdopted.getFileData().length()); // Should have data, even if not sourced from values in the CEN
+			assertNotEquals(0, helloAdopted.getFileData().byteSize()); // Should have data, even if not sourced from values in the CEN
 		} catch (IOException ex) {
 			fail(ex);
 		}

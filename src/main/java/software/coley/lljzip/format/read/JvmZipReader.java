@@ -4,12 +4,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.coley.lljzip.format.ZipPatterns;
 import software.coley.lljzip.format.model.*;
-import software.coley.lljzip.util.ByteData;
-import software.coley.lljzip.util.ByteDataUtil;
+import software.coley.lljzip.util.MemorySegmentUtil;
 import software.coley.lljzip.util.OffsetComparator;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
+import java.lang.foreign.MemorySegment;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.TreeSet;
@@ -61,14 +61,14 @@ public class JvmZipReader extends AbstractZipReader {
 	}
 
 	@Override
-	public void read(@Nonnull ZipArchive zip, @Nonnull ByteData data) throws IOException {
+	public void read(@Nonnull ZipArchive zip, @Nonnull MemorySegment data) throws IOException {
 		// Read scanning backwards
-		long endOfCentralDirectoryOffset = ByteDataUtil.lastIndexOfQuad(data, data.length() - 4, ZipPatterns.END_OF_CENTRAL_DIRECTORY_QUAD);
+		long endOfCentralDirectoryOffset = MemorySegmentUtil.lastIndexOfQuad(data, data.byteSize() - 4, ZipPatterns.END_OF_CENTRAL_DIRECTORY_QUAD);
 		if (endOfCentralDirectoryOffset < 0L)
 			throw new IOException("No Central-Directory-File-Header found!");
 
 		// Check for a prior end, indicating a preceding ZIP file.
-		long precedingEndOfCentralDirectory = ByteDataUtil.lastIndexOfQuad(data, endOfCentralDirectoryOffset - 1, ZipPatterns.END_OF_CENTRAL_DIRECTORY_QUAD);
+		long precedingEndOfCentralDirectory = MemorySegmentUtil.lastIndexOfQuad(data, endOfCentralDirectoryOffset - 1, ZipPatterns.END_OF_CENTRAL_DIRECTORY_QUAD);
 
 		// Read end header
 		EndOfCentralDirectory end = newEndOfCentralDirectory();
@@ -77,12 +77,12 @@ public class JvmZipReader extends AbstractZipReader {
 
 		// Read central directories (going from the back to the front) up until the preceding ZIP file (if any)
 		// but not surpassing the declared cen directory offset in the end of central directory header.
-		long len = data.length();
+		long len = data.byteSize();
 		long centralDirectoryOffset = len - ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER.length;
 		long maxRelativeOffset = 0;
 		long centralDirectoryOffsetScanEnd = Math.max(Math.max(precedingEndOfCentralDirectory, 0), end.getCentralDirectoryOffset());
 		while (centralDirectoryOffset > centralDirectoryOffsetScanEnd) {
-			centralDirectoryOffset = ByteDataUtil.lastIndexOfQuad(data, centralDirectoryOffset - 1L, ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER_QUAD);
+			centralDirectoryOffset = MemorySegmentUtil.lastIndexOfQuad(data, centralDirectoryOffset - 1L, ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER_QUAD);
 			if (centralDirectoryOffset >= 0L) {
 				CentralDirectoryFileHeader directory = newCentralDirectoryFileHeader();
 				directory.read(data, centralDirectoryOffset);
@@ -130,13 +130,13 @@ public class JvmZipReader extends AbstractZipReader {
 			jvmBaseFileOffset = (end.offset() - end.getCentralDirectorySize()) - end.getCentralDirectoryOffset();
 
 			// Now that we have the start offset, scan forward. We can match the current value as well.
-			jvmBaseFileOffset = ByteDataUtil.indexOfWord(data, jvmBaseFileOffset, ZipPatterns.PK_WORD);
+			jvmBaseFileOffset = MemorySegmentUtil.indexOfWord(data, jvmBaseFileOffset, ZipPatterns.PK_WORD);
 			while (jvmBaseFileOffset >= 0L) {
 				// Check that the PK discovered represents a valid zip part
 				try {
-					if (data.getInt(jvmBaseFileOffset) == ZipPatterns.LOCAL_FILE_HEADER_QUAD)
+					if (MemorySegmentUtil.readQuad(data, jvmBaseFileOffset) == ZipPatterns.LOCAL_FILE_HEADER_QUAD)
 						new LocalFileHeader().read(data, jvmBaseFileOffset);
-					else if (data.getInt(jvmBaseFileOffset) == ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER_QUAD)
+					else if (MemorySegmentUtil.readQuad(data, jvmBaseFileOffset) == ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER_QUAD)
 						new CentralDirectoryFileHeader().read(data, jvmBaseFileOffset);
 					else
 						throw new IllegalStateException("No match for LocalFileHeader/CentralDirectoryFileHeader");
@@ -144,7 +144,7 @@ public class JvmZipReader extends AbstractZipReader {
 					break;
 				} catch (Exception ex) {
 					// Invalid, seek forward
-					jvmBaseFileOffset = ByteDataUtil.indexOfWord(data, jvmBaseFileOffset + 1L, ZipPatterns.PK_WORD);
+					jvmBaseFileOffset = MemorySegmentUtil.indexOfWord(data, jvmBaseFileOffset + 1L, ZipPatterns.PK_WORD);
 				}
 			}
 		}
@@ -161,7 +161,7 @@ public class JvmZipReader extends AbstractZipReader {
 
 			// Add associated local file header offset
 			long offset = jvmBaseFileOffset + directory.getRelativeOffsetOfLocalHeader();
-			if (data.getInt(offset) == ZipPatterns.LOCAL_FILE_HEADER_QUAD) {
+			if (MemorySegmentUtil.readQuad(data, offset) == ZipPatterns.LOCAL_FILE_HEADER_QUAD) {
 				entryOffsets.add(offset);
 			}
 		}
@@ -182,7 +182,7 @@ public class JvmZipReader extends AbstractZipReader {
 					continue;
 			}
 
-			if (data.getInt(offset) != ZipPatterns.LOCAL_FILE_HEADER_QUAD) {
+			if (MemorySegmentUtil.readQuad(data, offset) != ZipPatterns.LOCAL_FILE_HEADER_QUAD) {
 				logger.warn("Central-Directory-File-Header's offset[{}] to Local-File-Header does not match the Local-File-Header magic!", offset);
 				continue;
 			}
