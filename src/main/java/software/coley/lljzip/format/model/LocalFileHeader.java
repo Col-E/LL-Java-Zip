@@ -101,6 +101,42 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 				fileNameLength.add(extraFieldLength).add(MIN_FIXED_SIZE), fileDataLength).withId("fileData");
 	}
 
+
+
+	/**
+	 * Should match {@link CentralDirectoryFileHeader#getFileNameLength()} but is not a strict requirement.
+	 * If they do not match, the central directory file name length should be trusted instead.
+	 *
+	 * @return File name length.
+	 */
+	@Override
+	public int getFileNameLength() {
+		return super.getFileNameLength();
+	}
+
+	/**
+	 * Should match {@link CentralDirectoryFileHeader#getFileName()} but is not a strict requirement.
+	 * If they do not match, the central directory file name should be trusted instead.
+	 *
+	 * @return File name.
+	 */
+	@Override
+	public MemorySegment getFileName() {
+
+		return super.getFileName();
+	}
+
+	/**
+	 * Should match {@link CentralDirectoryFileHeader#getFileName()} but is not a strict requirement.
+	 * If they do not match, the central directory file name should be trusted instead.
+	 *
+	 * @return File name.
+	 */
+	@Override
+	public String getFileNameAsString() {
+		return super.getFileNameAsString();
+	}
+
 	/**
 	 * Checks if the contents do not match those described in {@link CentralDirectoryFileHeader}.
 	 * If this is the case you will probably want to change your ZIP reading configuration.

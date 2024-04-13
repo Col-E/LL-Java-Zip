@@ -225,9 +225,6 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	}
 
 	/**
-	 * Should match {@link LocalFileHeader#getFileName()} but is not a strict requirement.
-	 * If they do not match, trust this value instead.
-	 *
 	 * @return File name.
 	 */
 	public MemorySegment getFileName() {
@@ -244,9 +241,6 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	}
 
 	/**
-	 * Should match {@link CentralDirectoryFileHeader#getFileName()} but is not a strict requirement.
-	 * If they do not match, the central directory file name should be trusted instead.
-	 *
 	 * @return File name.
 	 */
 	public String getFileNameAsString() {

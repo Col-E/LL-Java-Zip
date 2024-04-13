@@ -121,6 +121,38 @@ public class CentralDirectoryFileHeader extends AbstractZipFileHeader {
 		return PartType.CENTRAL_DIRECTORY_FILE_HEADER;
 	}
 
+	/**
+	 * Should match {@link LocalFileHeader#getFileNameLength()} but is not a strict requirement.
+	 * If they do not match, trust this value instead.
+	 *
+	 * @return File name length.
+	 */
+	@Override
+	public int getFileNameLength() {
+		return super.getFileNameLength();
+	}
+
+	/**
+	 * Should match {@link LocalFileHeader#getFileName()} but is not a strict requirement.
+	 * If they do not match, trust this value instead.
+	 *
+	 * @return File name.
+	 */
+	@Override
+	public MemorySegment getFileName() {
+		return super.getFileName();
+	}
+
+	/**
+	 * Should match {@link LocalFileHeader#getFileName()} but is not a strict requirement.
+	 * If they do not match, trust this value instead.
+	 *
+	 * @return File name.
+	 */
+	@Override
+	public String getFileNameAsString() {
+		return super.getFileNameAsString();
+	}
 
 	/**
 	 * @return The file header associated with {@link #getRelativeOffsetOfLocalHeader()}. May be {@code null}.
