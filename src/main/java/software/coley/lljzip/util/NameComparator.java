@@ -27,9 +27,7 @@ public class NameComparator implements Comparator<ZipPart> {
 
 	@Override
 	public int compare(ZipPart o1, ZipPart o2) {
-		if (o1 instanceof LocalFileHeader && o2 instanceof LocalFileHeader) {
-			LocalFileHeader header1 = (LocalFileHeader) o1;
-			LocalFileHeader header2 = (LocalFileHeader) o2;
+		if (o1 instanceof LocalFileHeader header1 && o2 instanceof LocalFileHeader header2) {
 			String name1 = Optional.ofNullable(header1.getLinkedDirectoryFileHeader())
 					.map(CentralDirectoryFileHeader::getFileNameAsString)
 					.orElse(header1.getFileNameAsString());
@@ -37,9 +35,7 @@ public class NameComparator implements Comparator<ZipPart> {
 					.map(CentralDirectoryFileHeader::getFileNameAsString)
 					.orElse(header2.getFileNameAsString());
 			return name1.compareTo(name2);
-		} else if (o1 instanceof CentralDirectoryFileHeader && o2 instanceof CentralDirectoryFileHeader) {
-			CentralDirectoryFileHeader header1 = (CentralDirectoryFileHeader) o1;
-			CentralDirectoryFileHeader header2 = (CentralDirectoryFileHeader) o2;
+		} else if (o1 instanceof CentralDirectoryFileHeader header1 && o2 instanceof CentralDirectoryFileHeader header2) {
 			String name1 = header1.getFileNameAsString();
 			String name2 = header2.getFileNameAsString();
 			return name1.compareTo(name2);

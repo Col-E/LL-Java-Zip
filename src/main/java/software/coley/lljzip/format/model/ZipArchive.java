@@ -157,7 +157,7 @@ public class ZipArchive implements AutoCloseable, Iterable<ZipPart> {
 	public LocalFileHeader getLocalFileByName(String name) {
 		List<LocalFileHeader> matches = getNameFilteredLocalFiles(name::equals);
 		if (matches.isEmpty()) return null;
-		return matches.get(0);
+		return matches.getFirst();
 	}
 
 	/**

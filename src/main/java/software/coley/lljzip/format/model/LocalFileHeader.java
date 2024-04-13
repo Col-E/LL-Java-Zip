@@ -240,11 +240,6 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 		return PartType.LOCAL_FILE_HEADER;
 	}
 
-	@Override
-	public long offset() {
-		return offset;
-	}
-
 	/**
 	 * @param decompressor
 	 * 		Decompressor implementation.

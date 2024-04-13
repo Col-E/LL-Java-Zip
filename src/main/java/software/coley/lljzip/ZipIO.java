@@ -172,7 +172,7 @@ public class ZipIO {
 	 *
 	 * @return Archive from path.
 	 *
-	 * @throws IOException
+	 * @throws IOException When the archive cannot be read.
 	 */
 	public static ZipArchive readAdaptingIO(Path path) throws IOException {
 		ZipArchive archive = new ZipArchive();
