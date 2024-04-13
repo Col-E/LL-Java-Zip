@@ -1,22 +1,21 @@
 package software.coley.lljzip.util.lazy;
 
-import software.coley.lljzip.util.ByteData;
-
 import javax.annotation.Nonnull;
+import java.lang.foreign.MemorySegment;
 import java.util.Objects;
 import java.util.function.Supplier;
 
 /**
- * Lazy {@link ByteData} getter.
+ * Lazy {@link MemorySegment} getter.
  */
-public class LazyByteData extends Lazy<Supplier<ByteData>> {
-	private ByteData value;
+public class LazyMemorySegment extends Lazy<Supplier<MemorySegment>> {
+	private MemorySegment value;
 
 	/**
 	 * @param lookup
 	 * 		Lazy lookup.
 	 */
-	public LazyByteData(@Nonnull Supplier<ByteData> lookup) {
+	public LazyMemorySegment(@Nonnull Supplier<MemorySegment> lookup) {
 		super(lookup);
 	}
 
@@ -24,8 +23,8 @@ public class LazyByteData extends Lazy<Supplier<ByteData>> {
 	 * @return Copy.
 	 */
 	@Nonnull
-	public LazyByteData copy() {
-		LazyByteData copy = new LazyByteData(lookup);
+	public LazyMemorySegment copy() {
+		LazyMemorySegment copy = new LazyMemorySegment(lookup);
 		copy.id = id;
 		if (set) copy.set(value);
 		return copy;
@@ -35,7 +34,7 @@ public class LazyByteData extends Lazy<Supplier<ByteData>> {
 	 * @param value
 	 * 		Data value.
 	 */
-	public void set(@Nonnull ByteData value) {
+	public void set(@Nonnull MemorySegment value) {
 		set = true;
 		this.value = value;
 	}
@@ -44,7 +43,7 @@ public class LazyByteData extends Lazy<Supplier<ByteData>> {
 	 * @return Data value.
 	 */
 	@Nonnull
-	public ByteData get() {
+	public MemorySegment get() {
 		if (!set) {
 			value = lookup.get();
 			set = true;
@@ -54,7 +53,7 @@ public class LazyByteData extends Lazy<Supplier<ByteData>> {
 
 	@Override
 	public String toString() {
-		return id + " data[" + get().length() + "]";
+		return id + " data[" + get().byteSize() + "]";
 	}
 
 	@Override
@@ -62,7 +61,7 @@ public class LazyByteData extends Lazy<Supplier<ByteData>> {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 
-		LazyByteData that = (LazyByteData) o;
+		LazyMemorySegment that = (LazyMemorySegment) o;
 
 		return Objects.equals(get(), that.get());
 	}

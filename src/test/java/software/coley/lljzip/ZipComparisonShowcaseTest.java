@@ -6,7 +6,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import software.coley.lljzip.format.compression.ZipCompressions;
 import software.coley.lljzip.format.model.LocalFileHeader;
 import software.coley.lljzip.format.model.ZipArchive;
-import software.coley.lljzip.util.ByteDataUtil;
+import software.coley.lljzip.util.MemorySegmentUtil;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -72,7 +72,7 @@ public class ZipComparisonShowcaseTest {
 			ZipArchive zipJvm = ZipIO.readJvm(path);
 			for (LocalFileHeader lfh : zipJvm.getLocalFiles()) {
 				String entryName = lfh.getFileNameAsString();
-				byte[] entryData = ByteDataUtil.toByteArray(ZipCompressions.decompress(lfh));
+				byte[] entryData = MemorySegmentUtil.toByteArray(ZipCompressions.decompress(lfh));
 				handle(entryName, entryData);
 			}
 		} catch (Exception ex) {
@@ -84,7 +84,7 @@ public class ZipComparisonShowcaseTest {
 			ZipArchive zipJvm = ZipIO.readStandard(path);
 			for (LocalFileHeader lfh : zipJvm.getLocalFiles()) {
 				String entryName = lfh.getFileNameAsString();
-				byte[] entryData = ByteDataUtil.toByteArray(ZipCompressions.decompress(lfh));
+				byte[] entryData = MemorySegmentUtil.toByteArray(ZipCompressions.decompress(lfh));
 				handle(entryName, entryData);
 			}
 		} catch (Exception ex) {
@@ -96,7 +96,7 @@ public class ZipComparisonShowcaseTest {
 			ZipArchive zipJvm = ZipIO.readNaive(path);
 			for (LocalFileHeader lfh : zipJvm.getLocalFiles()) {
 				String entryName = lfh.getFileNameAsString();
-				byte[] entryData = ByteDataUtil.toByteArray(ZipCompressions.decompress(lfh));
+				byte[] entryData = MemorySegmentUtil.toByteArray(ZipCompressions.decompress(lfh));
 				handle(entryName, entryData);
 			}
 		} catch (Exception ex) {

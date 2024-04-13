@@ -1,9 +1,9 @@
 package software.coley.lljzip.format.compression;
 
 import software.coley.lljzip.format.model.LocalFileHeader;
-import software.coley.lljzip.util.ByteData;
 
 import java.io.IOException;
+import java.lang.foreign.MemorySegment;
 
 /**
  * Constants for {@link LocalFileHeader#getCompressionMethod()}.
@@ -131,66 +131,37 @@ public interface ZipCompressions {
 	 * @return Name of method.
 	 */
 	static String getName(int method) {
-		switch (method) {
-			case STORED:
-				return "STORED";
-			case SHRUNK:
-				return "SHRUNK";
-			case REDUCED_F1:
-				return "REDUCED_F1";
-			case REDUCED_F2:
-				return "REDUCED_F2";
-			case REDUCED_F3:
-				return "REDUCED_F3";
-			case REDUCED_F4:
-				return "REDUCED_F4";
-			case IMPLODED:
-				return "IMPLODED";
-			case RESERVED_TOKENIZING:
-				return "RESERVED_TOKENIZING";
-			case DEFLATED:
-				return "DEFLATED";
-			case DEFLATED_64:
-				return "DEFLATED_64";
-			case PKWARE_IMPLODING:
-				return "PKWARE_IMPLODING";
-			case PKWARE_RESERVED_11:
-				return "PKWARE_RESERVED_11";
-			case BZIP2:
-				return "BZIP2";
-			case PKWARE_RESERVED_13:
-				return "PKWARE_RESERVED_13";
-			case LZMA:
-				return "LZMA";
-			case PKWARE_RESERVED_15:
-				return "PKWARE_RESERVED_15";
-			case CMPSC:
-				return "CMPSC";
-			case PKWARE_RESERVED_17:
-				return "PKWARE_RESERVED_17";
-			case IBM_TERSE:
-				return "IBM_TERSE";
-			case IBM_LZ77:
-				return "IBM_LZ77";
-			case DEPRECATED_ZSTD:
-				return "DEPRECATED_ZSTD";
-			case ZSTANDARD:
-				return "ZSTANDARD";
-			case MP3:
-				return "MP3";
-			case XZ:
-				return "XZ";
-			case JPEG:
-				return "JPEG";
-			case WAVPACK:
-				return "WAVPACK";
-			case PPMD:
-				return "PPMD";
-			case AE_x:
-				return "AE_x";
-			default:
-				return "Unknown[" + method + "]";
-		}
+		return switch (method) {
+			case STORED -> "STORED";
+			case SHRUNK -> "SHRUNK";
+			case REDUCED_F1 -> "REDUCED_F1";
+			case REDUCED_F2 -> "REDUCED_F2";
+			case REDUCED_F3 -> "REDUCED_F3";
+			case REDUCED_F4 -> "REDUCED_F4";
+			case IMPLODED -> "IMPLODED";
+			case RESERVED_TOKENIZING -> "RESERVED_TOKENIZING";
+			case DEFLATED -> "DEFLATED";
+			case DEFLATED_64 -> "DEFLATED_64";
+			case PKWARE_IMPLODING -> "PKWARE_IMPLODING";
+			case PKWARE_RESERVED_11 -> "PKWARE_RESERVED_11";
+			case BZIP2 -> "BZIP2";
+			case PKWARE_RESERVED_13 -> "PKWARE_RESERVED_13";
+			case LZMA -> "LZMA";
+			case PKWARE_RESERVED_15 -> "PKWARE_RESERVED_15";
+			case CMPSC -> "CMPSC";
+			case PKWARE_RESERVED_17 -> "PKWARE_RESERVED_17";
+			case IBM_TERSE -> "IBM_TERSE";
+			case IBM_LZ77 -> "IBM_LZ77";
+			case DEPRECATED_ZSTD -> "DEPRECATED_ZSTD";
+			case ZSTANDARD -> "ZSTANDARD";
+			case MP3 -> "MP3";
+			case XZ -> "XZ";
+			case JPEG -> "JPEG";
+			case WAVPACK -> "WAVPACK";
+			case PPMD -> "PPMD";
+			case AE_x -> "AE_x";
+			default -> "Unknown[" + method + "]";
+		};
 	}
 
 	/**
@@ -202,17 +173,16 @@ public interface ZipCompressions {
 	 * @throws IOException
 	 * 		When the decompression failed.
 	 */
-	static ByteData decompress(LocalFileHeader header) throws IOException {
+	static MemorySegment decompress(LocalFileHeader header) throws IOException {
 		int method = header.getCompressionMethod();
-		switch (method) {
-			case STORED:
-				return header.getFileData();
-			case DEFLATED:
-				return header.decompress(UnsafeDeflateDecompressor.INSTANCE);
-			default:
+		return switch (method) {
+			case STORED -> header.getFileData();
+			case DEFLATED -> header.decompress(UnsafeDeflateDecompressor.INSTANCE);
+			default -> {
 				// TODO: Support other decompressing techniques
 				String methodName = getName(method);
 				throw new IOException("Unsupported compression method: " + methodName);
-		}
+			}
+		};
 	}
 }

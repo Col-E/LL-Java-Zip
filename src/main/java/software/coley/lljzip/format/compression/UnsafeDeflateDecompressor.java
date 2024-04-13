@@ -1,11 +1,11 @@
 package software.coley.lljzip.format.compression;
 
 import software.coley.lljzip.format.model.LocalFileHeader;
-import software.coley.lljzip.util.ByteData;
 import software.coley.lljzip.util.FastWrapOutputStream;
 import software.coley.lljzip.util.InflaterHackery;
 
 import java.io.IOException;
+import java.lang.foreign.MemorySegment;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.zip.DataFormatException;
@@ -38,7 +38,7 @@ public class UnsafeDeflateDecompressor implements Decompressor {
 	}
 
 	@Override
-	public ByteData decompress(LocalFileHeader header, ByteData data) throws IOException {
+	public MemorySegment decompress(LocalFileHeader header, MemorySegment data) throws IOException {
 		if (header.getCompressionMethod() != ZipCompressions.DEFLATED)
 			throw new IOException("LocalFileHeader contents not using 'Deflated'!");
 		FastWrapOutputStream out = new FastWrapOutputStream();
@@ -55,16 +55,17 @@ public class UnsafeDeflateDecompressor implements Decompressor {
 		try {
 			byte[] output = entry.decompress;
 			byte[] buffer = entry.buffer;
+			MemorySegment bufferSegment = MemorySegment.ofArray(buffer);
 			Inflater inflater = entry.inflater;
 			long position = 0L;
-			long length = data.length();
+			long length = data.byteSize();
 			int remaining = 0;
 			boolean needsInput = true;
 			do {
 				if (needsInput) {
 					remaining = (int) Math.min(buffer.length, length);
 					if (remaining != 0) {
-						data.get(position, buffer, 0, remaining);
+						MemorySegment.copy(data, position, bufferSegment, 0, remaining);
 						length -= remaining;
 						position += remaining;
 						inflater.setInput(buffer, 0, remaining);

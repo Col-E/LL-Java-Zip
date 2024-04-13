@@ -6,7 +6,7 @@
 
     <groupId>software.coley</groupId>
     <artifactId>lljzip</artifactId>
-    <version>2.3.0</version>
+    <version>2.4.0</version>
 
     <name>LL Java ZIP</name>
     <description>Lower level ZIP support for Java</description>
@@ -97,13 +97,9 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <!-- When attempting to compile on higher Java versions, you may encounter
-                     some issues with Unsafe. In Intellij unset the 'use -release' under the
-                     javac compiler page and it'll happily compile once again
-                     -->
+                <version>3.13.0</version>
                 <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
+                    <release>22</release>
                 </configuration>
             </plugin>
             <plugin>

@@ -5,7 +5,7 @@ import software.coley.lljzip.format.model.CentralDirectoryFileHeader;
 import software.coley.lljzip.format.model.EndOfCentralDirectory;
 import software.coley.lljzip.format.model.LocalFileHeader;
 import software.coley.lljzip.format.model.ZipArchive;
-import software.coley.lljzip.util.ByteDataUtil;
+import software.coley.lljzip.util.MemorySegmentUtil;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
@@ -33,9 +33,9 @@ public class DirectZipWriter implements ZipWriter {
 			writeIntLE(os, (int) fileHeader.getUncompressedSize());
 			writeShortLE(os, fileHeader.getFileNameLength());
 			writeShortLE(os, fileHeader.getExtraFieldLength());
-			os.write(ByteDataUtil.toByteArray(fileHeader.getFileName()));
-			os.write(ByteDataUtil.toByteArray(fileHeader.getExtraField()));
-			os.write(ByteDataUtil.toByteArray(fileHeader.getFileData()));
+			os.write(MemorySegmentUtil.toByteArray(fileHeader.getFileName()));
+			os.write(MemorySegmentUtil.toByteArray(fileHeader.getExtraField()));
+			os.write(MemorySegmentUtil.toByteArray(fileHeader.getFileData()));
 		}
 
 		// Write central directory file headers.
@@ -57,9 +57,9 @@ public class DirectZipWriter implements ZipWriter {
 			writeShortLE(os, directory.getInternalFileAttributes());
 			writeIntLE(os, directory.getExternalFileAttributes());
 			writeIntLE(os, (int) directory.getRelativeOffsetOfLocalHeader());
-			os.write(ByteDataUtil.toByteArray(directory.getFileName()));
-			os.write(ByteDataUtil.toByteArray(directory.getExtraField()));
-			os.write(ByteDataUtil.toByteArray(directory.getFileComment()));
+			os.write(MemorySegmentUtil.toByteArray(directory.getFileName()));
+			os.write(MemorySegmentUtil.toByteArray(directory.getExtraField()));
+			os.write(MemorySegmentUtil.toByteArray(directory.getFileComment()));
 		}
 
 		// Write end of central directory record.
@@ -73,7 +73,7 @@ public class DirectZipWriter implements ZipWriter {
 			writeIntLE(os, (int) end.getCentralDirectorySize());
 			writeIntLE(os, (int) end.getCentralDirectoryOffset());
 			writeShortLE(os, end.getZipCommentLength());
-			os.write(ByteDataUtil.toByteArray(end.getZipComment()));
+			os.write(MemorySegmentUtil.toByteArray(end.getZipComment()));
 		}
 	}
 

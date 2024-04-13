@@ -25,9 +25,7 @@ But that's not all it does. That's just what that one comment says. Some other f
 
 ## Additional features
 
-- Reads ZIP files using `Unsafe` backed mapped files.
-    - Using `FileChannel.map` yields `MappedByteBuffer` which uses `int` values, limiting files up to about 2GB
-    - Our `UnsafeMappedFile` implementation uses `long` which far exceeds the GB file size range
+- Reads ZIP files using `MemorySegment` backed mapped files.
 - Highly configurable, offering 3 ZIP reading strategies out of the box _(See `ZipIO` for convenience calls)_
     - Std / Forward scanning: Scans for `EndOfCentralDirectory` from the front of the file, like many other tools
     - Naive: Scans only for `LocalFileHeader` values from the front of the file, the fastest implementation, but obviously naive

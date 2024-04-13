@@ -4,8 +4,9 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
-import software.coley.lljzip.util.ByteData;
-import software.coley.lljzip.util.ByteDataUtil;
+import software.coley.lljzip.util.MemorySegmentUtil;
+
+import java.lang.foreign.MemorySegment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -50,7 +51,7 @@ public class Utils {
 	 * @param target
 	 * 		String instance to look for.
 	 */
-	public static void assertDefinesString(ByteData code, String target) {
-		assertDefinesString(ByteDataUtil.toByteArray(code), target);
+	public static void assertDefinesString(MemorySegment code, String target) {
+		assertDefinesString(MemorySegmentUtil.toByteArray(code), target);
 	}
 }

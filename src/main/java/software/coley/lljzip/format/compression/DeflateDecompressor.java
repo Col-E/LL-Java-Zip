@@ -1,10 +1,10 @@
 package software.coley.lljzip.format.compression;
 
 import software.coley.lljzip.format.model.LocalFileHeader;
-import software.coley.lljzip.util.ByteData;
 import software.coley.lljzip.util.FastWrapOutputStream;
 
 import java.io.IOException;
+import java.lang.foreign.MemorySegment;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 import java.util.zip.ZipException;
@@ -22,7 +22,7 @@ public class DeflateDecompressor implements Decompressor {
 	}
 
 	@Override
-	public ByteData decompress(LocalFileHeader header, ByteData data) throws IOException {
+	public MemorySegment decompress(LocalFileHeader header, MemorySegment data) throws IOException {
 		if (header.getCompressionMethod() != ZipCompressions.DEFLATED)
 			throw new IOException("LocalFileHeader contents not using 'Deflated'!");
 		Inflater inflater = new Inflater(true);
@@ -30,15 +30,16 @@ public class DeflateDecompressor implements Decompressor {
 		try {
 			byte[] output = new byte[1024];
 			byte[] buffer = new byte[1024];
+			MemorySegment bufferSegment = MemorySegment.ofArray(buffer);
 			long position = 0L;
-			long length = data.length();
+			long length = data.byteSize();
 			do {
 				if (inflater.needsInput()) {
 					int remaining = (int) Math.min(buffer.length, length);
 					if (remaining == 0) {
 						break;
 					}
-					data.get(position, buffer, 0, remaining);
+					MemorySegment.copy(data, position, bufferSegment, 0, remaining);
 					length -= remaining;
 					position += remaining;
 					inflater.setInput(buffer, 0, remaining);

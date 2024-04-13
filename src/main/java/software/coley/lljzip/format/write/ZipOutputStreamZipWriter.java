@@ -3,7 +3,7 @@ package software.coley.lljzip.format.write;
 import software.coley.lljzip.format.compression.ZipCompressions;
 import software.coley.lljzip.format.model.LocalFileHeader;
 import software.coley.lljzip.format.model.ZipArchive;
-import software.coley.lljzip.util.ByteDataUtil;
+import software.coley.lljzip.util.MemorySegmentUtil;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
@@ -44,9 +44,9 @@ public class ZipOutputStreamZipWriter implements ZipWriter {
 		try (ZipOutputStream zos = new ZipOutputStream(os)) {
 			for (LocalFileHeader fileHeader : archive.getLocalFiles()) {
 				String name = fileHeader.getFileNameAsString();
-				if (fileHeader.getFileData().length() > 0L) {
+				if (fileHeader.getFileData().byteSize() > 0L) {
 					zos.putNextEntry(new ZipEntry(name));
-					zos.write(ByteDataUtil.toByteArray(ZipCompressions.decompress(fileHeader)));
+					zos.write(MemorySegmentUtil.toByteArray(ZipCompressions.decompress(fileHeader)));
 					zos.closeEntry();
 				} else if (createDirectoryEntries) {
 					// Directory, don't need to write anything

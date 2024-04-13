@@ -4,12 +4,12 @@ import software.coley.lljzip.format.model.CentralDirectoryFileHeader;
 import software.coley.lljzip.format.model.EndOfCentralDirectory;
 import software.coley.lljzip.format.model.ZipArchive;
 import software.coley.lljzip.format.read.*;
-import software.coley.lljzip.util.BufferData;
-import software.coley.lljzip.util.ByteData;
-import software.coley.lljzip.util.FileMapUtil;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.foreign.Arena;
+import java.lang.foreign.MemorySegment;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.zip.ZipFile;
@@ -21,7 +21,7 @@ import java.util.zip.ZipFile;
  *     <li>For regular ZIP files use {@link ForwardScanZipReader}.</li>
  *     <li>For ZIP files without {@link CentralDirectoryFileHeader} or {@link EndOfCentralDirectory} items, use {@link NaiveLocalFileZipReader}</li>
  * </ul>
- * You can fully control zip parsing via {@link #read(ByteData, ZipReader)} by passing a customized reader implementation.
+ * You can fully control zip parsing via {@link #read(MemorySegment, ZipReader)} by passing a customized reader implementation.
  *
  * @author Matt Coley
  */
@@ -37,7 +37,7 @@ public class ZipIO {
 	 * @throws IOException
 	 * 		When the archive bytes cannot be read from, usually indicating a malformed zip.
 	 */
-	public static ZipArchive readStandard(ByteData data) throws IOException {
+	public static ZipArchive readStandard(MemorySegment data) throws IOException {
 		return read(data, new ForwardScanZipReader());
 	}
 
@@ -82,7 +82,7 @@ public class ZipIO {
 	 * @throws IOException
 	 * 		When the archive bytes cannot be read from, usually indicating a malformed zip.
 	 */
-	public static ZipArchive readNaive(ByteData data) throws IOException {
+	public static ZipArchive readNaive(MemorySegment data) throws IOException {
 		return read(data, new NaiveLocalFileZipReader());
 	}
 
@@ -128,7 +128,7 @@ public class ZipIO {
 	 * @throws IOException
 	 * 		When the archive bytes cannot be read from, usually indicating a malformed zip.
 	 */
-	public static ZipArchive readJvm(ByteData data) throws IOException {
+	public static ZipArchive readJvm(MemorySegment data) throws IOException {
 		return read(data, new JvmZipReader());
 	}
 
@@ -172,7 +172,7 @@ public class ZipIO {
 	 *
 	 * @return Archive from path.
 	 *
-	 * @throws IOException
+	 * @throws IOException When the archive cannot be read.
 	 */
 	public static ZipArchive readAdaptingIO(Path path) throws IOException {
 		ZipArchive archive = new ZipArchive();
@@ -194,7 +194,7 @@ public class ZipIO {
 	public static ZipArchive read(byte[] data, ZipReader strategy) throws IOException {
 		if (data == null)
 			throw new IOException("Data is null!");
-		return read(BufferData.wrap(data), strategy);
+		return read(MemorySegment.ofArray(data), strategy);
 	}
 
 	/**
@@ -213,7 +213,23 @@ public class ZipIO {
 			throw new IOException("Data is null!");
 		if (!Files.isRegularFile(path))
 			throw new FileNotFoundException(path.toString());
-		return read(FileMapUtil.map(path), strategy);
+		FileChannel fc = FileChannel.open(path);
+		try {
+			long size = fc.size();
+			// The fixed size elements of a CDFH is 22 bytes (plus the variable size bits which can be 0)
+			// - Even if we only want to read local/central file entries, those are even larger at a minimum
+			if (size < 22)
+				throw new IOException("Not enough bytes to read Central-Directory-File-Header, minimum=22");
+
+			ZipArchive zip = new ZipArchive(fc);
+			strategy.read(zip, fc.map(FileChannel.MapMode.READ_ONLY, 0L, size, Arena.ofAuto()));
+			fc = null;
+			return zip;
+		} finally {
+			if (fc != null) {
+				fc.close();
+			}
+		}
 	}
 
 	/**
@@ -227,17 +243,17 @@ public class ZipIO {
 	 * @throws IOException
 	 * 		When the archive bytes cannot be read from, usually indicating a malformed zip.
 	 */
-	public static ZipArchive read(ByteData data, ZipReader strategy) throws IOException {
+	public static ZipArchive read(MemorySegment data, ZipReader strategy) throws IOException {
 		if (data == null)
 			throw new IOException("Data is null!");
 
 		// The fixed size elements of a CDFH is 22 bytes (plus the variable size bits which can be 0)
 		// - Even if we only want to read local/central file entries, those are even larger at a minimum
-		if (data.length() < 22)
+		if (data.byteSize() < 22)
 			throw new IOException("Not enough bytes to read Central-Directory-File-Header, minimum=22");
 
 		// Create instance
-		ZipArchive zip = new ZipArchive(data);
+		ZipArchive zip = new ZipArchive();
 		strategy.read(zip, data);
 		return zip;
 	}

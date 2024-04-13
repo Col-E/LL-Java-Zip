@@ -1,8 +1,6 @@
 package software.coley.lljzip.format.model;
 
-import software.coley.lljzip.util.BufferData;
-import software.coley.lljzip.util.NoopByteData;
-import software.coley.lljzip.util.lazy.LazyByteData;
+import software.coley.lljzip.util.lazy.LazyMemorySegment;
 import software.coley.lljzip.util.lazy.LazyInt;
 import software.coley.lljzip.util.lazy.LazyLong;
 
@@ -10,6 +8,7 @@ import javax.annotation.Nonnull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.foreign.MemorySegment;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -45,20 +44,20 @@ public class AdaptingLocalFileHeader extends LocalFileHeader {
 		lastModFileTime = new LazyInt(() -> 0);
 		lastModFileDate = new LazyInt(() -> 0);
 		fileNameLength = new LazyInt(entryName::length);
-		fileName = new LazyByteData(() -> BufferData.wrap(entryName.getBytes()));
+		fileName = new LazyMemorySegment(() -> MemorySegment.ofArray(entryName.getBytes()));
 		fileDataLength = new LazyLong(() -> entryData.length);
-		fileData = new LazyByteData(() -> BufferData.wrap(entryData));
+		fileData = new LazyMemorySegment(() -> MemorySegment.ofArray(entryData));
 		compressionMethod = new LazyInt(() -> 0);
 		uncompressedSize = new LazyLong(() -> entryData.length);
 		compressedSize = new LazyLong(() -> entryData.length);
 		crc32 = new LazyInt(() -> (int) entry.getCrc());
 		if (extra != null) {
 			extraFieldLength = new LazyInt(() -> extra.length);
-			extraField = new LazyByteData(() -> BufferData.wrap(extra));
+			extraField = new LazyMemorySegment(() -> MemorySegment.ofArray(extra));
 		} else {
 			extraFieldLength = new LazyInt(() -> 0);
-			extraField = new LazyByteData(() -> NoopByteData.INSTANCE);
+			extraField = new LazyMemorySegment(() -> MemorySegment.ofArray(new byte[0]));
 		}
-		data = NoopByteData.INSTANCE;
+		data = MemorySegment.ofArray(new byte[0]);
 	}
 }

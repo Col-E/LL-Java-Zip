@@ -3,10 +3,10 @@ package software.coley.lljzip.format;
 import software.coley.lljzip.format.model.CentralDirectoryFileHeader;
 import software.coley.lljzip.format.model.EndOfCentralDirectory;
 import software.coley.lljzip.format.model.LocalFileHeader;
-import software.coley.lljzip.util.ByteDataUtil;
+import software.coley.lljzip.util.MemorySegmentUtil;
 
 /**
- * Patterns for usage in {@link ByteDataUtil} methods.
+ * Patterns for usage in {@link MemorySegmentUtil} methods.
  *
  * @author Matt Coley
  */

@@ -21,15 +21,13 @@ public interface ZipPartMapper {
 	 */
 	@Nullable
 	default ZipPart map(@Nonnull ZipArchive archive, @Nonnull ZipPart part) {
-		if (part instanceof LocalFileHeader) {
-			return mapLocal(archive, (LocalFileHeader) part);
-		} else if (part instanceof CentralDirectoryFileHeader) {
-			return mapCentral(archive, (CentralDirectoryFileHeader) part);
-		} else if (part instanceof EndOfCentralDirectory) {
-			return mapEnd(archive, (EndOfCentralDirectory) part);
-		}
-		// Unknown part type, keep as-is.
-		return part;
+		return switch (part) {
+			case LocalFileHeader localFileHeader -> mapLocal(archive, localFileHeader);
+			case CentralDirectoryFileHeader centralDirectoryFileHeader ->
+					mapCentral(archive, centralDirectoryFileHeader);
+			case EndOfCentralDirectory endOfCentralDirectory -> mapEnd(archive, endOfCentralDirectory);
+			default -> part; // Unknown part type, keep as-is.
+		};
 	}
 
 	/**

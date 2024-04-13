@@ -1,5 +1,6 @@
 package software.coley.lljzip;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import software.coley.lljzip.format.model.AbstractZipFileHeader;
@@ -13,7 +14,8 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.zip.ZipFile;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Some edge case tests where {@link JvmZipReader} needs to match a few quirky cases from {@link ZipFile}.
@@ -21,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * @author Matt Coley
  */
 public class JvmVsZipFileEqualityEdgeCaseTests {
-
+	@Disabled("Updating to JDK changes how ZipFile works, which no longer reads the test sample")
 	@ParameterizedTest
 	@ValueSource(strings = {
 			"resource-pack-trick-header-N-to-1-cen-to-loc-mapping.zip",
@@ -43,7 +45,7 @@ public class JvmVsZipFileEqualityEdgeCaseTests {
 			assertEquals(0, namesDifference.size());
 			assertEquals(sizeDel, sizeJvm);
 		} catch (Exception ex) {
-			ex.printStackTrace();
+			fail(ex);
 		}
 	}
 }
