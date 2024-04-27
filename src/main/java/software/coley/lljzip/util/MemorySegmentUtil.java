@@ -31,6 +31,7 @@ public class MemorySegmentUtil {
 	 * @return First index of pattern in content, or {@code -1} for no match.
 	 */
 	public static long indexOfWord(MemorySegment data, long offset, int pattern) {
+		if (offset < 0) return -1;
 		long len = data.byteSize() - 2;
 		for (long i = offset; i < len; i++) {
 			if (pattern == (data.get(LITTLE_SHORT, i) & 0xFFFF))
@@ -50,6 +51,7 @@ public class MemorySegmentUtil {
 	 * @return First index of pattern in content, or {@code -1} for no match.
 	 */
 	public static long indexOfQuad(MemorySegment data, long offset, int pattern) {
+		if (offset < 0) return -1;
 		long len = data.byteSize() - 4;
 		long i = offset;
 		while (i < len) {
@@ -84,7 +86,7 @@ public class MemorySegmentUtil {
 	 */
 	public static long lastIndexOfWord(MemorySegment data, long offset, int pattern) {
 		long limit;
-		if (data == null || (limit = data.byteSize()) < 2 || offset >= limit)
+		if (offset < 0 || data == null || (limit = data.byteSize()) < 2 || offset >= limit)
 			return -1;
 		for (long i = offset; i >= 0; i--) {
 			if (pattern == data.get(LITTLE_SHORT, i))
@@ -106,7 +108,7 @@ public class MemorySegmentUtil {
 	 */
 	public static long lastIndexOfQuad(MemorySegment data, long offset, int pattern) {
 		long limit;
-		if (data == null || (limit = data.byteSize()) < 4 || offset >= limit)
+		if (offset < 0 || data == null || (limit = data.byteSize()) < 4 || offset >= limit)
 			return -1;
 		long i = offset;
 		while (i >= 0) {
@@ -152,9 +154,9 @@ public class MemorySegmentUtil {
 	 * @return First index of pattern in content, or {@code -1} for no match.
 	 */
 	public static long indexOf(MemorySegment data, long offset, int[] pattern) {
-		// Remaining data must be as long as pattern
+		// Remaining data must be as long as pattern and in bounds
 		long limit;
-		if (data == null || (limit = data.byteSize()) < pattern.length || offset >= limit)
+		if (offset < 0 || data == null || (limit = data.byteSize()) < pattern.length || offset >= limit)
 			return -1;
 
 		// Search from offset going forwards
@@ -189,8 +191,8 @@ public class MemorySegmentUtil {
 	 * @return Last index of pattern in content, or {@code -1} for no match.
 	 */
 	public static long lastIndexOf(MemorySegment data, long offset, int[] pattern) {
-		// Remaining data must be as long as pattern
-		if (data == null || data.byteSize() < pattern.length)
+		// Remaining data must be as long as pattern and in bounds
+		if (offset < 0 || data == null || data.byteSize() < pattern.length)
 			return -1;
 
 		// Search from offset going backwards
