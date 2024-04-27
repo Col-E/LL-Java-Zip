@@ -3,7 +3,9 @@ package software.coley.lljzip.format.compression;
 import software.coley.lljzip.format.model.LocalFileHeader;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.foreign.MemorySegment;
+import java.util.zip.DeflaterInputStream;
 
 /**
  * Constants for {@link LocalFileHeader#getCompressionMethod()}.
@@ -178,6 +180,29 @@ public interface ZipCompressions {
 		return switch (method) {
 			case STORED -> header.getFileData();
 			case DEFLATED -> header.decompress(UnsafeDeflateDecompressor.INSTANCE);
+			default -> {
+				// TODO: Support other decompressing techniques
+				String methodName = getName(method);
+				throw new IOException("Unsupported compression method: " + methodName);
+			}
+		};
+	}
+
+	/**
+	 * @param header
+	 * 		Header with {@link LocalFileHeader#getFileData()} to decompress.
+	 *
+	 * @return Stream with decompressed data.
+	 *
+	 * @throws IOException
+	 * 		When the decompression failed.
+	 */
+	static InputStream decompressStream(LocalFileHeader header) throws IOException {
+		int method = header.getCompressionMethod();
+		InputStream in = new MemorySegmentInputStream(header.getFileData());
+		return switch (method) {
+			case STORED -> in;
+			case DEFLATED -> new DeflaterInputStream(in);
 			default -> {
 				// TODO: Support other decompressing techniques
 				String methodName = getName(method);
