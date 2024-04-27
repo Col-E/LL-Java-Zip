@@ -31,6 +31,8 @@ But that's not all it does. That's just what that one comment says. Some other f
     - Naive: Scans only for `LocalFileHeader` values from the front of the file, the fastest implementation, but obviously naive
     - JVM: Matches the behavior of the JVM's ZIP parser, including a number of odd edge cases. Useful for opening JAR files to mirror `java -jar <path>` behavior.
 - Inputs do not have to be on-disk to be read, you can supply zip data in-memory.
+- Tracks data in front of ZIP contents as `ZipArchive.getPrefixData()`
+    - Useful for cases like keeping track of the executable header of Jar2Exe archives.
 
 ## Usage
 
@@ -93,7 +95,7 @@ There is also a `ZipFile` delegating reader `AdaptingZipReader` but it should pr
 
 ## Building
 
-Due to some `sun.misc.Unsafe` hacks _(For performance and long addressing)_, you will get compiler warnings when first opening the project in IntelliJ.
+Due to some `sun.misc.Unsafe` hacks _(For faster deflate performance)_, you will get compiler warnings when first opening the project in IntelliJ.
 You can resolve this by changing the compiler target:
 
 ![intellij compiler settings](docs/compiler-settings.png)
