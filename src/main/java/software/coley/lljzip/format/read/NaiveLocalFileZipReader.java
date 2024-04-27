@@ -34,12 +34,18 @@ public class NaiveLocalFileZipReader extends AbstractZipReader {
 
 	@Override
 	public void read(@Nonnull ZipArchive zip, @Nonnull MemorySegment data) throws IOException {
-		long localFileOffset = -1;
-		while ((localFileOffset = MemorySegmentUtil.indexOfQuad(data, localFileOffset + 1, ZipPatterns.LOCAL_FILE_HEADER_QUAD)) >= 0) {
+		long localFileOffset = MemorySegmentUtil.indexOfQuad(data, 0, ZipPatterns.LOCAL_FILE_HEADER_QUAD);
+		if (localFileOffset < 0) return;
+		if (localFileOffset > 0) {
+			// The first offset containing archive data is not at the first byte.
+			// Record whatever content is at the front.
+			zip.setPrefixData(data.asSlice(0, localFileOffset));
+		}
+		do {
 			LocalFileHeader file = newLocalFileHeader();
 			file.read(data, localFileOffset);
 			zip.addPart(file);
 			postProcessLocalFileHeader(file);
-		}
+		} while ((localFileOffset = MemorySegmentUtil.indexOfQuad(data, localFileOffset + 1, ZipPatterns.LOCAL_FILE_HEADER_QUAD)) >= 0);
 	}
 }

@@ -40,7 +40,7 @@ public class JvmZipReader extends AbstractZipReader {
 	 *
 	 * @param skipRevisitedCenToLocalLinks
 	 * 		Flag to skip creating duplicate {@link LocalFileHeader} entries if multiple
-	 * 		{@link CentralDirectoryFileHeader} point to the same location.
+	 *        {@link CentralDirectoryFileHeader} point to the same location.
 	 */
 	public JvmZipReader(boolean skipRevisitedCenToLocalLinks) {
 		this(new JvmZipPartAllocator(), skipRevisitedCenToLocalLinks);
@@ -53,7 +53,7 @@ public class JvmZipReader extends AbstractZipReader {
 	 * 		Allocator to use.
 	 * @param skipRevisitedCenToLocalLinks
 	 * 		Flag to skip creating duplicate {@link LocalFileHeader} entries if multiple
-	 * 		{@link CentralDirectoryFileHeader} point to the same location.
+	 *        {@link CentralDirectoryFileHeader} point to the same location.
 	 */
 	public JvmZipReader(@Nonnull ZipPartAllocator allocator, boolean skipRevisitedCenToLocalLinks) {
 		super(allocator);
@@ -201,6 +201,12 @@ public class JvmZipReader extends AbstractZipReader {
 			} catch (Exception ex) {
 				logger.warn("Failed to read 'local file header' at offset[{}]", offset, ex);
 			}
+		}
+
+		// Record any data appearing at the front of the file not associated with the ZIP file contents.
+		if (!entryOffsets.isEmpty()) {
+			long firstOffset = entryOffsets.first();
+			zip.setPrefixData(data.asSlice(0, firstOffset));
 		}
 
 		// Sort based on order

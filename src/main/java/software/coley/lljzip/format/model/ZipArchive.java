@@ -1,5 +1,6 @@
 package software.coley.lljzip.format.model;
 
+import software.coley.lljzip.format.read.ZipReader;
 import software.coley.lljzip.format.transform.ZipPartMapper;
 import software.coley.lljzip.util.OffsetComparator;
 
@@ -7,6 +8,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.foreign.MemorySegment;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -19,6 +21,7 @@ import java.util.stream.Collectors;
 public class ZipArchive implements AutoCloseable, Iterable<ZipPart> {
 	private final List<ZipPart> parts = new ArrayList<>();
 	private final Closeable closableBackingResource;
+	private MemorySegment prefixData;
 
 	/**
 	 * New zip archive without any backing resource.
@@ -35,6 +38,28 @@ public class ZipArchive implements AutoCloseable, Iterable<ZipPart> {
 	 */
 	public ZipArchive(@Nonnull Closeable closableBackingResource) {
 		this.closableBackingResource = closableBackingResource;
+	}
+
+	/**
+	 * If the {@link ZipReader} used to read this archive supports tracking such information this will return
+	 * any data not contained in the archive that was found at the front of the input content.
+	 * <p/>
+	 * Some applications like Jar2Exe will prepend a loader executable in front of the jar, in which case this content
+	 * would be that executable. It can be any kind of arbitrary data though.
+	 *
+	 * @return Data at the front of the archive.
+	 */
+	@Nullable
+	public MemorySegment getPrefixData() {
+		return prefixData;
+	}
+
+	/**
+	 * @param prefixData
+	 * 		Data at the front of the archive.
+	 */
+	public void setPrefixData(@Nullable MemorySegment prefixData) {
+		this.prefixData = prefixData;
 	}
 
 	/**

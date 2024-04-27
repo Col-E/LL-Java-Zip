@@ -13,8 +13,7 @@ import software.coley.lljzip.util.OffsetComparator;
 import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.lang.foreign.MemorySegment;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 /**
  * The standard read strategy that should work with standard zip archives.
@@ -67,7 +66,7 @@ public class ForwardScanZipReader extends AbstractZipReader {
 
 		// Read local files
 		// - Set to prevent duplicate file header entries for the same offset
-		Set<Long> offsets = new HashSet<>();
+		NavigableSet<Long> offsets = new TreeSet<>();
 		for (CentralDirectoryFileHeader directory : zip.getCentralDirectories()) {
 			long offset = zipStart + directory.getRelativeOffsetOfLocalHeader();
 			if (!offsets.contains(offset) && MemorySegmentUtil.readQuad(data, offset) == ZipPatterns.LOCAL_FILE_HEADER_QUAD) {
@@ -81,6 +80,12 @@ public class ForwardScanZipReader extends AbstractZipReader {
 			} else {
 				logger.warn("Central-Directory-File-Header's offset[{}] to Local-File-Header does not match the Local-File-Header magic!", offset);
 			}
+		}
+
+		// Record any data appearing at the front of the file not associated with the ZIP file contents.
+		if (!offsets.isEmpty()) {
+			long firstOffset = offsets.first();
+			zip.setPrefixData(data.asSlice(0, firstOffset));
 		}
 
 		// Sort based on order
