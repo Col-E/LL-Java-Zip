@@ -1,7 +1,9 @@
 package software.coley.lljzip.format.compression;
 
 import software.coley.lljzip.format.model.LocalFileHeader;
+import software.coley.lljzip.util.MemorySegmentInputStream;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.foreign.MemorySegment;
@@ -175,7 +177,8 @@ public interface ZipCompressions {
 	 * @throws IOException
 	 * 		When the decompression failed.
 	 */
-	static MemorySegment decompress(LocalFileHeader header) throws IOException {
+	@Nonnull
+	static MemorySegment decompress(@Nonnull LocalFileHeader header) throws IOException {
 		int method = header.getCompressionMethod();
 		return switch (method) {
 			case STORED -> header.getFileData();
@@ -197,7 +200,8 @@ public interface ZipCompressions {
 	 * @throws IOException
 	 * 		When the decompression failed.
 	 */
-	static InputStream decompressStream(LocalFileHeader header) throws IOException {
+	@Nonnull
+	static InputStream decompressStream(@Nonnull LocalFileHeader header) throws IOException {
 		int method = header.getCompressionMethod();
 		InputStream in = new MemorySegmentInputStream(header.getFileData());
 		return switch (method) {
