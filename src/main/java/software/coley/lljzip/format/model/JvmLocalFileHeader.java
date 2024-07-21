@@ -60,9 +60,16 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 			//
 			// The JVM technically allows the header to be excluded, so we split the offset fixing
 			// into two parts.
-			absoluteDataOffsetEnd -= 12;
-			if (MemorySegmentUtil.readQuad(data, absoluteDataOffsetEnd) == ZipPatterns.DATA_DESCRIPTOR_QUAD) {
-				absoluteDataOffsetEnd -= 4;
+			//
+			// In some WEIRD cases the bit flag can be set, but the data-descriptor will be missing.
+			// When this occurs we can validate the range is currently correct by checking if the data end offset
+			// is the beginning of another file header. If we find the file header, the bit flag is a lie,
+			// and we do not need to manipulate our data end offset.
+			if ((MemorySegmentUtil.readWord(data, absoluteDataOffsetEnd) & ZipPatterns.PK_WORD) != ZipPatterns.PK_WORD) {
+				absoluteDataOffsetEnd -= 12;
+				if (MemorySegmentUtil.readQuad(data, absoluteDataOffsetEnd) == ZipPatterns.DATA_DESCRIPTOR_QUAD) {
+					absoluteDataOffsetEnd -= 4;
+				}
 			}
 		}
 		relativeDataOffsetEnd = absoluteDataOffsetEnd == null ? relativeDataOffsetStart : absoluteDataOffsetEnd - offset;
