@@ -149,6 +149,9 @@ public class JvmZipReader extends AbstractZipReader {
 			}
 		}
 
+		// Normalize for when the 'indexOfWord' checks above yield no results.
+		jvmBaseFileOffset = Math.max(0, jvmBaseFileOffset);
+
 		// Read local files
 		// - Set to prevent duplicate file header entries for the same offset
 		Set<Long> offsets = new HashSet<>();
