@@ -28,7 +28,7 @@ public class JvmClassDirectoryMapper extends DelegatingZipPartMapper {
 		if (name.endsWith(".class/")) {
 			int newLength = name.length() - 1;
 			LocalFileHeader copy = localFileHeader.copy();
-			copy.setFileName(copy.getFileName().asSlice(0, newLength));
+			copy.setFileName(copy.getFileName().substring(0, newLength));
 			copy.setFileNameLength(newLength);
 			localFileHeader = copy;
 		}
@@ -42,7 +42,7 @@ public class JvmClassDirectoryMapper extends DelegatingZipPartMapper {
 		if (name.endsWith(".class/")) {
 			int newLength = name.length() - 1;
 			CentralDirectoryFileHeader copy = centralDirectoryFileHeader.copy();
-			copy.setFileName(copy.getFileName().asSlice(0, newLength));
+			copy.setFileName(copy.getFileName().substring(0, newLength));
 			copy.setFileNameLength(newLength);
 			centralDirectoryFileHeader = copy;
 		}

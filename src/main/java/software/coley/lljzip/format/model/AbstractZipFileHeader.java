@@ -3,13 +3,13 @@ package software.coley.lljzip.format.model;
 import software.coley.lljzip.format.compression.Decompressor;
 import software.coley.lljzip.format.compression.ZipCompressions;
 import software.coley.lljzip.util.MemorySegmentUtil;
-import software.coley.lljzip.util.lazy.LazyMemorySegment;
-import software.coley.lljzip.util.lazy.LazyInt;
-import software.coley.lljzip.util.lazy.LazyLong;
+import software.coley.lljzip.util.data.MemorySegmentData;
+import software.coley.lljzip.util.data.StringData;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.lang.foreign.MemorySegment;
+import java.util.Objects;
 
 /**
  * Common base for shared elements of {@link CentralDirectoryFileHeader} and {@link LocalFileHeader}.
@@ -17,19 +17,19 @@ import java.lang.foreign.MemorySegment;
  * @author Matt Coley
  */
 public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
-	// Zip spec elements, all lazily read, common between central/local file headers
-	protected LazyInt versionNeededToExtract;
-	protected LazyInt generalPurposeBitFlag;
-	protected LazyInt compressionMethod;
-	protected LazyInt lastModFileTime;
-	protected LazyInt lastModFileDate;
-	protected LazyInt crc32;
-	protected LazyLong compressedSize;
-	protected LazyLong uncompressedSize;
-	protected LazyInt fileNameLength;
-	protected LazyInt extraFieldLength;
-	protected LazyMemorySegment fileName;
-	protected LazyMemorySegment extraField;
+	// Zip spec elements, common between central/local file headers
+	protected int versionNeededToExtract;
+	protected int generalPurposeBitFlag;
+	protected int compressionMethod;
+	protected int lastModFileTime;
+	protected int lastModFileDate;
+	protected int crc32;
+	protected long compressedSize;
+	protected long uncompressedSize;
+	protected int fileNameLength;
+	protected int extraFieldLength;
+	protected StringData fileName;
+	protected MemorySegmentData extraField;
 
 	// Offset into the data this part is read from
 	protected transient long offset = -1L;
@@ -37,9 +37,6 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	// Data source that contents were read from.
 	protected transient MemorySegment data;
 
-	// String cache values
-	private transient String fileNameCache;
-	private transient String extraFieldCache;
 
 	/**
 	 * @return The associated backing data that this file header was read from.
@@ -55,7 +52,7 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	}
 
 	@Override
-	public void read(@Nonnull MemorySegment data, long offset) {
+	public void read(@Nonnull MemorySegment data, long offset) throws ZipParseException {
 		this.data = data;
 		this.offset = offset;
 	}
@@ -64,7 +61,7 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * @return Version of zip software required to read the archive features.
 	 */
 	public int getVersionNeededToExtract() {
-		return versionNeededToExtract.get();
+		return versionNeededToExtract;
 	}
 
 	/**
@@ -72,14 +69,14 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * 		Version of zip software required to read the archive features.
 	 */
 	public void setVersionNeededToExtract(int versionNeededToExtract) {
-		this.versionNeededToExtract.set(versionNeededToExtract);
+		this.versionNeededToExtract = versionNeededToExtract;
 	}
 
 	/**
 	 * @return Used primarily to expand on details of file compression.
 	 */
 	public int getGeneralPurposeBitFlag() {
-		return generalPurposeBitFlag.get();
+		return generalPurposeBitFlag;
 	}
 
 	/**
@@ -87,7 +84,7 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * 		Used primarily to expand on details of file compression.
 	 */
 	public void setGeneralPurposeBitFlag(int generalPurposeBitFlag) {
-		this.generalPurposeBitFlag.set(generalPurposeBitFlag);
+		this.generalPurposeBitFlag = generalPurposeBitFlag;
 	}
 
 	/**
@@ -96,7 +93,7 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * @see ZipCompressions Possible methods.
 	 */
 	public int getCompressionMethod() {
-		return compressionMethod.get();
+		return compressionMethod;
 	}
 
 	/**
@@ -106,14 +103,14 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * @see ZipCompressions Possible methods.
 	 */
 	public void setCompressionMethod(int compressionMethod) {
-		this.compressionMethod.set(compressionMethod);
+		this.compressionMethod = compressionMethod;
 	}
 
 	/**
 	 * @return Modification time of the file.
 	 */
 	public int getLastModFileTime() {
-		return lastModFileTime.get();
+		return lastModFileTime;
 	}
 
 	/**
@@ -121,14 +118,14 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * 		Modification time of the file.
 	 */
 	public void setLastModFileTime(int lastModFileTime) {
-		this.lastModFileTime.set(lastModFileTime);
+		this.lastModFileTime = lastModFileTime;
 	}
 
 	/**
 	 * @return Modification date of the file.
 	 */
 	public int getLastModFileDate() {
-		return lastModFileDate.get();
+		return lastModFileDate;
 	}
 
 	/**
@@ -136,14 +133,14 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * 		Modification date of the file.
 	 */
 	public void setLastModFileDate(int lastModFileDate) {
-		this.lastModFileDate.set(lastModFileDate);
+		this.lastModFileDate = lastModFileDate;
 	}
 
 	/**
 	 * @return File checksum.
 	 */
 	public int getCrc32() {
-		return crc32.get();
+		return crc32;
 	}
 
 	/**
@@ -151,7 +148,7 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * 		File checksum.
 	 */
 	public void setCrc32(int crc32) {
-		this.crc32.set(crc32);
+		this.crc32 = crc32;
 	}
 
 	/**
@@ -164,7 +161,7 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * @return Compressed size of {@link LocalFileHeader#getFileData()}.
 	 */
 	public long getCompressedSize() {
-		return compressedSize.get();
+		return compressedSize;
 	}
 
 	/**
@@ -172,7 +169,7 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * 		Compressed size of {@link LocalFileHeader#getFileData()}.
 	 */
 	public void setCompressedSize(long compressedSize) {
-		this.compressedSize.set(compressedSize & 0xFFFFFFFFL);
+		this.compressedSize = compressedSize & 0xFFFFFFFFL;
 	}
 
 	/**
@@ -183,7 +180,7 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * @return Uncompressed size after {@link LocalFileHeader#decompress(Decompressor)} is used on {@link LocalFileHeader#getFileData()}.
 	 */
 	public long getUncompressedSize() {
-		return uncompressedSize.get();
+		return uncompressedSize;
 	}
 
 	/**
@@ -191,14 +188,14 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * 		Uncompressed size after {@link LocalFileHeader#decompress(Decompressor)} is used on {@link LocalFileHeader#getFileData()}.
 	 */
 	public void setUncompressedSize(long uncompressedSize) {
-		this.uncompressedSize.set(uncompressedSize & 0xFFFFFFFFL);
+		this.uncompressedSize = uncompressedSize & 0xFFFFFFFFL;
 	}
 
 	/**
 	 * @return Length of {@link #getFileName()}.
 	 */
 	public int getFileNameLength() {
-		return fileNameLength.get();
+		return fileNameLength;
 	}
 
 	/**
@@ -206,14 +203,14 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * 		Length of {@link #getFileName()}.
 	 */
 	public void setFileNameLength(int fileNameLength) {
-		this.fileNameLength.set(fileNameLength & 0xFFFF);
+		this.fileNameLength = fileNameLength & 0xFFFF;
 	}
 
 	/**
 	 * @return Length of {@link #getExtraField()}
 	 */
 	public int getExtraFieldLength() {
-		return extraFieldLength.get();
+		return extraFieldLength;
 	}
 
 	/**
@@ -221,60 +218,91 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * 		Length of {@link #getExtraField()}
 	 */
 	public void setExtraFieldLength(int extraFieldLength) {
-		this.extraFieldLength.set(extraFieldLength & 0xFFFF);
+		this.extraFieldLength = extraFieldLength & 0xFFFF;
 	}
 
 	/**
 	 * @return File name.
 	 */
-	public MemorySegment getFileName() {
-		return fileName.get();
+	public StringData getFileName() {
+		return fileName;
 	}
 
 	/**
 	 * @param fileName
 	 * 		File name.
 	 */
-	public void setFileName(MemorySegment fileName) {
-		this.fileName.set(fileName);
-		fileNameCache = null;
+	public void setFileName(StringData fileName) {
+		this.fileName = fileName;
 	}
 
 	/**
 	 * @return File name.
 	 */
 	public String getFileNameAsString() {
-		String fileNameCache = this.fileNameCache;
-		if (fileNameCache == null && fileName != null) {
-			return this.fileNameCache = MemorySegmentUtil.toString(fileName.get());
-		}
-		return fileNameCache;
+		return fileName.get();
 	}
 
 	/**
 	 * @return May be used for extra compression information,
 	 * depending on the {@link #getCompressionMethod() compression method} used.
 	 */
-	public MemorySegment getExtraField() {
-		return extraField.get();
+	public MemorySegmentData getExtraField() {
+		return extraField;
 	}
 
 	/**
 	 * @param extraField
 	 * 		Extra field bytes.
 	 */
-	public void setExtraField(MemorySegment extraField) {
-		this.extraField.set(extraField);
+	public void setExtraField(MemorySegmentData extraField) {
+		this.extraField = extraField;
 	}
 
 	/**
 	 * @return Extra field.
 	 */
 	public String getExtraFieldAsString() {
-		String fileCommentCache = this.extraFieldCache;
-		if (fileCommentCache == null && extraField != null) {
-			return this.extraFieldCache = MemorySegmentUtil.toString(extraField.get());
-		}
-		return fileCommentCache;
+		return MemorySegmentUtil.toString(extraField.get());
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof AbstractZipFileHeader that)) return false;
+
+		if (versionNeededToExtract != that.versionNeededToExtract) return false;
+		if (generalPurposeBitFlag != that.generalPurposeBitFlag) return false;
+		if (compressionMethod != that.compressionMethod) return false;
+		if (lastModFileTime != that.lastModFileTime) return false;
+		if (lastModFileDate != that.lastModFileDate) return false;
+		if (crc32 != that.crc32) return false;
+		if (compressedSize != that.compressedSize) return false;
+		if (uncompressedSize != that.uncompressedSize) return false;
+		if (fileNameLength != that.fileNameLength) return false;
+		if (extraFieldLength != that.extraFieldLength) return false;
+		if (offset != that.offset) return false;
+		if (!Objects.equals(fileName, that.fileName)) return false;
+		if (!Objects.equals(extraField, that.extraField)) return false;
+		return Objects.equals(data, that.data);
+	}
+
+	@Override
+	public int hashCode() {
+		int result = versionNeededToExtract;
+		result = 31 * result + generalPurposeBitFlag;
+		result = 31 * result + compressionMethod;
+		result = 31 * result + lastModFileTime;
+		result = 31 * result + lastModFileDate;
+		result = 31 * result + crc32;
+		result = 31 * result + (int) (compressedSize ^ (compressedSize >>> 32));
+		result = 31 * result + (int) (uncompressedSize ^ (uncompressedSize >>> 32));
+		result = 31 * result + fileNameLength;
+		result = 31 * result + extraFieldLength;
+		result = 31 * result + (fileName != null ? fileName.hashCode() : 0);
+		result = 31 * result + (extraField != null ? extraField.hashCode() : 0);
+		result = 31 * result + (int) (offset ^ (offset >>> 32));
+		result = 31 * result + (data != null ? data.hashCode() : 0);
+		return result;
 	}
 }

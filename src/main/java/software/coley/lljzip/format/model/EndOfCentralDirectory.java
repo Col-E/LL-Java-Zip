@@ -1,11 +1,13 @@
 package software.coley.lljzip.format.model;
 
-import software.coley.lljzip.util.MemorySegmentUtil;
+import software.coley.lljzip.util.data.StringData;
 
 import javax.annotation.Nonnull;
 import java.lang.foreign.MemorySegment;
 import java.util.Objects;
 
+import static software.coley.lljzip.util.MemorySegmentUtil.readQuad;
+import static software.coley.lljzip.util.MemorySegmentUtil.readWord;
 
 /**
  * ZIP EndOfCentralDirectory structure.
@@ -35,8 +37,7 @@ public class EndOfCentralDirectory implements ZipPart, ZipRead {
 	private long centralDirectorySize;
 	private long centralDirectoryOffset;
 	private int zipCommentLength;
-	private MemorySegment zipComment;
-	private transient String zipCommentCache;
+	private StringData zipComment;
 
 	/**
 	 * @return Copy.
@@ -53,26 +54,25 @@ public class EndOfCentralDirectory implements ZipPart, ZipRead {
 		copy.centralDirectoryOffset = centralDirectoryOffset;
 		copy.zipCommentLength = zipCommentLength;
 		copy.zipComment = zipComment;
-		copy.zipCommentCache = zipCommentCache;
 		return copy;
 	}
 
 	@Override
 	public void read(@Nonnull MemorySegment data, long offset) {
 		this.offset = offset;
-		diskNumber = MemorySegmentUtil.readWord(data, offset + 4);
-		centralDirectoryStartDisk = MemorySegmentUtil.readWord(data, offset + 6);
-		centralDirectoryStartOffset = MemorySegmentUtil.readWord(data, offset + 8);
-		numEntries = MemorySegmentUtil.readWord(data, offset + 10);
-		setCentralDirectorySize(MemorySegmentUtil.readQuad(data, offset + 12));
-		setCentralDirectoryOffset(MemorySegmentUtil.readQuad(data, offset + 16));
-		setZipCommentLength(MemorySegmentUtil.readWord(data, offset + 20));
-		zipComment = data.asSlice(offset + 22, zipCommentLength);
+		diskNumber = readWord(data, offset + 4);
+		centralDirectoryStartDisk = readWord(data, offset + 6);
+		centralDirectoryStartOffset = readWord(data, offset + 8);
+		numEntries = readWord(data, offset + 10);
+		setCentralDirectorySize(readQuad(data, offset + 12));
+		setCentralDirectoryOffset(readQuad(data, offset + 16));
+		setZipCommentLength(readWord(data, offset + 20));
+		zipComment = StringData.of(data.asSlice(offset + 22, zipCommentLength));
 	}
 
 	@Override
 	public long length() {
-		return 22L + zipComment.byteSize();
+		return 22L + zipComment.get().length();
 	}
 
 	@Nonnull
@@ -196,7 +196,7 @@ public class EndOfCentralDirectory implements ZipPart, ZipRead {
 	/**
 	 * @return Optional comment, or empty string.
 	 */
-	public MemorySegment getZipComment() {
+	public StringData getZipComment() {
 		return zipComment;
 	}
 
@@ -204,9 +204,7 @@ public class EndOfCentralDirectory implements ZipPart, ZipRead {
 	 * @param zipComment
 	 * 		Optional comment, or empty string.
 	 */
-	public void setZipComment(MemorySegment zipComment) {
-		if (zipComment == null)
-			zipComment = MemorySegment.ofArray(new byte[0]);
+	public void setZipComment(StringData zipComment) {
 		this.zipComment = zipComment;
 	}
 
@@ -214,11 +212,7 @@ public class EndOfCentralDirectory implements ZipPart, ZipRead {
 	 * @return Optional comment, or empty string.
 	 */
 	public String getZipCommentAsString() {
-		String zipCommentCache = this.zipCommentCache;
-		if (zipCommentCache == null) {
-			return this.zipCommentCache = MemorySegmentUtil.toString(zipComment);
-		}
-		return zipCommentCache;
+		return zipComment.get();
 	}
 
 	@Override
@@ -239,21 +233,30 @@ public class EndOfCentralDirectory implements ZipPart, ZipRead {
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
-		EndOfCentralDirectory that = (EndOfCentralDirectory) o;
-		return diskNumber == that.diskNumber &&
-				centralDirectoryStartDisk == that.centralDirectoryStartDisk &&
-				centralDirectoryStartOffset == that.centralDirectoryStartOffset &&
-				numEntries == that.numEntries &&
-				centralDirectorySize == that.centralDirectorySize &&
-				centralDirectoryOffset == that.centralDirectoryOffset &&
-				zipCommentLength == that.zipCommentLength &&
-				zipComment.equals(that.zipComment);
+		if (!(o instanceof EndOfCentralDirectory that)) return false;
+
+		if (offset != that.offset) return false;
+		if (diskNumber != that.diskNumber) return false;
+		if (centralDirectoryStartDisk != that.centralDirectoryStartDisk) return false;
+		if (centralDirectoryStartOffset != that.centralDirectoryStartOffset) return false;
+		if (numEntries != that.numEntries) return false;
+		if (centralDirectorySize != that.centralDirectorySize) return false;
+		if (centralDirectoryOffset != that.centralDirectoryOffset) return false;
+		if (zipCommentLength != that.zipCommentLength) return false;
+		return Objects.equals(zipComment, that.zipComment);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(diskNumber, centralDirectoryStartDisk, centralDirectoryStartOffset,
-				numEntries, centralDirectorySize, centralDirectoryOffset, zipCommentLength, zipComment);
+		int result = (int) (offset ^ (offset >>> 32));
+		result = 31 * result + diskNumber;
+		result = 31 * result + centralDirectoryStartDisk;
+		result = 31 * result + centralDirectoryStartOffset;
+		result = 31 * result + numEntries;
+		result = 31 * result + (int) (centralDirectorySize ^ (centralDirectorySize >>> 32));
+		result = 31 * result + (int) (centralDirectoryOffset ^ (centralDirectoryOffset >>> 32));
+		result = 31 * result + zipCommentLength;
+		result = 31 * result + (zipComment != null ? zipComment.hashCode() : 0);
+		return result;
 	}
 }

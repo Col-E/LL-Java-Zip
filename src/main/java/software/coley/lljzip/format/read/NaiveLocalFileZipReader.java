@@ -3,6 +3,7 @@ package software.coley.lljzip.format.read;
 import software.coley.lljzip.format.ZipPatterns;
 import software.coley.lljzip.format.model.LocalFileHeader;
 import software.coley.lljzip.format.model.ZipArchive;
+import software.coley.lljzip.format.model.ZipParseException;
 import software.coley.lljzip.util.MemorySegmentUtil;
 
 import javax.annotation.Nonnull;
@@ -43,7 +44,11 @@ public class NaiveLocalFileZipReader extends AbstractZipReader {
 		}
 		do {
 			LocalFileHeader file = newLocalFileHeader();
-			file.read(data, localFileOffset);
+			try {
+				file.read(data, localFileOffset);
+			} catch (ZipParseException ex) {
+				throw new IOException(ex);
+			}
 			zip.addPart(file);
 			postProcessLocalFileHeader(file);
 		} while ((localFileOffset = MemorySegmentUtil.indexOfQuad(data, localFileOffset + 1, ZipPatterns.LOCAL_FILE_HEADER_QUAD)) >= 0);

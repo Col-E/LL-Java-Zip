@@ -46,8 +46,8 @@ public class DirectZipWriter implements ZipWriter {
 		writeIntLE(os, (int) fileHeader.getUncompressedSize());
 		writeShortLE(os, fileHeader.getFileNameLength());
 		writeShortLE(os, fileHeader.getExtraFieldLength());
-		os.write(MemorySegmentUtil.toByteArray(fileHeader.getFileName()));
-		os.write(MemorySegmentUtil.toByteArray(fileHeader.getExtraField()));
+		os.write(fileHeader.getFileName().get().getBytes());
+		os.write(MemorySegmentUtil.toByteArray(fileHeader.getExtraField().get()));
 		os.write(MemorySegmentUtil.toByteArray(fileHeader.getFileData()));
 	}
 
@@ -69,9 +69,9 @@ public class DirectZipWriter implements ZipWriter {
 		writeShortLE(os, directory.getInternalFileAttributes());
 		writeIntLE(os, directory.getExternalFileAttributes());
 		writeIntLE(os, (int) directory.getRelativeOffsetOfLocalHeader());
-		os.write(MemorySegmentUtil.toByteArray(directory.getFileName()));
-		os.write(MemorySegmentUtil.toByteArray(directory.getExtraField()));
-		os.write(MemorySegmentUtil.toByteArray(directory.getFileComment()));
+		os.write(directory.getFileName().get().getBytes());
+		os.write(MemorySegmentUtil.toByteArray(directory.getExtraField().get()));
+		os.write(directory.getFileComment().get().getBytes());
 	}
 
 	protected void writeEnd(@Nonnull EndOfCentralDirectory end, @Nonnull OutputStream os) throws IOException {
@@ -83,7 +83,7 @@ public class DirectZipWriter implements ZipWriter {
 		writeIntLE(os, (int) end.getCentralDirectorySize());
 		writeIntLE(os, (int) end.getCentralDirectoryOffset());
 		writeShortLE(os, end.getZipCommentLength());
-		os.write(MemorySegmentUtil.toByteArray(end.getZipComment()));
+		os.write(end.getZipComment().get().getBytes());
 	}
 
 	protected static void writeShortLE(OutputStream os, int value) throws IOException {

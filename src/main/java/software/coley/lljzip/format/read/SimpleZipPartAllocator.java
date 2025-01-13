@@ -11,7 +11,7 @@ import javax.annotation.Nonnull;
  *
  * @author Matt Coley
  */
-public class SimpleZipPartAllocator implements ZipPartAllocator{
+public class SimpleZipPartAllocator implements ZipPartAllocator {
 	@Nonnull
 	@Override
 	public LocalFileHeader newLocalFileHeader() {

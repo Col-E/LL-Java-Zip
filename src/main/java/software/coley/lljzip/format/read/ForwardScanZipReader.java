@@ -7,13 +7,15 @@ import software.coley.lljzip.format.model.CentralDirectoryFileHeader;
 import software.coley.lljzip.format.model.EndOfCentralDirectory;
 import software.coley.lljzip.format.model.LocalFileHeader;
 import software.coley.lljzip.format.model.ZipArchive;
+import software.coley.lljzip.format.model.ZipParseException;
 import software.coley.lljzip.util.MemorySegmentUtil;
 import software.coley.lljzip.util.OffsetComparator;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.lang.foreign.MemorySegment;
-import java.util.*;
+import java.util.NavigableSet;
+import java.util.TreeSet;
 
 /**
  * The standard read strategy that should work with standard zip archives.
@@ -33,7 +35,8 @@ public class ForwardScanZipReader extends AbstractZipReader {
 	/**
 	 * New reader with given allocator.
 	 *
-	 * @param allocator Allocator to use.
+	 * @param allocator
+	 * 		Allocator to use.
 	 */
 	public ForwardScanZipReader(@Nonnull ZipPartAllocator allocator) {
 		super(allocator);
@@ -59,7 +62,12 @@ public class ForwardScanZipReader extends AbstractZipReader {
 		long centralDirectoryOffset = zipStart + end.getCentralDirectoryOffset();
 		while (centralDirectoryOffset < len && MemorySegmentUtil.readQuad(data, centralDirectoryOffset) == ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER_QUAD) {
 			CentralDirectoryFileHeader directory = new CentralDirectoryFileHeader();
-			directory.read(data, centralDirectoryOffset);
+			try {
+				directory.read(data, centralDirectoryOffset);
+			} catch (ZipParseException ex) {
+				// When the CEN cannot be read, we can't recover
+				throw new IOException(ex);
+			}
 			centralDirectoryOffset += directory.length();
 			zip.addPart(directory);
 		}
@@ -73,7 +81,12 @@ public class ForwardScanZipReader extends AbstractZipReader {
 				LocalFileHeader file = newLocalFileHeader();
 				directory.link(file);
 				file.link(directory);
-				file.read(data, offset);
+				try {
+					file.read(data, offset);
+				} catch (ZipParseException ex) {
+					// Unlike the other readers, we aren't going to fall back to using CEN data, so we won't recover from this.
+					throw new IOException(ex);
+				}
 				zip.addPart(file);
 				postProcessLocalFileHeader(file);
 				offsets.add(offset);

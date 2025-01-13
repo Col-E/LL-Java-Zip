@@ -171,7 +171,7 @@ public class PartParseTests {
 			ZipArchive zipStdAndAdopt = ZipIO.read(path, new ForwardScanZipReader() {
 				@Override
 				public void postProcessLocalFileHeader(@Nonnull LocalFileHeader file) {
-					file.adoptLinkedCentralDirectoryValues();
+					assertDoesNotThrow(() -> file.adoptLinkedCentralDirectoryValues());
 				}
 			});
 			LocalFileHeader helloAdopted = zipStdAndAdopt.getLocalFileByName("Hello.class");

@@ -3,7 +3,11 @@ package software.coley.lljzip;
 import software.coley.lljzip.format.model.CentralDirectoryFileHeader;
 import software.coley.lljzip.format.model.EndOfCentralDirectory;
 import software.coley.lljzip.format.model.ZipArchive;
-import software.coley.lljzip.format.read.*;
+import software.coley.lljzip.format.read.AdaptingZipReader;
+import software.coley.lljzip.format.read.ForwardScanZipReader;
+import software.coley.lljzip.format.read.JvmZipReader;
+import software.coley.lljzip.format.read.NaiveLocalFileZipReader;
+import software.coley.lljzip.format.read.ZipReader;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -172,7 +176,8 @@ public class ZipIO {
 	 *
 	 * @return Archive from path.
 	 *
-	 * @throws IOException When the archive cannot be read.
+	 * @throws IOException
+	 * 		When the archive cannot be read.
 	 */
 	public static ZipArchive readAdaptingIO(Path path) throws IOException {
 		ZipArchive archive = new ZipArchive();

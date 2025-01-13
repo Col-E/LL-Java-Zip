@@ -3,6 +3,7 @@ package software.coley.lljzip.format.transform;
 import software.coley.lljzip.format.model.CentralDirectoryFileHeader;
 import software.coley.lljzip.format.model.LocalFileHeader;
 import software.coley.lljzip.format.model.ZipArchive;
+import software.coley.lljzip.format.model.ZipParseException;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -26,7 +27,11 @@ public class CentralAdoptingMapper extends DelegatingZipPartMapper {
 	public LocalFileHeader mapLocal(@Nonnull ZipArchive archive, @Nonnull LocalFileHeader localFileHeader) {
 		if (localFileHeader.getLinkedDirectoryFileHeader() != null) {
 			LocalFileHeader copy = localFileHeader.copy();
-			copy.adoptLinkedCentralDirectoryValues();
+			try {
+				copy.adoptLinkedCentralDirectoryValues();
+			} catch (ZipParseException ex) {
+				throw new IllegalStateException(ex);
+			}
 			return copy;
 		}
 		return super.mapLocal(archive, localFileHeader);

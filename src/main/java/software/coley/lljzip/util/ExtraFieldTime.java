@@ -26,7 +26,7 @@ public class ExtraFieldTime {
 	public static TimeWrapper read(@Nonnull CentralDirectoryFileHeader header) {
 		int extraLen = header.getExtraFieldLength();
 		if (extraLen > 0 && extraLen < 0xFFFF) {
-			MemorySegment extra = header.getExtraField();
+			MemorySegment extra = header.getExtraField().get();
 			return read(extra);
 		}
 		return null;
@@ -42,7 +42,7 @@ public class ExtraFieldTime {
 	public static TimeWrapper read(@Nonnull LocalFileHeader header) {
 		int extraLen = header.getExtraFieldLength();
 		if (extraLen > 0 && extraLen < 0xFFFF) {
-			MemorySegment extra = header.getExtraField();
+			MemorySegment extra = header.getExtraField().get();
 			return read(extra);
 		}
 		return null;

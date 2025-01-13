@@ -3,7 +3,12 @@ package software.coley.lljzip.format.read;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.coley.lljzip.format.ZipPatterns;
-import software.coley.lljzip.format.model.*;
+import software.coley.lljzip.format.model.CentralDirectoryFileHeader;
+import software.coley.lljzip.format.model.EndOfCentralDirectory;
+import software.coley.lljzip.format.model.JvmLocalFileHeader;
+import software.coley.lljzip.format.model.LocalFileHeader;
+import software.coley.lljzip.format.model.ZipArchive;
+import software.coley.lljzip.format.model.ZipParseException;
 import software.coley.lljzip.util.MemorySegmentUtil;
 import software.coley.lljzip.util.OffsetComparator;
 
@@ -27,12 +32,13 @@ import java.util.TreeSet;
 public class JvmZipReader extends AbstractZipReader {
 	private static final Logger logger = LoggerFactory.getLogger(JvmZipReader.class);
 	private final boolean skipRevisitedCenToLocalLinks;
+	private final boolean allowBasicJvmBaseOffsetZeroCheck;
 
 	/**
 	 * New reader with jvm allocator.
 	 */
 	public JvmZipReader() {
-		this(new JvmZipPartAllocator(), true);
+		this(new JvmZipPartAllocator(), true, true);
 	}
 
 	/**
@@ -41,9 +47,11 @@ public class JvmZipReader extends AbstractZipReader {
 	 * @param skipRevisitedCenToLocalLinks
 	 * 		Flag to skip creating duplicate {@link LocalFileHeader} entries if multiple
 	 *        {@link CentralDirectoryFileHeader} point to the same location.
+	 * @param allowBasicJvmBaseOffsetZeroCheck
+	 * 		Flag to check for {@code jvmBaseFileOffset == 0} before using the logic adapted from {@code ZipFile.Source#findEND()}.
 	 */
-	public JvmZipReader(boolean skipRevisitedCenToLocalLinks) {
-		this(new JvmZipPartAllocator(), skipRevisitedCenToLocalLinks);
+	public JvmZipReader(boolean skipRevisitedCenToLocalLinks, boolean allowBasicJvmBaseOffsetZeroCheck) {
+		this(new JvmZipPartAllocator(), skipRevisitedCenToLocalLinks, allowBasicJvmBaseOffsetZeroCheck);
 	}
 
 	/**
@@ -54,10 +62,13 @@ public class JvmZipReader extends AbstractZipReader {
 	 * @param skipRevisitedCenToLocalLinks
 	 * 		Flag to skip creating duplicate {@link LocalFileHeader} entries if multiple
 	 *        {@link CentralDirectoryFileHeader} point to the same location.
+	 * @param allowBasicJvmBaseOffsetZeroCheck
+	 * 		Flag to check for {@code jvmBaseFileOffset == 0} before using the logic adapted from {@code ZipFile.Source#findEND()}.
 	 */
-	public JvmZipReader(@Nonnull ZipPartAllocator allocator, boolean skipRevisitedCenToLocalLinks) {
+	public JvmZipReader(@Nonnull ZipPartAllocator allocator, boolean skipRevisitedCenToLocalLinks, boolean allowBasicJvmBaseOffsetZeroCheck) {
 		super(allocator);
 		this.skipRevisitedCenToLocalLinks = skipRevisitedCenToLocalLinks;
+		this.allowBasicJvmBaseOffsetZeroCheck = allowBasicJvmBaseOffsetZeroCheck;
 	}
 
 	@Override
@@ -85,7 +96,12 @@ public class JvmZipReader extends AbstractZipReader {
 			centralDirectoryOffset = MemorySegmentUtil.lastIndexOfQuad(data, centralDirectoryOffset - 1L, ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER_QUAD);
 			if (centralDirectoryOffset >= 0L) {
 				CentralDirectoryFileHeader directory = newCentralDirectoryFileHeader();
-				directory.read(data, centralDirectoryOffset);
+				try {
+					directory.read(data, centralDirectoryOffset);
+				} catch (ZipParseException ex) {
+					// We cannot recover from the CEN reading encountering failures.
+					throw new IOException(ex);
+				}
 				zip.addPart(directory);
 				if (directory.getRelativeOffsetOfLocalHeader() > maxRelativeOffset)
 					maxRelativeOffset = directory.getRelativeOffsetOfLocalHeader();
@@ -122,29 +138,42 @@ public class JvmZipReader extends AbstractZipReader {
 
 		// Search for the first valid PK header if there was either no prior ZIP file
 		// or if the prior ZIP detection was bogus.
-		if (priorZipEndWasBogus || precedingEndOfCentralDirectory == -1L) {
-			// There was no match for a prior end part. We will seek forwards until finding a *VALID* PK starting header.
-			//  - Java's zip parser does not always start from zero. It uses the computation:
-			//      locpos = (end.endpos - end.cenlen) - end.cenoff;
-			//  - This computation is taken from: ZipFile.Source#initCEN
-			jvmBaseFileOffset = (end.offset() - end.getCentralDirectorySize()) - end.getCentralDirectoryOffset();
+		scan:
+		{
+			if (priorZipEndWasBogus || precedingEndOfCentralDirectory == -1L) {
+				// If the start of the file is valid, we don't have to actually do much more anti-bogus work.
+				// This whole 'scan' block is incredibly yucky but seems to work for all of our edge case inputs.
+				if (allowBasicJvmBaseOffsetZeroCheck && MemorySegmentUtil.readQuad(data, 0) == ZipPatterns.LOCAL_FILE_HEADER_QUAD) {
+					if (MemorySegmentUtil.indexOfQuad(data, 1, ZipPatterns.LOCAL_FILE_HEADER_QUAD) > LocalFileHeader.MIN_FIXED_SIZE) {
+						break scan;
+					}
+				}
 
-			// Now that we have the start offset, scan forward. We can match the current value as well.
-			jvmBaseFileOffset = MemorySegmentUtil.indexOfWord(data, jvmBaseFileOffset, ZipPatterns.PK_WORD);
-			while (jvmBaseFileOffset >= 0L) {
-				// Check that the PK discovered represents a valid zip part
-				try {
-					if (MemorySegmentUtil.readQuad(data, jvmBaseFileOffset) == ZipPatterns.LOCAL_FILE_HEADER_QUAD)
-						new LocalFileHeader().read(data, jvmBaseFileOffset);
-					else if (MemorySegmentUtil.readQuad(data, jvmBaseFileOffset) == ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER_QUAD)
-						new CentralDirectoryFileHeader().read(data, jvmBaseFileOffset);
-					else
+				// There was no match for a prior end part. We will seek forwards until finding a *VALID* PK starting header.
+				//  - Java's zip parser does not always start from zero. It uses the computation:
+				//      locpos = (end.endpos - end.cenlen) - end.cenoff;
+				//  - This computation is taken from: ZipFile.Source#initCEN
+				long endPos = end.offset();
+				long cenLen = end.getCentralDirectorySize();
+				long cenOff = end.getCentralDirectoryOffset();
+				jvmBaseFileOffset = (endPos - cenLen) - cenOff;
+
+				// Now that we have the start offset, scan forward. We can match the current value as well.
+				jvmBaseFileOffset = MemorySegmentUtil.indexOfWord(data, jvmBaseFileOffset, ZipPatterns.PK_WORD);
+				while (jvmBaseFileOffset >= 0L) {
+					// Check that the PK discovered represents a valid zip part
+					try {
+						if (MemorySegmentUtil.readQuad(data, jvmBaseFileOffset) == ZipPatterns.LOCAL_FILE_HEADER_QUAD)
+							break;
+						else if (MemorySegmentUtil.readQuad(data, jvmBaseFileOffset) == ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER_QUAD)
+							break;
+
+						// Not an expected value...
 						throw new IllegalStateException("No match for LocalFileHeader/CentralDirectoryFileHeader");
-					// Valid, we're good to go
-					break;
-				} catch (Exception ex) {
-					// Invalid, seek forward
-					jvmBaseFileOffset = MemorySegmentUtil.indexOfWord(data, jvmBaseFileOffset + 1L, ZipPatterns.PK_WORD);
+					} catch (Exception ex) {
+						// Invalid, seek forward
+						jvmBaseFileOffset = MemorySegmentUtil.indexOfWord(data, jvmBaseFileOffset + 1L, ZipPatterns.PK_WORD);
+					}
 				}
 			}
 		}
@@ -195,7 +224,11 @@ public class JvmZipReader extends AbstractZipReader {
 				if (file instanceof JvmLocalFileHeader) {
 					((JvmLocalFileHeader) file).setOffsets(entryOffsets);
 				}
-				file.read(data, offset);
+				try {
+					file.read(data, offset);
+				} catch (IndexOutOfBoundsException t) {
+					// Its intended that if this fails the adopting of CEN values below will work instead.
+				}
 				directory.link(file);
 				file.link(directory);
 				file.adoptLinkedCentralDirectoryValues();
@@ -209,7 +242,8 @@ public class JvmZipReader extends AbstractZipReader {
 		// Record any data appearing at the front of the file not associated with the ZIP file contents.
 		if (!entryOffsets.isEmpty()) {
 			long firstOffset = entryOffsets.first();
-			zip.setPrefixData(data.asSlice(0, firstOffset));
+			if (firstOffset > 0)
+				zip.setPrefixData(data.asSlice(0, firstOffset));
 		}
 
 		// Sort based on order

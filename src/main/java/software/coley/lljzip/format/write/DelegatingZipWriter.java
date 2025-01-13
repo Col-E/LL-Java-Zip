@@ -19,7 +19,8 @@ public class DelegatingZipWriter implements ZipWriter {
 	private final ZipWriter delegate;
 
 	/**
-	 * @param delegate Delegate writer.
+	 * @param delegate
+	 * 		Delegate writer.
 	 */
 	public DelegatingZipWriter(@Nullable ZipWriter delegate) {
 		this.delegate = delegate;

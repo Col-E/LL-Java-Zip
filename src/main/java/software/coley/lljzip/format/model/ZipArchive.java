@@ -9,7 +9,12 @@ import javax.annotation.Nullable;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.foreign.MemorySegment;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -160,6 +165,7 @@ public class ZipArchive implements AutoCloseable, Iterable<ZipPart> {
 			return centralDirectories.stream()
 					.filter(c -> nameFilter.test(c.getFileNameAsString()))
 					.map(CentralDirectoryFileHeader::getLinkedFileHeader)
+					.filter(Objects::nonNull)
 					.collect(Collectors.toList());
 
 		// Fallback to using local entries

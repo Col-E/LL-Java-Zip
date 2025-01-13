@@ -1,9 +1,6 @@
 package software.coley.lljzip.util;
 
 import software.coley.lljzip.format.model.ZipPart;
-import software.coley.lljzip.util.lazy.LazyMemorySegment;
-import software.coley.lljzip.util.lazy.LazyInt;
-import software.coley.lljzip.util.lazy.LazyLong;
 
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
@@ -17,6 +14,7 @@ import java.nio.charset.StandardCharsets;
  */
 public class MemorySegmentUtil {
 	public static final int WILDCARD = Integer.MIN_VALUE;
+	public static final MemorySegment EMPTY = MemorySegment.ofArray(new byte[0]);
 	private static final ValueLayout.OfInt LITTLE_INT = ValueLayout.JAVA_INT_UNALIGNED.withOrder(ByteOrder.LITTLE_ENDIAN);
 	private static final ValueLayout.OfShort LITTLE_SHORT = ValueLayout.JAVA_SHORT_UNALIGNED.withOrder(ByteOrder.LITTLE_ENDIAN);
 
@@ -319,12 +317,10 @@ public class MemorySegmentUtil {
 	 * @param localOffset
 	 * 		Local offset from the header offset.
 	 *
-	 * @return Lazily populated word.
+	 * @return Value of word.
 	 */
-	public static LazyInt readLazyWord(MemorySegment data, long headerOffset, int localOffset) {
-		return new LazyInt(() -> {
-			return readWord(data, headerOffset + localOffset);
-		});
+	public static int readWord(MemorySegment data, long headerOffset, int localOffset) {
+		return readWord(data, headerOffset + localOffset);
 	}
 
 	/**
@@ -335,12 +331,10 @@ public class MemorySegmentUtil {
 	 * @param localOffset
 	 * 		Local offset from the header offset.
 	 *
-	 * @return Lazily populated quad.
+	 * @return Value of quad.
 	 */
-	public static LazyInt readLazyQuad(MemorySegment data, long headerOffset, int localOffset) {
-		return new LazyInt(() -> {
-			return readQuad(data, headerOffset + localOffset);
-		});
+	public static int readQuad(MemorySegment data, long headerOffset, int localOffset) {
+		return readQuad(data, headerOffset + localOffset);
 	}
 
 	/**
@@ -351,12 +345,10 @@ public class MemorySegmentUtil {
 	 * @param localOffset
 	 * 		Local offset from the header offset.
 	 *
-	 * @return Lazily populated masked quad.
+	 * @return Value of masked quad.
 	 */
-	public static LazyInt readLazyMaskedQuad(MemorySegment data, long headerOffset, int localOffset) {
-		return new LazyInt(() -> {
-			return readQuad(data, headerOffset + localOffset) & 0xFFFF;
-		});
+	public static int readMaskedQuad(MemorySegment data, long headerOffset, int localOffset) {
+		return readQuad(data, headerOffset + localOffset) & 0xFFFF;
 	}
 
 	/**
@@ -367,12 +359,10 @@ public class MemorySegmentUtil {
 	 * @param localOffset
 	 * 		Local offset from the header offset.
 	 *
-	 * @return Lazily populated long word.
+	 * @return Value of long word.
 	 */
-	public static LazyLong readLazyLongWord(MemorySegment data, long headerOffset, int localOffset) {
-		return new LazyLong(() -> {
-			return readWord(data, headerOffset + localOffset);
-		});
+	public static long readLongWord(MemorySegment data, long headerOffset, int localOffset) {
+		return readWord(data, headerOffset + localOffset);
 	}
 
 	/**
@@ -383,12 +373,10 @@ public class MemorySegmentUtil {
 	 * @param localOffset
 	 * 		Local offset from the header offset.
 	 *
-	 * @return Lazily populated masked long quad.
+	 * @return Value of masked long quad.
 	 */
-	public static LazyLong readLazyMaskedLongQuad(MemorySegment data, long headerOffset, int localOffset) {
-		return new LazyLong(() -> {
-			return readQuad(data, headerOffset + localOffset) & 0xFFFFFFFFL;
-		});
+	public static long readMaskedLongQuad(MemorySegment data, long headerOffset, int localOffset) {
+		return readQuad(data, headerOffset + localOffset) & 0xFFFFFFFFL;
 	}
 
 	/**
@@ -399,12 +387,10 @@ public class MemorySegmentUtil {
 	 * @param localOffset
 	 * 		Local offset from the header offset.
 	 *
-	 * @return Lazily populated slice.
+	 * @return Value of slice.
 	 */
-	public static LazyMemorySegment readLazySlice(MemorySegment data, long headerOffset, LazyInt localOffset, LazyInt length) {
-		return new LazyMemorySegment(() -> {
-			return data.asSlice(headerOffset + localOffset.get(), length.get());
-		});
+	public static MemorySegment readSlice(MemorySegment data, long headerOffset, int localOffset, int length) {
+		return data.asSlice(headerOffset + localOffset, length);
 	}
 
 	/**
@@ -415,12 +401,10 @@ public class MemorySegmentUtil {
 	 * @param localOffset
 	 * 		Local offset from the header offset.
 	 *
-	 * @return Lazily populated long slice.
+	 * @return Value of long slice.
 	 */
-	public static LazyMemorySegment readLazyLongSlice(MemorySegment data, long headerOffset, LazyInt localOffset, LazyLong length) {
-		return new LazyMemorySegment(() -> {
-			return data.asSlice(headerOffset + localOffset.get(), length.get());
-		});
+	public static MemorySegment readLongSlice(MemorySegment data, long headerOffset, int localOffset, long length) {
+		return data.asSlice(headerOffset + localOffset, length);
 	}
 
 	/**
@@ -431,27 +415,9 @@ public class MemorySegmentUtil {
 	 * @param localOffset
 	 * 		Local offset from the header offset.
 	 *
-	 * @return Lazily populated long slice.
+	 * @return Value of long slice.
 	 */
-	public static LazyMemorySegment readLazyLongSlice(MemorySegment data, long headerOffset, LazyLong localOffset, LazyLong length) {
-		return new LazyMemorySegment(() -> {
-			return data.asSlice(headerOffset + localOffset.get(), length.get());
-		});
-	}
-
-	/**
-	 * @param data
-	 * 		Content to get long slice from.
-	 * @param headerOffset
-	 * 		Offset of {@link ZipPart} header.
-	 * @param localOffset
-	 * 		Local offset from the header offset.
-	 *
-	 * @return Lazily populated long slice.
-	 */
-	public static LazyMemorySegment readLazyLongSlice(MemorySegment data, long headerOffset, LazyInt localOffset, long length) {
-		return new LazyMemorySegment(() -> {
-			return data.asSlice(headerOffset + localOffset.get(), length);
-		});
+	public static MemorySegment readLongSlice(MemorySegment data, long headerOffset, long localOffset, long length) {
+		return data.asSlice(headerOffset + localOffset, length);
 	}
 }

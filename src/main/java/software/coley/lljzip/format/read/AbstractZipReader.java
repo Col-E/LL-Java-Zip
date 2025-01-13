@@ -9,7 +9,8 @@ import javax.annotation.Nonnull;
  */
 public abstract class AbstractZipReader extends DelegatingZipPartAllocator implements ZipReader {
 	/**
-	 * @param allocator Allocator to use.
+	 * @param allocator
+	 * 		Allocator to use.
 	 */
 	public AbstractZipReader(@Nonnull ZipPartAllocator allocator) {
 		super(allocator);

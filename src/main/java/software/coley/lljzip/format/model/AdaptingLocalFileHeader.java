@@ -1,14 +1,13 @@
 package software.coley.lljzip.format.model;
 
-import software.coley.lljzip.util.lazy.LazyMemorySegment;
-import software.coley.lljzip.util.lazy.LazyInt;
-import software.coley.lljzip.util.lazy.LazyLong;
+import software.coley.lljzip.util.MemorySegmentUtil;
+import software.coley.lljzip.util.data.MemorySegmentData;
+import software.coley.lljzip.util.data.StringData;
 
 import javax.annotation.Nonnull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.foreign.MemorySegment;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -39,25 +38,21 @@ public class AdaptingLocalFileHeader extends LocalFileHeader {
 		byte[] entryData = outputStream.toByteArray();
 		String entryName = entry.getName();
 		byte[] extra = entry.getExtra();
-		versionNeededToExtract = new LazyInt(() -> 0);
-		generalPurposeBitFlag = new LazyInt(() -> 0);
-		lastModFileTime = new LazyInt(() -> 0);
-		lastModFileDate = new LazyInt(() -> 0);
-		fileNameLength = new LazyInt(entryName::length);
-		fileName = new LazyMemorySegment(() -> MemorySegment.ofArray(entryName.getBytes()));
-		fileDataLength = new LazyLong(() -> entryData.length);
-		fileData = new LazyMemorySegment(() -> MemorySegment.ofArray(entryData));
-		compressionMethod = new LazyInt(() -> 0);
-		uncompressedSize = new LazyLong(() -> entryData.length);
-		compressedSize = new LazyLong(() -> entryData.length);
-		crc32 = new LazyInt(() -> (int) entry.getCrc());
-		if (extra != null) {
-			extraFieldLength = new LazyInt(() -> extra.length);
-			extraField = new LazyMemorySegment(() -> MemorySegment.ofArray(extra));
+
+		fileNameLength = entryName.length();
+		fileName = StringData.of(entryName);
+		fileData = MemorySegmentData.of(entryData);
+		compressionMethod = 0;
+		uncompressedSize = entryData.length;
+		compressedSize = entryData.length;
+		crc32 = (int) entry.getCrc();
+		if (extra != null && extra.length > 0) {
+			extraFieldLength = extra.length;
+			extraField = MemorySegmentData.of(extra);
 		} else {
-			extraFieldLength = new LazyInt(() -> 0);
-			extraField = new LazyMemorySegment(() -> MemorySegment.ofArray(new byte[0]));
+			extraFieldLength = 0;
+			extraField = MemorySegmentData.empty();
 		}
-		data = MemorySegment.ofArray(new byte[0]);
+		data = MemorySegmentUtil.EMPTY;
 	}
 }

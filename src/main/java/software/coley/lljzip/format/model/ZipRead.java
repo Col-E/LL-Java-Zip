@@ -15,5 +15,5 @@ public interface ZipRead {
 	 * @param offset
 	 * 		Initial offset in data to start at.
 	 */
-	void read(@Nonnull MemorySegment data, long offset);
+	void read(@Nonnull MemorySegment data, long offset) throws ZipParseException;
 }

@@ -25,7 +25,8 @@ public interface ZipReader {
 	void read(@Nonnull ZipArchive zip, @Nonnull MemorySegment data) throws IOException;
 
 	/**
-	 * @param file File to post-process.
+	 * @param file
+	 * 		File to post-process.
 	 */
 	default void postProcessLocalFileHeader(@Nonnull LocalFileHeader file) {
 		// no-op by default

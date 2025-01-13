@@ -2,10 +2,8 @@ package software.coley.lljzip.format.model;
 
 import software.coley.lljzip.format.compression.Decompressor;
 import software.coley.lljzip.format.read.ZipReader;
-import software.coley.lljzip.util.MemorySegmentUtil;
-import software.coley.lljzip.util.lazy.LazyMemorySegment;
-import software.coley.lljzip.util.lazy.LazyInt;
-import software.coley.lljzip.util.lazy.LazyLong;
+import software.coley.lljzip.util.data.MemorySegmentData;
+import software.coley.lljzip.util.data.StringData;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
@@ -13,6 +11,7 @@ import java.lang.foreign.MemorySegment;
 import java.util.Objects;
 
 import static software.coley.lljzip.format.compression.ZipCompressions.STORED;
+import static software.coley.lljzip.util.MemorySegmentUtil.*;
 
 /**
  * ZIP LocalFileHeader structure.
@@ -38,14 +37,11 @@ import static software.coley.lljzip.format.compression.ZipCompressions.STORED;
  * @author Matt Coley
  */
 public class LocalFileHeader extends AbstractZipFileHeader {
-	protected static final int MIN_FIXED_SIZE = 30;
+	public static final int MIN_FIXED_SIZE = 30;
 	protected transient CentralDirectoryFileHeader linkedDirectoryFileHeader;
 
 	// LocalFileHeader spec (plus common elements between this and central file)
-	protected LazyMemorySegment fileData;
-
-	// Caches
-	protected transient LazyLong fileDataLength;
+	protected MemorySegmentData fileData;
 
 	/**
 	 * @return Copy.
@@ -56,52 +52,62 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 		copy.data = data;
 		copy.offset = offset;
 		copy.linkedDirectoryFileHeader = linkedDirectoryFileHeader;
-		copy.versionNeededToExtract = versionNeededToExtract.copy();
-		copy.generalPurposeBitFlag = generalPurposeBitFlag.copy();
-		copy.compressionMethod = compressionMethod.copy();
-		copy.lastModFileTime = lastModFileTime.copy();
-		copy.lastModFileDate = lastModFileDate.copy();
-		copy.crc32 = crc32.copy();
-		copy.compressedSize = compressedSize.copy();
-		copy.uncompressedSize = uncompressedSize.copy();
-		copy.fileNameLength = fileNameLength.copy();
-		copy.extraFieldLength = extraFieldLength.copy();
+		copy.versionNeededToExtract = versionNeededToExtract;
+		copy.generalPurposeBitFlag = generalPurposeBitFlag;
+		copy.compressionMethod = compressionMethod;
+		copy.lastModFileTime = lastModFileTime;
+		copy.lastModFileDate = lastModFileDate;
+		copy.crc32 = crc32;
+		copy.compressedSize = compressedSize;
+		copy.uncompressedSize = uncompressedSize;
+		copy.fileNameLength = fileNameLength;
+		copy.extraFieldLength = extraFieldLength;
 		copy.fileName = fileName.copy();
 		copy.extraField = extraField.copy();
-		copy.fileDataLength = fileDataLength.copy();
 		copy.fileData = fileData.copy();
 		return copy;
 	}
 
 	@Override
-	public void read(@Nonnull MemorySegment data, long offset) {
+	public void read(@Nonnull MemorySegment data, long offset) throws ZipParseException {
 		super.read(data, offset);
-		versionNeededToExtract = MemorySegmentUtil.readLazyWord(data, offset, 4).withId("versionNeededToExtract");
-		generalPurposeBitFlag = MemorySegmentUtil.readLazyWord(data, offset, 6).withId("generalPurposeBitFlag");
-		compressionMethod = MemorySegmentUtil.readLazyWord(data, offset, 8).withId("compressionMethod");
-		lastModFileTime = MemorySegmentUtil.readLazyWord(data, offset, 10).withId("lastModFileTime");
-		lastModFileDate = MemorySegmentUtil.readLazyWord(data, offset, 12).withId("lastModFileDate");
-		crc32 = MemorySegmentUtil.readLazyQuad(data, offset, 14).withId("crc32");
-		compressedSize = MemorySegmentUtil.readLazyMaskedLongQuad(data, offset, 18).withId("compressedSize");
-		uncompressedSize = MemorySegmentUtil.readLazyMaskedLongQuad(data, offset, 22).withId("uncompressedSize");
-		fileNameLength = MemorySegmentUtil.readLazyWord(data, offset, 26).withId("fileNameLength");
-		extraFieldLength = MemorySegmentUtil.readLazyWord(data, offset, 28).withId("extraFieldLength");
-		fileName = MemorySegmentUtil.readLazySlice(data, offset, new LazyInt(() -> MIN_FIXED_SIZE), fileNameLength).withId("fileName");
-		extraField = MemorySegmentUtil.readLazySlice(data, offset, fileNameLength.add(MIN_FIXED_SIZE), extraFieldLength).withId("extraField");
-		fileDataLength = new LazyLong(() -> {
-			long fileDataLength;
-			if (compressionMethod.get() == STORED) {
-				fileDataLength = uncompressedSize.get();
-			} else {
-				fileDataLength = compressedSize.get();
-			}
-			return fileDataLength;
-		}).withId("fileDataLength");
-		fileData = MemorySegmentUtil.readLazyLongSlice(data, offset,
-				fileNameLength.add(extraFieldLength).add(MIN_FIXED_SIZE), fileDataLength).withId("fileData");
+		try {
+			versionNeededToExtract = readWord(data, offset, 4);
+			generalPurposeBitFlag = readWord(data, offset, 6);
+			compressionMethod = readWord(data, offset, 8);
+			lastModFileTime = readWord(data, offset, 10);
+			lastModFileDate = readWord(data, offset, 12);
+			crc32 = readQuad(data, offset, 14);
+			compressedSize = readMaskedLongQuad(data, offset, 18);
+			uncompressedSize = readMaskedLongQuad(data, offset, 22);
+			fileNameLength = readWord(data, offset, 26);
+			extraFieldLength = readWord(data, offset, 28);
+		} catch (Throwable t) {
+			throw new ZipParseException(ZipParseException.Type.OTHER);
+		}
+		try {
+			fileName = StringData.of(readSlice(data, offset, MIN_FIXED_SIZE, fileNameLength));
+		} catch (IndexOutOfBoundsException ex) {
+			throw new ZipParseException(ex, ZipParseException.Type.IOOBE_FILE_NAME);
+		} catch (Throwable t) {
+			throw new ZipParseException(ZipParseException.Type.OTHER);
+		}
+		try {
+			extraField = MemorySegmentData.of(data, offset + MIN_FIXED_SIZE + fileNameLength, extraFieldLength);
+		} catch (IndexOutOfBoundsException ex) {
+			throw new ZipParseException(ex, ZipParseException.Type.IOOBE_FILE_EXTRA);
+		} catch (Throwable t) {
+			throw new ZipParseException(ZipParseException.Type.OTHER);
+		}
+		long fileDataLength = (compressionMethod == STORED) ? uncompressedSize : compressedSize;
+		try {
+			fileData = MemorySegmentData.of(readLongSlice(data, offset, MIN_FIXED_SIZE + fileNameLength + extraFieldLength, fileDataLength));
+		} catch (IndexOutOfBoundsException ex) {
+			throw new ZipParseException(ex, ZipParseException.Type.IOOBE_FILE_DATA);
+		} catch (Throwable t) {
+			throw new ZipParseException(ZipParseException.Type.OTHER);
+		}
 	}
-
-
 
 	/**
 	 * Should match {@link CentralDirectoryFileHeader#getFileNameLength()} but is not a strict requirement.
@@ -121,8 +127,7 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 	 * @return File name.
 	 */
 	@Override
-	public MemorySegment getFileName() {
-
+	public StringData getFileName() {
 		return super.getFileName();
 	}
 
@@ -168,7 +173,7 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 	 * In some cases the {@link LocalFileHeader} file size may be 0, but the authoritative CEN states a non-0 value,
 	 * which you may want to adopt.
 	 */
-	public void adoptLinkedCentralDirectoryValues() {
+	public void adoptLinkedCentralDirectoryValues() throws ZipParseException {
 		if (linkedDirectoryFileHeader != null) {
 			versionNeededToExtract = linkedDirectoryFileHeader.versionNeededToExtract;
 			generalPurposeBitFlag = linkedDirectoryFileHeader.generalPurposeBitFlag;
@@ -183,55 +188,41 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 			extraField = linkedDirectoryFileHeader.extraField;
 			// We're using the same slices/data locations from the central directory.
 			// If we wanted to use local data but with updated offsets from the central directory it would look like this:
-			//  fileName = ByteDataUtil.readLazySlice(data, offset, new LazyInt(() -> MIN_FIXED_SIZE), fileNameLength).withId("fileName");
-			//  extraField = ByteDataUtil.readLazySlice(data, offset, fileNameLength.add(MIN_FIXED_SIZE), extraFieldLength).withId("extraField");
-			fileDataLength = new LazyLong(() -> {
-				long fileDataLength;
-				if (compressionMethod.get() == STORED) {
-					fileDataLength = uncompressedSize.get();
-				} else {
-					fileDataLength = compressedSize.get();
-				}
-				return fileDataLength;
-			}).withId("fileDataLength");
+			//  fileName = ByteDataUtil.readSlice(data, offset, MIN_FIXED_SIZE, fileNameLength)
+			//  extraField = ByteDataUtil.readSlice(data, offset, MIN_FIXED_SIZE + fileNameLength, extraFieldLength)
+			long fileDataLength = (compressionMethod == STORED) ? uncompressedSize : compressedSize;
 			if (data != null)
-				fileData = MemorySegmentUtil.readLazyLongSlice(data, offset, fileNameLength.add(extraFieldLength).add(MIN_FIXED_SIZE), fileDataLength).withId("fileData");
+				try {
+					fileData = MemorySegmentData.of(readLongSlice(data, offset, MIN_FIXED_SIZE + fileNameLength + extraFieldLength, fileDataLength));
+				} catch (IndexOutOfBoundsException ex) {
+					throw new ZipParseException(ex, ZipParseException.Type.IOOBE_FILE_DATA);
+				}
 		}
 	}
 
 	/**
 	 * Sets the file data length to go up to the given offset.
 	 *
-	 * @param endOffset New file data length.
+	 * @param endOffset
+	 * 		New file data length.
 	 */
 	public void setFileDataEndOffset(long endOffset) {
-		long fileDataStartOffset = offset + fileNameLength.add(extraFieldLength).add(MIN_FIXED_SIZE).get();
+		long fileDataStartOffset = offset + MIN_FIXED_SIZE + fileNameLength + extraFieldLength;
 		long length = endOffset - fileDataStartOffset;
 		setFileDataLength(length);
 	}
 
 	/**
-	 * @param newLength New file data length.
+	 * @param newLength
+	 * 		New file data length.
 	 */
 	public void setFileDataLength(long newLength) {
-		fileDataLength.set(newLength);
-		fileData = MemorySegmentUtil.readLazyLongSlice(data, offset, fileNameLength.add(extraFieldLength).add(MIN_FIXED_SIZE), newLength).withId("fileData");
-	}
-
-	/**
-	 * @param newLength New file data length.
-	 */
-	public void setFileDataLength(@Nonnull LazyLong newLength) {
-		fileDataLength = newLength;
-		fileData = MemorySegmentUtil.readLazyLongSlice(data, offset, fileNameLength.add(extraFieldLength).add(MIN_FIXED_SIZE), newLength).withId("fileData");
+		fileData = MemorySegmentData.of(readLongSlice(data, offset, MIN_FIXED_SIZE + fileNameLength + extraFieldLength, newLength));
 	}
 
 	@Override
 	public long length() {
-		return MIN_FIXED_SIZE +
-				fileNameLength.get() +
-				extraFieldLength.get() +
-				fileDataLength.get();
+		return MIN_FIXED_SIZE + fileNameLength + extraFieldLength + fileData.length();
 	}
 
 	@Nonnull
@@ -281,15 +272,14 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 	 * @param fileData
 	 * 		Compressed file contents.
 	 */
-	public void setFileData(MemorySegment fileData) {
-		this.fileData.set(fileData);
+	public void setFileData(MemorySegmentData fileData) {
+		this.fileData = fileData;
 	}
 
 	@Override
 	public String toString() {
 		return "LocalFileHeader{" +
 				"fileData=" + fileData +
-				", fileDataLength=" + fileDataLength +
 				", data=" + data +
 				", versionNeededToExtract=" + versionNeededToExtract +
 				", generalPurposeBitFlag=" + generalPurposeBitFlag +
@@ -309,42 +299,17 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
+		if (!(o instanceof LocalFileHeader that)) return false;
+		if (!super.equals(o)) return false;
 
-		LocalFileHeader that = (LocalFileHeader) o;
-
-		if (!Objects.equals(versionNeededToExtract, that.versionNeededToExtract)) return false;
-		if (!Objects.equals(generalPurposeBitFlag, that.generalPurposeBitFlag)) return false;
-		if (!Objects.equals(compressionMethod, that.compressionMethod)) return false;
-		if (!Objects.equals(lastModFileTime, that.lastModFileTime)) return false;
-		if (!Objects.equals(lastModFileDate, that.lastModFileDate)) return false;
-		if (!Objects.equals(crc32, that.crc32)) return false;
-		if (!Objects.equals(compressedSize, that.compressedSize)) return false;
-		if (!Objects.equals(uncompressedSize, that.uncompressedSize)) return false;
-		if (!Objects.equals(fileNameLength, that.fileNameLength)) return false;
-		if (!Objects.equals(extraFieldLength, that.extraFieldLength)) return false;
-		if (!Objects.equals(fileName, that.fileName)) return false;
-		if (!Objects.equals(extraField, that.extraField)) return false;
-		if (!Objects.equals(fileDataLength, that.fileDataLength)) return false;
+		if (!Objects.equals(linkedDirectoryFileHeader, that.linkedDirectoryFileHeader)) return false;
 		return Objects.equals(fileData, that.fileData);
 	}
 
 	@Override
 	public int hashCode() {
-		int result = 0;
-		result = 31 * result + (versionNeededToExtract != null ? versionNeededToExtract.hashCode() : 0);
-		result = 31 * result + (generalPurposeBitFlag != null ? generalPurposeBitFlag.hashCode() : 0);
-		result = 31 * result + (compressionMethod != null ? compressionMethod.hashCode() : 0);
-		result = 31 * result + (lastModFileTime != null ? lastModFileTime.hashCode() : 0);
-		result = 31 * result + (lastModFileDate != null ? lastModFileDate.hashCode() : 0);
-		result = 31 * result + (crc32 != null ? crc32.hashCode() : 0);
-		result = 31 * result + (compressedSize != null ? compressedSize.hashCode() : 0);
-		result = 31 * result + (uncompressedSize != null ? uncompressedSize.hashCode() : 0);
-		result = 31 * result + (fileNameLength != null ? fileNameLength.hashCode() : 0);
-		result = 31 * result + (extraFieldLength != null ? extraFieldLength.hashCode() : 0);
-		result = 31 * result + (fileName != null ? fileName.hashCode() : 0);
-		result = 31 * result + (extraField != null ? extraField.hashCode() : 0);
-		result = 31 * result + (fileDataLength != null ? fileDataLength.hashCode() : 0);
+		int result = super.hashCode();
+		result = 31 * result + (linkedDirectoryFileHeader != null ? linkedDirectoryFileHeader.hashCode() : 0);
 		result = 31 * result + (fileData != null ? fileData.hashCode() : 0);
 		return result;
 	}

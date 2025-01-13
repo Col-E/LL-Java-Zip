@@ -1,6 +1,10 @@
 package software.coley.lljzip.format.transform;
 
-import software.coley.lljzip.format.model.*;
+import software.coley.lljzip.format.model.CentralDirectoryFileHeader;
+import software.coley.lljzip.format.model.EndOfCentralDirectory;
+import software.coley.lljzip.format.model.LocalFileHeader;
+import software.coley.lljzip.format.model.ZipArchive;
+import software.coley.lljzip.format.model.ZipPart;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;

@@ -3,7 +3,7 @@ package software.coley.lljzip.format.model;
 import software.coley.lljzip.format.ZipPatterns;
 import software.coley.lljzip.format.compression.ZipCompressions;
 import software.coley.lljzip.util.MemorySegmentUtil;
-import software.coley.lljzip.util.lazy.LazyLong;
+import software.coley.lljzip.util.data.MemorySegmentData;
 
 import javax.annotation.Nonnull;
 import java.lang.foreign.MemorySegment;
@@ -32,8 +32,15 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 	}
 
 	@Override
-	public void read(@Nonnull MemorySegment data, long offset) {
-		super.read(data, offset);
+	public void read(@Nonnull MemorySegment data, long offset) throws ZipParseException {
+		try {
+			super.read(data, offset);
+		} catch (ZipParseException ex) {
+			// If the error was that the data couldn't be read, that's OK because we're going to try reading
+			// that in a slightly different way below.
+			if (ex.getType() != ZipParseException.Type.IOOBE_FILE_DATA)
+				throw ex;
+		}
 
 		// JVM file data reading does NOT use the compressed/uncompressed fields.
 		// Instead, it scans data until the next header.
@@ -77,23 +84,27 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 		// Update the file data ranges
 		this.relativeDataOffsetStart = relativeDataOffsetStart;
 		this.relativeDataOffsetEnd = relativeDataOffsetEnd;
-		fileDataLength = new LazyLong(() -> relativeDataOffsetEnd - relativeDataOffsetStart).withId("fileDataLength");
+		long fileDataLength = relativeDataOffsetEnd - relativeDataOffsetStart;
 
-		fileData = MemorySegmentUtil.readLazyLongSlice(data, offset,
-				new LazyLong(() -> relativeDataOffsetStart), fileDataLength).withId("fileData");
+		try {
+			fileData = MemorySegmentData.of(MemorySegmentUtil.readLongSlice(data, offset, relativeDataOffsetStart, fileDataLength));
+		} catch (IndexOutOfBoundsException ex) {
+			throw new ZipParseException(ex, ZipParseException.Type.IOOBE_FILE_DATA);
+		} catch (Throwable t) {
+			throw new ZipParseException(ZipParseException.Type.OTHER);
+		}
 
 		// Update sizes where possible
-		long size = fileDataLength.get();
 		if (getCompressionMethod() == ZipCompressions.STORED) {
-			setUncompressedSize(size);
-			setCompressedSize(size);
+			setUncompressedSize(fileDataLength);
+			setCompressedSize(fileDataLength);
 		} else {
-			setCompressedSize(size);
+			setCompressedSize(fileDataLength);
 		}
 
 		// If we have a size, we can assume we found some data.
 		// Whether its valid, who really knows?
-		foundData = size != 0;
+		foundData = fileDataLength != 0;
 	}
 
 	@Override
@@ -103,7 +114,6 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 			return;
 
 		// JVM trusts central directory file header contents over local
-		//  - Using fields as this maintains the lazy model
 		versionNeededToExtract = linkedDirectoryFileHeader.versionNeededToExtract;
 		generalPurposeBitFlag = linkedDirectoryFileHeader.generalPurposeBitFlag;
 		compressionMethod = linkedDirectoryFileHeader.compressionMethod;
@@ -137,9 +147,7 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 			// Data should not be overflowing into adjacent header entries.
 			// - If it is, the data here is likely intentionally tampered with to screw with parsers
 			if (fileDataLength < relativeDataOffsetEnd) {
-				fileData = MemorySegmentUtil.readLazyLongSlice(data, offset,
-						new LazyLong(() -> relativeDataOffsetStart - offset),
-						new LazyLong(() -> fileDataLength)).withId("fileData");
+				fileData = MemorySegmentData.of(MemorySegmentUtil.readLongSlice(data, offset, relativeDataOffsetStart - offset, fileDataLength));
 			}
 		}
 	}

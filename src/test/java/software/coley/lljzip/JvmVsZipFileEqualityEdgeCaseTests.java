@@ -32,7 +32,7 @@ public class JvmVsZipFileEqualityEdgeCaseTests {
 		Path path = Paths.get("src/test/resources/" + name);
 
 		try {
-			ZipArchive zipJvm = ZipIO.read(path, new JvmZipReader(false));
+			ZipArchive zipJvm = ZipIO.read(path, new JvmZipReader(false, false));
 			ZipArchive zipAdapting = ZipIO.readAdaptingIO(path);
 			int sizeDel = zipAdapting.getLocalFiles().size();
 			int sizeJvm = zipJvm.getLocalFiles().size();
