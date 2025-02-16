@@ -86,26 +86,40 @@ public class JvmZipReader extends AbstractZipReader {
 		end.read(data, endOfCentralDirectoryOffset);
 		zip.addPart(end);
 
-		// Read central directories (going from the back to the front) up until the preceding ZIP file (if any)
-		// but not surpassing the declared cen directory offset in the end of central directory header.
+		// Find the first CEN header.
 		long len = data.byteSize();
-		long centralDirectoryOffset = len - ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER.length;
-		long maxRelativeOffset = 0;
 		long centralDirectoryOffsetScanEnd = Math.max(Math.max(precedingEndOfCentralDirectory, 0), end.getCentralDirectoryOffset());
-		while (centralDirectoryOffset > centralDirectoryOffsetScanEnd) {
-			centralDirectoryOffset = MemorySegmentUtil.lastIndexOfQuad(data, centralDirectoryOffset - 1L, ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER_QUAD);
-			if (centralDirectoryOffset >= 0L) {
-				CentralDirectoryFileHeader directory = newCentralDirectoryFileHeader();
-				try {
-					directory.read(data, centralDirectoryOffset);
-				} catch (ZipParseException ex) {
-					// We cannot recover from the CEN reading encountering failures.
-					throw new IOException(ex);
-				}
-				zip.addPart(directory);
-				if (directory.getRelativeOffsetOfLocalHeader() > maxRelativeOffset)
-					maxRelativeOffset = directory.getRelativeOffsetOfLocalHeader();
+		long earliestCentralDirectoryOffset = len - ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER.length;
+		long maxRelativeOffset = 0;
+		while (true) {
+			// Look backwards for the next CEN magic quad.
+			long offset = MemorySegmentUtil.lastIndexOfQuad(data, earliestCentralDirectoryOffset - 1L, ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER_QUAD);
+
+			// If the offset is before the END defined CEN offset, then we should stop scanning.
+			// This offset is the first CEN for the given END.
+			if (offset < centralDirectoryOffsetScanEnd)
+				break;
+
+			// Record as the new earliest CEN offset, and loop again.
+			earliestCentralDirectoryOffset = offset;
+		}
+
+		// Read central directories going forward from the first CEN header.
+		// We do this "find the first, then read forward" so that we can skip over data that may
+		// coincidentally hold the CEN magic, but not actually denote the beginning of a central directory entry.
+		long centralDirectoryOffset = earliestCentralDirectoryOffset;
+		while (centralDirectoryOffset >= 0L) {
+			CentralDirectoryFileHeader directory = newCentralDirectoryFileHeader();
+			try {
+				directory.read(data, centralDirectoryOffset);
+			} catch (ZipParseException ex) {
+				// We cannot recover from the CEN reading encountering failures.
+				throw new IOException(ex);
 			}
+			zip.addPart(directory);
+			if (directory.getRelativeOffsetOfLocalHeader() > maxRelativeOffset)
+				maxRelativeOffset = directory.getRelativeOffsetOfLocalHeader();
+			centralDirectoryOffset = MemorySegmentUtil.indexOfQuad(data, centralDirectoryOffset + CentralDirectoryFileHeader.MIN_FIXED_SIZE, ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER_QUAD);
 		}
 
 		// Determine base offset for computing file header locations with.

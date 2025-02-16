@@ -36,7 +36,7 @@ import static software.coley.lljzip.util.MemorySegmentUtil.*;
  * @author Matt Coley
  */
 public class CentralDirectoryFileHeader extends AbstractZipFileHeader {
-	protected static final long MIN_FIXED_SIZE = 46;
+	public static final long MIN_FIXED_SIZE = 46;
 
 	private transient LocalFileHeader linkedFileHeader;
 
