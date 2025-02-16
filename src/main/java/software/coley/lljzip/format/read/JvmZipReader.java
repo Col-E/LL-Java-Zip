@@ -193,13 +193,15 @@ public class JvmZipReader extends AbstractZipReader {
 
 			// Add associated local file header offset
 			long offset = jvmBaseFileOffset + directory.getRelativeOffsetOfLocalHeader();
-			if (MemorySegmentUtil.readQuad(data, offset) == ZipPatterns.LOCAL_FILE_HEADER_QUAD) {
+			if (offset >= 0 && offset < len - 4 && MemorySegmentUtil.readQuad(data, offset) == ZipPatterns.LOCAL_FILE_HEADER_QUAD) {
 				entryOffsets.add(offset);
 			}
 		}
+
 		// Add the earliest central directory offset, which serves as the upper bound to search against for the
 		// last local file header entry's file data contents.
 		entryOffsets.add(earliestCdfh);
+
 		// Add the end of central directory
 		entryOffsets.add(endOfCentralDirectoryOffset);
 
@@ -214,18 +216,18 @@ public class JvmZipReader extends AbstractZipReader {
 					continue;
 			}
 
-			if (MemorySegmentUtil.readQuad(data, offset) != ZipPatterns.LOCAL_FILE_HEADER_QUAD) {
+			if (offset >= 0 && offset <= len - 4 && MemorySegmentUtil.readQuad(data, offset) != ZipPatterns.LOCAL_FILE_HEADER_QUAD) {
 				logger.warn("Central-Directory-File-Header's offset[{}] to Local-File-Header does not match the Local-File-Header magic!", offset);
 				continue;
 			}
 
 			try {
 				LocalFileHeader file = newLocalFileHeader();
-				if (file instanceof JvmLocalFileHeader) {
-					((JvmLocalFileHeader) file).setOffsets(entryOffsets);
-				}
+				if (file instanceof JvmLocalFileHeader jvmFile)
+					jvmFile.setOffsets(entryOffsets);
 				try {
-					file.read(data, offset);
+					if (offset <= len - LocalFileHeader.MIN_FIXED_SIZE)
+						file.read(data, offset);
 				} catch (IndexOutOfBoundsException t) {
 					// Its intended that if this fails the adopting of CEN values below will work instead.
 				}
