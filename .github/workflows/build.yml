@@ -43,7 +43,7 @@ jobs:
         run: ./mvnw test
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Test artifacts
           retention-days: 21
@@ -62,7 +62,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: artifacts
       - name: Publish test results
@@ -139,7 +139,7 @@ jobs:
           JRELEASER_NEXUS2_PASSWORD: ${{ secrets.JRELEASER_DEPLOY_MAVEN_NEXUS2_PASSWORD }}
       # Upload JRelease debug log
       - name: JReleaser output
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: jreleaser-release
