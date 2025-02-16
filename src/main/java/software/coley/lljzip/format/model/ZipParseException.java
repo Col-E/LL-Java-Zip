@@ -12,13 +12,9 @@ import javax.annotation.Nullable;
 public class ZipParseException extends Exception {
 	private final Type type;
 
-	public ZipParseException(@Nullable IndexOutOfBoundsException cause, @Nonnull Type type) {
+	public ZipParseException(@Nullable Throwable cause, @Nonnull Type type) {
 		super(type.getMessage(), cause);
 		this.type = type;
-	}
-
-	public ZipParseException(@Nonnull Type type) {
-		this(null, type);
 	}
 
 	/**
@@ -37,6 +33,7 @@ public class ZipParseException extends Exception {
 		IOOBE_FILE_DATA("Bounds check failed reading file data"),
 		IOOBE_FILE_EXTRA("Bounds check failed reading file extra"),
 		IOOBE_CEN_COMMENT("Bounds check failed reading directory comment"),
+		IOOBE_OTHER("Bounds check failed"),
 		OTHER("Unknown zip parse error");
 
 		private final String message;

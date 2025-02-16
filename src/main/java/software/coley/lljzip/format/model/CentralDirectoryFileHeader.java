@@ -100,29 +100,31 @@ public class CentralDirectoryFileHeader extends AbstractZipFileHeader {
 			internalFileAttributes = readWord(data, offset, 36);
 			externalFileAttributes = readQuad(data, offset, 38);
 			relativeOffsetOfLocalHeader = readMaskedLongQuad(data, offset, 42);
+		} catch (IndexOutOfBoundsException ex) {
+			throw new ZipParseException(ex, ZipParseException.Type.IOOBE_OTHER);
 		} catch (Throwable t) {
-			throw new ZipParseException(ZipParseException.Type.OTHER);
+			throw new ZipParseException(t, ZipParseException.Type.OTHER);
 		}
 		try {
-			fileName = StringData.of(readSlice(data, offset, 46, fileNameLength));
+			fileName = StringData.of(data, offset + 46, fileNameLength);
 		} catch (IndexOutOfBoundsException ex) {
 			throw new ZipParseException(ex, ZipParseException.Type.IOOBE_FILE_NAME);
 		} catch (Throwable t) {
-			throw new ZipParseException(ZipParseException.Type.OTHER);
+			throw new ZipParseException(t, ZipParseException.Type.OTHER);
 		}
 		try {
 			extraField = MemorySegmentData.of(data, offset + 46 + fileNameLength, extraFieldLength);
 		} catch (IndexOutOfBoundsException ex) {
 			throw new ZipParseException(ex, ZipParseException.Type.IOOBE_FILE_EXTRA);
 		} catch (Throwable t) {
-			throw new ZipParseException(ZipParseException.Type.OTHER);
+			throw new ZipParseException(t, ZipParseException.Type.OTHER);
 		}
 		try {
 			fileComment = StringData.of(readSlice(data, offset, 46 + fileNameLength + extraFieldLength, fileCommentLength));
 		} catch (IndexOutOfBoundsException ex) {
 			throw new ZipParseException(ex, ZipParseException.Type.IOOBE_CEN_COMMENT);
 		} catch (Throwable t) {
-			throw new ZipParseException(ZipParseException.Type.OTHER);
+			throw new ZipParseException(t, ZipParseException.Type.OTHER);
 		}
 	}
 

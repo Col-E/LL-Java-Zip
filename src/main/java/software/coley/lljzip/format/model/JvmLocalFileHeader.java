@@ -91,7 +91,7 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 		} catch (IndexOutOfBoundsException ex) {
 			throw new ZipParseException(ex, ZipParseException.Type.IOOBE_FILE_DATA);
 		} catch (Throwable t) {
-			throw new ZipParseException(ZipParseException.Type.OTHER);
+			throw new ZipParseException(t, ZipParseException.Type.OTHER);
 		}
 
 		// Update sizes where possible

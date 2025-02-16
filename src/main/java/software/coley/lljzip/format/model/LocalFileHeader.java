@@ -82,22 +82,24 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 			uncompressedSize = readMaskedLongQuad(data, offset, 22);
 			fileNameLength = readWord(data, offset, 26);
 			extraFieldLength = readWord(data, offset, 28);
+		} catch (IndexOutOfBoundsException ex) {
+			throw new ZipParseException(ex, ZipParseException.Type.IOOBE_OTHER);
 		} catch (Throwable t) {
-			throw new ZipParseException(ZipParseException.Type.OTHER);
+			throw new ZipParseException(t, ZipParseException.Type.OTHER);
 		}
 		try {
 			fileName = StringData.of(readSlice(data, offset, MIN_FIXED_SIZE, fileNameLength));
 		} catch (IndexOutOfBoundsException ex) {
 			throw new ZipParseException(ex, ZipParseException.Type.IOOBE_FILE_NAME);
 		} catch (Throwable t) {
-			throw new ZipParseException(ZipParseException.Type.OTHER);
+			throw new ZipParseException(t, ZipParseException.Type.OTHER);
 		}
 		try {
 			extraField = MemorySegmentData.of(data, offset + MIN_FIXED_SIZE + fileNameLength, extraFieldLength);
 		} catch (IndexOutOfBoundsException ex) {
 			throw new ZipParseException(ex, ZipParseException.Type.IOOBE_FILE_EXTRA);
 		} catch (Throwable t) {
-			throw new ZipParseException(ZipParseException.Type.OTHER);
+			throw new ZipParseException(t, ZipParseException.Type.OTHER);
 		}
 		long fileDataLength = (compressionMethod == STORED) ? uncompressedSize : compressedSize;
 		try {
@@ -105,7 +107,7 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 		} catch (IndexOutOfBoundsException ex) {
 			throw new ZipParseException(ex, ZipParseException.Type.IOOBE_FILE_DATA);
 		} catch (Throwable t) {
-			throw new ZipParseException(ZipParseException.Type.OTHER);
+			throw new ZipParseException(t, ZipParseException.Type.OTHER);
 		}
 	}
 
