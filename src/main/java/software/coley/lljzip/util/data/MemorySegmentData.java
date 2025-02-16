@@ -25,7 +25,7 @@ public interface MemorySegmentData {
 
 	@Nonnull
 	static MemorySegmentData empty() {
-		return FullSegment.EMPTY;
+		return EmptySegment.INSTANCE;
 	}
 
 	@Nonnull
@@ -85,7 +85,6 @@ public interface MemorySegmentData {
 	}
 
 	class FullSegment implements MemorySegmentData {
-		private static final FullSegment EMPTY = new FullSegment(MemorySegmentUtil.EMPTY);
 		private final MemorySegment segment;
 
 		public FullSegment(@Nonnull MemorySegment segment) {
@@ -102,6 +101,18 @@ public interface MemorySegmentData {
 		@Override
 		public MemorySegmentData copy() {
 			return this;
+		}
+	}
+
+	class EmptySegment implements MemorySegmentData {
+		private static final EmptySegment INSTANCE = new EmptySegment();
+
+		private EmptySegment() {}
+
+		@Nonnull
+		@Override
+		public MemorySegment get() {
+			return MemorySegmentUtil.EMPTY;
 		}
 	}
 }

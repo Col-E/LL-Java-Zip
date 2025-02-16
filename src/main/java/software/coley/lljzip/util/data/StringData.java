@@ -26,7 +26,7 @@ public interface StringData {
 
 	@Nonnull
 	static StringData empty() {
-		return Literal.EMPTY;
+		return Empty.INSTANCE;
 	}
 
 	@Nonnull
@@ -101,7 +101,6 @@ public interface StringData {
 	}
 
 	class Literal implements StringData {
-		private static final Literal EMPTY = new Literal("");
 		private final String content;
 
 		public Literal(@Nonnull String content) {
@@ -118,6 +117,18 @@ public interface StringData {
 		@Override
 		public StringData copy() {
 			return this;
+		}
+	}
+
+	class Empty implements StringData {
+		private static final Empty INSTANCE = new Empty();
+
+		private Empty() {}
+
+		@Nonnull
+		@Override
+		public String get() {
+			return "";
 		}
 	}
 }
