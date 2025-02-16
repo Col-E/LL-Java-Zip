@@ -120,7 +120,7 @@ public class CentralDirectoryFileHeader extends AbstractZipFileHeader {
 			throw new ZipParseException(t, ZipParseException.Type.OTHER);
 		}
 		try {
-			fileComment = StringData.of(readSlice(data, offset, 46 + fileNameLength + extraFieldLength, fileCommentLength));
+			fileComment = StringData.of(data, offset + 46 + fileNameLength + extraFieldLength, fileCommentLength);
 		} catch (IndexOutOfBoundsException ex) {
 			throw new ZipParseException(ex, ZipParseException.Type.IOOBE_CEN_COMMENT);
 		} catch (Throwable t) {

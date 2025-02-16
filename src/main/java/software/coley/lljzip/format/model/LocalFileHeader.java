@@ -88,7 +88,7 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 			throw new ZipParseException(t, ZipParseException.Type.OTHER);
 		}
 		try {
-			fileName = StringData.of(readSlice(data, offset, MIN_FIXED_SIZE, fileNameLength));
+			fileName = StringData.of(data, offset + MIN_FIXED_SIZE, fileNameLength);
 		} catch (IndexOutOfBoundsException ex) {
 			throw new ZipParseException(ex, ZipParseException.Type.IOOBE_FILE_NAME);
 		} catch (Throwable t) {

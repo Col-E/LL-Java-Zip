@@ -67,7 +67,7 @@ public class EndOfCentralDirectory implements ZipPart, ZipRead {
 		setCentralDirectorySize(readQuad(data, offset + 12));
 		setCentralDirectoryOffset(readQuad(data, offset + 16));
 		setZipCommentLength(readWord(data, offset + 20));
-		zipComment = StringData.of(data.asSlice(offset + 22, zipCommentLength));
+		zipComment = StringData.of(data, offset + 22, zipCommentLength);
 	}
 
 	@Override
