@@ -188,6 +188,18 @@ public class PartParseTests {
 	}
 
 	@Test
+	public void testEndInLocalDataDesc() {
+		// The non-class files have been zeroed out in this sample, but we don't care.
+		// The main point is that the "bin/3" and "bin/4" red-herring headers are properly dealt with,
+		// and we can see that there are 639 class files in this jar file.
+		try (ZipArchive archive = ZipIO.readJvm(Paths.get("src/test/resources/end-in-local-data-desc.jar"))) {
+			assertEquals(639, archive.getNameFilteredLocalFiles(f -> f.endsWith(".class")).size());
+		} catch (IOException ex) {
+			fail(ex);
+		}
+	}
+
+	@Test
 	public void testMergedFakeEmpty() {
 		try (ZipArchive zipJvm = ZipIO.readJvm(Paths.get("src/test/resources/hello-merged-fake-empty.jar"))) {
 			assertNotNull(zipJvm);

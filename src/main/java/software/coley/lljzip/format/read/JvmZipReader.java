@@ -90,7 +90,7 @@ public class JvmZipReader extends AbstractZipReader {
 		long len = data.byteSize();
 		long centralDirectoryOffsetScanEnd = Math.max(Math.max(precedingEndOfCentralDirectory, 0), end.getCentralDirectoryOffset());
 		long earliestCentralDirectoryOffset = len - ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER.length;
-		long maxRelativeOffset = 0;
+		long maxRelativeLFHOffset = 0;
 		while (true) {
 			// Look backwards for the next CEN magic quad.
 			long offset = MemorySegmentUtil.lastIndexOfQuad(data, earliestCentralDirectoryOffset - 1L, ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER_QUAD);
@@ -107,6 +107,7 @@ public class JvmZipReader extends AbstractZipReader {
 		// Read central directories going forward from the first CEN header.
 		// We do this "find the first, then read forward" so that we can skip over data that may
 		// coincidentally hold the CEN magic, but not actually denote the beginning of a central directory entry.
+		CentralDirectoryFileHeader latestOffsetCen = null;
 		long centralDirectoryOffset = earliestCentralDirectoryOffset;
 		while (centralDirectoryOffset >= 0L) {
 			CentralDirectoryFileHeader directory = newCentralDirectoryFileHeader();
@@ -116,9 +117,17 @@ public class JvmZipReader extends AbstractZipReader {
 				// We cannot recover from the CEN reading encountering failures.
 				throw new IOException(ex);
 			}
+
+			// Add to zip
 			zip.addPart(directory);
-			if (directory.getRelativeOffsetOfLocalHeader() > maxRelativeOffset)
-				maxRelativeOffset = directory.getRelativeOffsetOfLocalHeader();
+
+			// Track which CEN has the latest offset in the ZIP file
+			if (directory.getRelativeOffsetOfLocalHeader() > maxRelativeLFHOffset) {
+				maxRelativeLFHOffset = directory.getRelativeOffsetOfLocalHeader();
+				latestOffsetCen = directory;
+			}
+
+			// Step forward
 			centralDirectoryOffset = MemorySegmentUtil.indexOfQuad(data, centralDirectoryOffset + CentralDirectoryFileHeader.MIN_FIXED_SIZE, ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER_QUAD);
 		}
 
@@ -130,6 +139,18 @@ public class JvmZipReader extends AbstractZipReader {
 		if (precedingEndOfCentralDirectory != -1) {
 			// There was a prior end part, so we will seek past it's length and use that as the base offset.
 			try {
+				// We roughly compute the "size" of section of data occupied by LocalFileHeader contents.
+				// The latest relative file offset, plus its header+data size then this should be the section size
+				// even if we don't know if there is a preceding end header or not to base off of.
+				if (latestOffsetCen != null) {
+					long localFileHeaderSectionLength = LocalFileHeader.MIN_FIXED_SIZE + maxRelativeLFHOffset + latestOffsetCen.getCompressedSize();
+					long startOfRelativeLocalFileHeaders = earliestCentralDirectoryOffset - localFileHeaderSectionLength;
+					if (precedingEndOfCentralDirectory > startOfRelativeLocalFileHeaders) {
+						// This occurs between the start of LocalFileHeader data and our current end and should be ignored.
+						throw new IllegalStateException();
+					}
+				}
+
 				// Make sure it isn't bogus before we use it as a reference point
 				EndOfCentralDirectory tempEnd = new EndOfCentralDirectory();
 				tempEnd.read(data, precedingEndOfCentralDirectory);
@@ -137,7 +158,7 @@ public class JvmZipReader extends AbstractZipReader {
 				// If we use this as a point of reference there must be enough data remaining
 				// to read the largest offset specified by our central directories.
 				long hypotheticalJvmBaseOffset = precedingEndOfCentralDirectory + tempEnd.length();
-				if (len <= hypotheticalJvmBaseOffset + maxRelativeOffset)
+				if (len <= hypotheticalJvmBaseOffset + maxRelativeLFHOffset)
 					throw new IllegalStateException();
 
 				// TODO: Double check 'precedingEndOfCentralDirectory' points to a EndOfCentralDirectory that isn't bogus
