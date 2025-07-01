@@ -8,11 +8,11 @@ project:
     - Matt Coley
   license: MIT
   inceptionYear: 2022
-  stereotype: none
-  java:
-    version: 22
-    groupId: software.coley
-    artifactId: lljzip
+  languages:
+    java:
+      version: 22
+      groupId: software.coley
+      artifactId: lljzip
 
 release:
   github:
@@ -39,14 +39,13 @@ signing:
   checksums: true
   files: false
 
+
 deploy:
   maven:
-    nexus2:
-      maven-central:
+    mavenCentral:
+      sonatype:
+        url: https://central.sonatype.com/api/v1/publisher
         active: RELEASE
-        url: https://s01.oss.sonatype.org/service/local
         applyMavenCentralRules: true
         stagingRepositories:
           - target/staging-deploy
-        closeRepository: true
-        releaseRepository: true
