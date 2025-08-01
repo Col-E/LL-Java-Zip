@@ -31,17 +31,9 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 		this.offsets = offsets;
 	}
 
+	@Nonnull
 	@Override
-	public void read(@Nonnull MemorySegment data, long offset) throws ZipParseException {
-		try {
-			super.read(data, offset);
-		} catch (ZipParseException ex) {
-			// If the error was that the data couldn't be read, that's OK because we're going to try reading
-			// that in a slightly different way below.
-			if (ex.getType() != ZipParseException.Type.IOOBE_FILE_DATA)
-				throw ex;
-		}
-
+	protected MemorySegmentData readFileData(@Nonnull MemorySegment data, long headerOffset) {
 		// JVM file data reading does NOT use the compressed/uncompressed fields.
 		// Instead, it scans data until the next header.
 		long relativeDataOffsetStart = MIN_FIXED_SIZE + getFileNameLength() + getExtraFieldLength();
@@ -86,13 +78,7 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 		this.relativeDataOffsetEnd = relativeDataOffsetEnd;
 		long fileDataLength = relativeDataOffsetEnd - relativeDataOffsetStart;
 
-		try {
-			fileData = MemorySegmentData.of(MemorySegmentUtil.readLongSlice(data, offset, relativeDataOffsetStart, fileDataLength));
-		} catch (IndexOutOfBoundsException ex) {
-			throw new ZipParseException(ex, ZipParseException.Type.IOOBE_FILE_DATA);
-		} catch (Throwable t) {
-			throw new ZipParseException(t, ZipParseException.Type.OTHER);
-		}
+		fileData = MemorySegmentData.of(MemorySegmentUtil.readLongSlice(data, offset, relativeDataOffsetStart, fileDataLength));
 
 		// Update sizes where possible
 		if (getCompressionMethod() == ZipCompressions.STORED) {
@@ -105,6 +91,7 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 		// If we have a size, we can assume we found some data.
 		// Whether its valid, who really knows?
 		foundData = fileDataLength != 0;
+		return fileData;
 	}
 
 	@Override

@@ -3,14 +3,22 @@ package software.coley.lljzip;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import software.coley.lljzip.format.ZipPatterns;
+import software.coley.lljzip.format.model.LocalFileHeader;
 import software.coley.lljzip.format.model.ZipArchive;
+import software.coley.lljzip.format.read.NaiveLocalFileZipReader;
+import software.coley.lljzip.format.read.SimpleZipPartAllocator;
 import software.coley.lljzip.format.transform.IdentityZipPartMapper;
 import software.coley.lljzip.format.transform.JvmClassDirectoryMapper;
 import software.coley.lljzip.format.write.ZipOutputStreamZipWriter;
+import software.coley.lljzip.util.MemorySegmentUtil;
+import software.coley.lljzip.util.data.MemorySegmentData;
 
+import javax.annotation.Nonnull;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.lang.foreign.MemorySegment;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -18,6 +26,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static software.coley.lljzip.util.MemorySegmentUtil.readLongSlice;
 
 /**
  * Tests for patching the <i>"trick"</i> jars, and making them compatible with standard Java ZIP apis.
@@ -83,6 +92,33 @@ public class PatchingTests {
 		} catch (IOException ex) {
 			fail(ex);
 		}
+	}
+
+	@Test
+	@SuppressWarnings("resource")
+	public void testNaiveWithForwardScanningData() {
+		NaiveLocalFileZipReader strategy = new NaiveLocalFileZipReader(new SimpleZipPartAllocator() {
+			@Nonnull
+			@Override
+			public LocalFileHeader newLocalFileHeader() {
+				return new LocalFileHeader() {
+					@Nonnull
+					@Override
+					protected MemorySegmentData readFileData(@Nonnull MemorySegment data, long headerOffset) {
+						long localOffset = MIN_FIXED_SIZE + getFileNameLength() + getExtraFieldLength();
+						long nextStart = MemorySegmentUtil.indexOfQuad(data, headerOffset + localOffset, ZipPatterns.LOCAL_FILE_HEADER_QUAD);
+						long fileDataLength = nextStart > headerOffset ?
+								nextStart - (headerOffset + localOffset) :
+								data.byteSize() - (headerOffset + localOffset);
+						return MemorySegmentData.of(readLongSlice(data, headerOffset, localOffset, fileDataLength));
+					}
+				};
+			}
+		});
+
+		Path path = Paths.get("src/test/resources/resource-pack-trick-data-ioobe-no-end.zip");
+		ZipArchive zip = assertDoesNotThrow(() -> ZipIO.read(path, strategy));
+		assertNotNull(zip.getLocalFileByName("pack.mcmeta"), "IOOBE not patched");
 	}
 
 	@Test

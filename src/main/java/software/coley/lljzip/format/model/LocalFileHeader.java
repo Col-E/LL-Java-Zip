@@ -101,14 +101,30 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 		} catch (Throwable t) {
 			throw new ZipParseException(t, ZipParseException.Type.OTHER);
 		}
-		long fileDataLength = (compressionMethod == STORED) ? uncompressedSize : compressedSize;
 		try {
-			fileData = MemorySegmentData.of(readLongSlice(data, offset, MIN_FIXED_SIZE + fileNameLength + extraFieldLength, fileDataLength));
+			fileData = readFileData(data, offset);
 		} catch (IndexOutOfBoundsException ex) {
 			throw new ZipParseException(ex, ZipParseException.Type.IOOBE_FILE_DATA);
 		} catch (Throwable t) {
 			throw new ZipParseException(t, ZipParseException.Type.OTHER);
 		}
+	}
+
+	/**
+	 * @param data
+	 * 		Data to read from.
+	 * @param headerOffset
+	 * 		Initial offset in data to where the local file header starts at.
+	 *
+	 * @return File data segment.
+	 */
+	@Nonnull
+	protected MemorySegmentData readFileData(@Nonnull MemorySegment data, long headerOffset) {
+		long localOffset = MIN_FIXED_SIZE + getFileNameLength() + getExtraFieldLength();
+		long fileDataLength = (compressionMethod == STORED) ? uncompressedSize : compressedSize;
+		if (localOffset + fileDataLength > data.byteSize())
+			throw new IndexOutOfBoundsException("LFH FileData: Reads beyond file bounds");
+		return MemorySegmentData.of(readLongSlice(data, headerOffset, localOffset, fileDataLength));
 	}
 
 	/**
