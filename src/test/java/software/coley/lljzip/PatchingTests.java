@@ -103,6 +103,10 @@ public class PatchingTests {
 
 		Path path = Paths.get("src/test/resources/resource-pack-trick-data-ioobe.zip");
 
+		// Assert default zip part allocation fails for naive/standard
+		assertThrows(Throwable.class, () -> ZipIO.readNaive(path));
+		assertThrows(Throwable.class, () -> ZipIO.readStandard(path));
+
 		// Naive strategy finds the file with the trailing '/'
 		NaiveLocalFileZipReader naiveStrategy = new NaiveLocalFileZipReader(allocator);
 		ZipArchive zip = assertDoesNotThrow(() -> ZipIO.read(path, naiveStrategy));
