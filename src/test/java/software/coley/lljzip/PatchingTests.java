@@ -6,8 +6,10 @@ import org.junit.jupiter.params.provider.ValueSource;
 import software.coley.lljzip.format.ZipPatterns;
 import software.coley.lljzip.format.model.LocalFileHeader;
 import software.coley.lljzip.format.model.ZipArchive;
+import software.coley.lljzip.format.read.ForwardScanZipReader;
 import software.coley.lljzip.format.read.NaiveLocalFileZipReader;
 import software.coley.lljzip.format.read.SimpleZipPartAllocator;
+import software.coley.lljzip.format.read.ZipPartAllocator;
 import software.coley.lljzip.format.transform.IdentityZipPartMapper;
 import software.coley.lljzip.format.transform.JvmClassDirectoryMapper;
 import software.coley.lljzip.format.write.ZipOutputStreamZipWriter;
@@ -96,8 +98,34 @@ public class PatchingTests {
 
 	@Test
 	@SuppressWarnings("resource")
-	public void testNaiveWithForwardScanningData() {
-		NaiveLocalFileZipReader strategy = new NaiveLocalFileZipReader(new SimpleZipPartAllocator() {
+	public void testReadIgnoringFileLengths() {
+		ZipPartAllocator allocator = lengthIgnoringAllocator();
+
+		Path path = Paths.get("src/test/resources/resource-pack-trick-data-ioobe.zip");
+
+		// Naive strategy finds the file with the trailing '/'
+		NaiveLocalFileZipReader naiveStrategy = new NaiveLocalFileZipReader(allocator);
+		ZipArchive zip = assertDoesNotThrow(() -> ZipIO.read(path, naiveStrategy));
+		assertNotNull(zip.getLocalFileByName("assets/luxbl/lang/en_us.json/"), "Missing 'en_us' file");
+
+		// Standard strategy finds it, but its authoritative CEN defines the file name to not include the trailing '/'
+		ForwardScanZipReader forwardStrategy = new ForwardScanZipReader(allocator);
+		zip = assertDoesNotThrow(() -> ZipIO.read(path, forwardStrategy));
+		assertNotNull(zip.getLocalFileByName("assets/luxbl/lang/en_us.json"), "Missing 'en_us' file");
+	}
+
+	@Test
+	@SuppressWarnings("resource")
+	public void testTrailingSlashTransform() {
+		// The 'JvmClassDirectoryMapper' maps 'Name.class/' paths to 'Name.class'
+		Path path = Paths.get("src/test/resources/hello-secret-trailing-slash.jar");
+		ZipArchive zip = assertDoesNotThrow(() -> ZipIO.readStandard(path)
+				.withMapping(new JvmClassDirectoryMapper(new IdentityZipPartMapper())));
+		assertNotNull(zip.getLocalFileByName("Hello.class"), "Trailing slash was not patched");
+	}
+
+	private static ZipPartAllocator lengthIgnoringAllocator() {
+		return new SimpleZipPartAllocator() {
 			@Nonnull
 			@Override
 			public LocalFileHeader newLocalFileHeader() {
@@ -114,20 +142,6 @@ public class PatchingTests {
 					}
 				};
 			}
-		});
-
-		Path path = Paths.get("src/test/resources/resource-pack-trick-data-ioobe-no-end.zip");
-		ZipArchive zip = assertDoesNotThrow(() -> ZipIO.read(path, strategy));
-		assertNotNull(zip.getLocalFileByName("pack.mcmeta"), "IOOBE not patched");
-	}
-
-	@Test
-	@SuppressWarnings("resource")
-	public void testTrailingSlashTransform() {
-		// The 'JvmClassDirectoryMapper' maps 'Name.class/' paths to 'Name.class'
-		Path path = Paths.get("src/test/resources/hello-secret-trailing-slash.jar");
-		ZipArchive zip = assertDoesNotThrow(() -> ZipIO.readStandard(path)
-				.withMapping(new JvmClassDirectoryMapper(new IdentityZipPartMapper())));
-		assertNotNull(zip.getLocalFileByName("Hello.class"), "Trailing slash was not patched");
+		};
 	}
 }
