@@ -88,7 +88,7 @@ If you're looking to see which implementation models different ways of reading Z
 | Java closest equivalent | LL-Java-Zip                                        |
 |-------------------------|----------------------------------------------------|
 | `ZipFile`               | `JvmZipReader` / `ZipIO.readJvm(...)`              |
-| `ZipInputSstream`       | `ForwardScanZipReader` / `ZipIO.readStandard(...)` |
+| `ZipInputStream`        | `ForwardScanZipReader` / `ZipIO.readStandard(...)` |
 | N/A                     | `NaiveLocalFileZipReader` / `ZipIO.readNaive(...)` |
 
 There is also a `ZipFile` delegating reader `AdaptingZipReader` but it should primarily be used only for debugging purposes.
