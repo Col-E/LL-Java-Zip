@@ -28,6 +28,8 @@ import static software.coley.lljzip.util.MemorySegmentUtil.readWord;
  * @author Matt Coley
  */
 public class EndOfCentralDirectory implements ZipPart, ZipRead {
+	/** Size of the fixed-length portion of the header, excluding the variable-length comment. */
+	public static final long END_HEADER_LENGTH = 22L;
 	private transient long offset = -1L;
 	// Zip spec elements
 	private int diskNumber;
@@ -72,7 +74,7 @@ public class EndOfCentralDirectory implements ZipPart, ZipRead {
 
 	@Override
 	public long length() {
-		return 22L + zipComment.get().length();
+		return END_HEADER_LENGTH + zipCommentLength;
 	}
 
 	@Nonnull

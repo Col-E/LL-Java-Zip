@@ -9,7 +9,6 @@ import javax.annotation.Nonnull;
 import java.lang.foreign.MemorySegment;
 import java.util.NavigableSet;
 
-
 /**
  * An extension of {@link LocalFileHeader} with adjustments to the file-data parse logic to support
  * how the Hotspot JVM handles parsing jar files.
@@ -107,6 +106,8 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 		lastModFileTime = linkedDirectoryFileHeader.lastModFileTime;
 		lastModFileDate = linkedDirectoryFileHeader.lastModFileDate;
 		crc32 = linkedDirectoryFileHeader.crc32;
+		compressedSize = linkedDirectoryFileHeader.compressedSize;
+		uncompressedSize = linkedDirectoryFileHeader.uncompressedSize;
 		fileNameLength = linkedDirectoryFileHeader.fileNameLength;
 		fileName = linkedDirectoryFileHeader.fileName;
 
@@ -130,11 +131,18 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 				fileDataLength = getCompressedSize() & 0xFFFFFFFFL;
 			}
 
+			// Compute absolute end offset for data.
+			long absoluteDataOffsetStart = offset + relativeDataOffsetStart;
+			long availableDataEnd = data.byteSize();
+			if (relativeDataOffsetEnd > relativeDataOffsetStart)
+				availableDataEnd = Math.min(availableDataEnd, offset + relativeDataOffsetEnd);
+			long absoluteDataOffsetEnd = absoluteDataOffsetStart + fileDataLength;
+
 			// Only allow lengths that are within a sensible range.
-			// Data should not be overflowing into adjacent header entries.
+			// Data should not be overflowing into adjacent header entries or beyond the file bounds.
 			// - If it is, the data here is likely intentionally tampered with to screw with parsers
-			if (fileDataLength < relativeDataOffsetEnd) {
-				fileData = MemorySegmentData.of(MemorySegmentUtil.readLongSlice(data, offset, relativeDataOffsetStart - offset, fileDataLength));
+			if (fileDataLength >= 0 && absoluteDataOffsetStart >= 0 && absoluteDataOffsetEnd <= availableDataEnd) {
+				fileData = MemorySegmentData.of(data, absoluteDataOffsetStart, fileDataLength);
 			}
 		}
 	}

@@ -151,6 +151,21 @@ public class PartParseTests {
 	}
 
 	@Test
+	public void testEocdMisleading() {
+		try {
+			// This sample has a few tricks which historically have causes some problems
+			// for our EOCD detection heuristics. We expect to see the manifest and class file, even though the EOCD is misleading.
+			// There are other 'files' in the jar, but they're junk.
+			ZipArchive zip = ZipIO.readJvm(Paths.get("src/test/resources/sample-eocd-oob.jar"));
+			assertNotNull(zip);
+			assertTrue(hasFile(zip, "META-INF/MANIFEST.MF"));
+			assertTrue(hasFile(zip, "Hello.class/"));
+		} catch (IOException ex) {
+			fail(ex);
+		}
+	}
+
+	@Test
 	public void testLocalHeaderDetectMismatch() {
 		Path path = Paths.get("src/test/resources/hello-secret-0-length-locals.jar");
 
