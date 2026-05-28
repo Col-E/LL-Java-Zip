@@ -14,9 +14,13 @@ import software.coley.lljzip.util.MemorySegmentUtil;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipOutputStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -160,6 +164,34 @@ public class PartParseTests {
 			assertNotNull(zip);
 			assertTrue(hasFile(zip, "META-INF/MANIFEST.MF"));
 			assertTrue(hasFile(zip, "Hello.class/"));
+		} catch (IOException ex) {
+			fail(ex);
+		}
+	}
+
+	@Test
+	public void testZip64ByEntryCount() {
+		// Standard ZIP format has a limit of 65,535 entries.
+		// The sample is a zipped jar with a Zip64 jar inside of it (because its easily compressible data, so why not?)
+		final int entryCount = 70_000;
+		try {
+			// Extract the zip64 jar
+			byte[] zip64bytes;
+			try (ZipFile zip = new ZipFile(Paths.get("src/test/resources/there-is-a-zip64-in-here.zip").toFile())) {
+				zip64bytes = zip.getInputStream(zip.getEntry("lljzip-zip64-4605877303365506557.jar")).readAllBytes();
+			}
+
+			// Both standard/jvm readers should handle all entries in the zip64 jar.
+			try (ZipArchive zipStd = ZipIO.readStandard(zip64bytes);
+			     ZipArchive zipJvm = ZipIO.readJvm(zip64bytes)) {
+				assertEquals(entryCount, zipStd.getCentralDirectories().size());
+				assertEquals(entryCount, zipStd.getLocalFiles().size());
+				assertNotNull(zipStd.getLocalFileByName("E" + (entryCount - 1)));
+
+				assertEquals(entryCount, zipJvm.getCentralDirectories().size());
+				assertEquals(entryCount, zipJvm.getLocalFiles().size());
+				assertNotNull(zipJvm.getLocalFileByName("E" + (entryCount - 1)));
+			}
 		} catch (IOException ex) {
 			fail(ex);
 		}

@@ -17,6 +17,9 @@ import java.util.Objects;
  * @author Matt Coley
  */
 public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
+	// Extra field ID's can be found at: APPNOTE 4.5.2
+	protected static final int EXTRA_FID_ZIP64 = 0x0001;
+
 	// Zip spec elements, common between central/local file headers
 	protected int versionNeededToExtract;
 	protected int generalPurposeBitFlag;
@@ -36,7 +39,8 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 
 	// Data source that contents were read from.
 	protected transient MemorySegment data;
-
+	protected transient boolean zip64CompressedSize;
+	protected transient boolean zip64UncompressedSize;
 
 	/**
 	 * @return The associated backing data that this file header was read from.
@@ -76,6 +80,7 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * @return Used primarily to expand on details of file compression.
 	 */
 	public int getGeneralPurposeBitFlag() {
+		// APPNOTE 4.4.4 for flag bit purposes.
 		return generalPurposeBitFlag;
 	}
 
@@ -169,7 +174,7 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * 		Compressed size of {@link LocalFileHeader#getFileData()}.
 	 */
 	public void setCompressedSize(long compressedSize) {
-		this.compressedSize = compressedSize & 0xFFFFFFFFL;
+		this.compressedSize = compressedSize;
 	}
 
 	/**
@@ -188,7 +193,7 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 * 		Uncompressed size after {@link LocalFileHeader#decompress(Decompressor)} is used on {@link LocalFileHeader#getFileData()}.
 	 */
 	public void setUncompressedSize(long uncompressedSize) {
-		this.uncompressedSize = uncompressedSize & 0xFFFFFFFFL;
+		this.uncompressedSize = uncompressedSize;
 	}
 
 	/**
@@ -264,6 +269,117 @@ public abstract class AbstractZipFileHeader implements ZipPart, ZipRead {
 	 */
 	public String getExtraFieldAsString() {
 		return MemorySegmentUtil.toString(extraField.get());
+	}
+
+	/**
+	 * @return {@code true} when the compressed-size value was hydrated from the ZIP64 extended information extra field.
+	 */
+	protected boolean hasZip64CompressedSize() {
+		return zip64CompressedSize;
+	}
+
+	/**
+	 * @return {@code true} when the uncompressed-size value was hydrated from the ZIP64 extended information extra field.
+	 */
+	protected boolean hasZip64UncompressedSize() {
+		return zip64UncompressedSize;
+	}
+
+	/**
+	 * Reads ZIP64 extended information from the extra field, if present.
+	 *
+	 * @param readRelativeOffset
+	 *        {@code true} to read the relative header offset, {@code false} to skip it.
+	 * @param readDiskStart
+	 *        {@code true} to read the disk start number, {@code false} to skip it.
+	 *
+	 * @return ZIP64 extended information, or an empty instance if not present or invalid.
+	 */
+	@Nonnull
+	protected final Zip64ExtendedInfo readZip64ExtendedInfo(boolean readRelativeOffset, boolean readDiskStart) {
+		zip64CompressedSize = false;
+		zip64UncompressedSize = false;
+		if (extraFieldLength <= 0)
+			return Zip64ExtendedInfo.EMPTY;
+
+		MemorySegment extra = extraField.get();
+		int off = 0;
+		int len = (int) extra.byteSize();
+		while (off + 4 <= len) {
+			// APPNOTE 4.5.3 defines the Zip64 extended information extra field as follows:
+			//  2:  Header ID (0x0001)
+			//  2:  Size of this block
+			//  8:  Size of uncompressed/original data
+			//  8:  Size of compressed data
+			//  8:  Relative header offset (from the start of the first disk)
+			//  4:  Disk start number
+			int tag = MemorySegmentUtil.readWord(extra, off);
+			int size = MemorySegmentUtil.readWord(extra, off + 2);
+			off += 4;
+			if (off + size > len)
+				return Zip64ExtendedInfo.EMPTY;
+			if (tag == EXTRA_FID_ZIP64) {
+				long pos = off;
+				long limit = off + size;
+				long resolvedUncompressedSize = 0L;
+				long resolvedCompressedSize = 0L;
+				long resolvedRelativeOffset = 0L;
+				long resolvedDiskStart = 0L;
+				boolean hasResolvedUncompressedSize = false;
+				boolean hasResolvedCompressedSize = false;
+				boolean hasResolvedRelativeOffset = false;
+				boolean hasResolvedDiskStart = false;
+
+				if (uncompressedSize == 0xFFFFFFFFL) {
+					if (pos + 8L > limit)
+						return Zip64ExtendedInfo.EMPTY;
+					resolvedUncompressedSize = MemorySegmentUtil.readLong(extra, pos);
+					pos += 8L;
+					hasResolvedUncompressedSize = true;
+				}
+				if (compressedSize == 0xFFFFFFFFL) {
+					if (pos + 8L > limit)
+						return Zip64ExtendedInfo.EMPTY;
+					resolvedCompressedSize = MemorySegmentUtil.readLong(extra, pos);
+					pos += 8L;
+					hasResolvedCompressedSize = true;
+				}
+				if (readRelativeOffset) {
+					if (pos + 8L > limit)
+						return Zip64ExtendedInfo.EMPTY;
+					resolvedRelativeOffset = MemorySegmentUtil.readLong(extra, pos);
+					pos += 8L;
+					hasResolvedRelativeOffset = true;
+				}
+				if (readDiskStart) {
+					if (pos + 4L > limit)
+						return Zip64ExtendedInfo.EMPTY;
+					resolvedDiskStart = MemorySegmentUtil.readMaskedLongQuad(extra, pos, 0);
+					hasResolvedDiskStart = true;
+				}
+
+				if (hasResolvedUncompressedSize)
+					zip64UncompressedSize = true;
+				if (hasResolvedCompressedSize)
+					zip64CompressedSize = true;
+
+				return new Zip64ExtendedInfo(
+						hasResolvedUncompressedSize, resolvedUncompressedSize,
+						hasResolvedCompressedSize, resolvedCompressedSize,
+						hasResolvedRelativeOffset, resolvedRelativeOffset,
+						hasResolvedDiskStart, resolvedDiskStart
+				);
+			}
+			off += size;
+		}
+		return Zip64ExtendedInfo.EMPTY;
+	}
+
+	protected record Zip64ExtendedInfo(boolean hasUncompressedSize, long uncompressedSize,
+	                                   boolean hasCompressedSize, long compressedSize,
+	                                   boolean hasRelativeOffset, long relativeOffset,
+	                                   boolean hasDiskStart, long diskStart) {
+		protected static final Zip64ExtendedInfo EMPTY = new Zip64ExtendedInfo(false, 0L, false, 0L, false, 0L, false, 0L);
 	}
 
 	@Override

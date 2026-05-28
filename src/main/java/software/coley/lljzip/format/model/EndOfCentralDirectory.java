@@ -160,7 +160,7 @@ public class EndOfCentralDirectory implements ZipPart, ZipRead {
 	 * 		Size of central directory in bytes, or {@code 0xFFFFFFFF} for ZIP64.
 	 */
 	public void setCentralDirectorySize(long centralDirectorySize) {
-		this.centralDirectorySize = centralDirectorySize & 0xFFFFFFFFL;
+		this.centralDirectorySize = centralDirectorySize;
 	}
 
 	/**
@@ -177,7 +177,7 @@ public class EndOfCentralDirectory implements ZipPart, ZipRead {
 	 *        {@link #getCentralDirectoryStartDisk() starting disk number}, or {@code 0xFFFFFFFF} for ZIP64.
 	 */
 	public void setCentralDirectoryOffset(long centralDirectoryOffset) {
-		this.centralDirectoryOffset = centralDirectoryOffset & 0xFFFFFFFFL;
+		this.centralDirectoryOffset = centralDirectoryOffset;
 	}
 
 	/**

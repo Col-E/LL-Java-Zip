@@ -44,6 +44,22 @@ public interface ZipPatterns {
 	 */
 	int END_OF_CENTRAL_DIRECTORY_QUAD = 0x06_05_4B_50;
 	/**
+	 * Header for the ZIP64 end of central directory record.
+	 */
+	int[] ZIP64_END_OF_CENTRAL_DIRECTORY = {0x50, 0x4B, 0x06, 0x06};
+	/**
+	 * Header for the ZIP64 end of central directory record, as a {@code s4/quad/int}
+	 */
+	int ZIP64_END_OF_CENTRAL_DIRECTORY_QUAD = 0x06_06_4B_50;
+	/**
+	 * Header for the ZIP64 end of central directory locator.
+	 */
+	int[] ZIP64_END_OF_CENTRAL_DIRECTORY_LOCATOR = {0x50, 0x4B, 0x06, 0x07};
+	/**
+	 * Header for the ZIP64 end of central directory locator, as a {@code s4/quad/int}
+	 */
+	int ZIP64_END_OF_CENTRAL_DIRECTORY_LOCATOR_QUAD = 0x07_06_4B_50;
+	/**
 	 * Optional header for the data descriptor section
 	 */
 	int[] DATA_DESCRIPTOR = {0x08, 0x07, 0x4b, 0x50};

@@ -102,6 +102,19 @@ public class LocalFileHeader extends AbstractZipFileHeader {
 			throw new ZipParseException(t, ZipParseException.Type.OTHER);
 		}
 		try {
+			// Optional zip64 extended information extra field.
+			// We return an 'empty' model when the field is not present, so we can check for the presence of values.
+			Zip64ExtendedInfo zip64 = readZip64ExtendedInfo(false, false);
+			if (zip64.hasCompressedSize())
+				compressedSize = zip64.compressedSize();
+			if (zip64.hasUncompressedSize())
+				uncompressedSize = zip64.uncompressedSize();
+		} catch (IndexOutOfBoundsException ex) {
+			throw new ZipParseException(ex, ZipParseException.Type.IOOBE_FILE_EXTRA);
+		} catch (Throwable t) {
+			throw new ZipParseException(t, ZipParseException.Type.OTHER);
+		}
+		try {
 			fileData = readFileData(data, offset);
 		} catch (IndexOutOfBoundsException ex) {
 			throw new ZipParseException(ex, ZipParseException.Type.IOOBE_FILE_DATA);

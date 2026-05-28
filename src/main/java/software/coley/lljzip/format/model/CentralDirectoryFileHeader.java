@@ -48,6 +48,8 @@ public class CentralDirectoryFileHeader extends AbstractZipFileHeader {
 	private int internalFileAttributes;
 	private int externalFileAttributes;
 	private long relativeOffsetOfLocalHeader;
+	private transient boolean zip64RelativeOffsetOfLocalHeader;
+	private transient long zip64DiskNumberStart = -1L;
 
 	/**
 	 * @return Copy.
@@ -114,6 +116,28 @@ public class CentralDirectoryFileHeader extends AbstractZipFileHeader {
 		}
 		try {
 			extraField = MemorySegmentData.of(data, offset + 46 + fileNameLength, extraFieldLength);
+		} catch (IndexOutOfBoundsException ex) {
+			throw new ZipParseException(ex, ZipParseException.Type.IOOBE_FILE_EXTRA);
+		} catch (Throwable t) {
+			throw new ZipParseException(t, ZipParseException.Type.OTHER);
+		}
+		try {
+			// Optional zip64 extended information extra field.
+			// We return an 'empty' model when the field is not present, so we can check for the presence of values.
+			Zip64ExtendedInfo zip64 = readZip64ExtendedInfo(relativeOffsetOfLocalHeader == 0xFFFFFFFFL, diskNumberStart == 0xFFFF);
+			zip64RelativeOffsetOfLocalHeader = zip64.hasRelativeOffset();
+			zip64DiskNumberStart = zip64.hasDiskStart() ? zip64.diskStart() : -1L;
+			if (zip64.hasCompressedSize())
+				compressedSize = zip64.compressedSize();
+			if (zip64.hasUncompressedSize())
+				uncompressedSize = zip64.uncompressedSize();
+			if (zip64.hasRelativeOffset())
+				relativeOffsetOfLocalHeader = zip64.relativeOffset();
+			if (zip64.hasDiskStart()) {
+				if (zip64.diskStart() > Integer.MAX_VALUE)
+					throw new IndexOutOfBoundsException("ZIP64 disk start exceeds supported range");
+				diskNumberStart = (int) zip64.diskStart();
+			}
 		} catch (IndexOutOfBoundsException ex) {
 			throw new ZipParseException(ex, ZipParseException.Type.IOOBE_FILE_EXTRA);
 		} catch (Throwable t) {
@@ -275,7 +299,21 @@ public class CentralDirectoryFileHeader extends AbstractZipFileHeader {
 	 * 		This should also be where the {@link LocalFileHeader} is located.  Or {@code 0xFFFFFFFF} for ZIP64.
 	 */
 	public void setRelativeOffsetOfLocalHeader(long relativeOffsetOfLocalHeader) {
-		this.relativeOffsetOfLocalHeader = relativeOffsetOfLocalHeader & 0xFFFFFFFFL;
+		this.relativeOffsetOfLocalHeader = relativeOffsetOfLocalHeader;
+	}
+
+	/**
+	 * @return {@code true} when the local-header offset was hydrated from the ZIP64 extended information extra field.
+	 */
+	public boolean hasZip64RelativeOffsetOfLocalHeader() {
+		return zip64RelativeOffsetOfLocalHeader;
+	}
+
+	/**
+	 * @return ZIP64 disk-start value when present, otherwise {@code -1}.
+	 */
+	public long getZip64DiskNumberStart() {
+		return zip64DiskNumberStart;
 	}
 
 	/**

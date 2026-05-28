@@ -16,6 +16,7 @@ public class MemorySegmentUtil {
 	public static final int WILDCARD = Integer.MIN_VALUE;
 	public static final MemorySegment EMPTY = MemorySegment.ofArray(new byte[0]);
 	private static final ValueLayout.OfInt LITTLE_INT = ValueLayout.JAVA_INT_UNALIGNED.withOrder(ByteOrder.LITTLE_ENDIAN);
+	private static final ValueLayout.OfLong LITTLE_LONG = ValueLayout.JAVA_LONG_UNALIGNED.withOrder(ByteOrder.LITTLE_ENDIAN);
 	private static final ValueLayout.OfShort LITTLE_SHORT = ValueLayout.JAVA_SHORT_UNALIGNED.withOrder(ByteOrder.LITTLE_ENDIAN);
 
 	/**
@@ -257,6 +258,18 @@ public class MemorySegmentUtil {
 	/**
 	 * @param data
 	 * 		Content to read from.
+	 * @param i
+	 * 		Index to read long from.
+	 *
+	 * @return Value of long.
+	 */
+	public static long readLong(MemorySegment data, long i) {
+		return data.get(LITTLE_LONG, i);
+	}
+
+	/**
+	 * @param data
+	 * 		Content to read from.
 	 * @param start
 	 * 		Start position of string.
 	 * @param len
@@ -377,6 +390,20 @@ public class MemorySegmentUtil {
 	 */
 	public static long readMaskedLongQuad(MemorySegment data, long headerOffset, int localOffset) {
 		return readQuad(data, headerOffset + localOffset) & 0xFFFFFFFFL;
+	}
+
+	/**
+	 * @param data
+	 * 		Content to get long from.
+	 * @param headerOffset
+	 * 		Offset of {@link ZipPart} header.
+	 * @param localOffset
+	 * 		Local offset from the header offset.
+	 *
+	 * @return Value of long.
+	 */
+	public static long readLong(MemorySegment data, long headerOffset, int localOffset) {
+		return readLong(data, headerOffset + localOffset);
 	}
 
 	/**

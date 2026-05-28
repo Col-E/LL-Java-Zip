@@ -54,13 +54,19 @@ public class ForwardScanZipReader extends AbstractZipReader {
 		end.read(data, endOfCentralDirectoryOffset);
 		zip.addPart(end);
 
-		// Used for relative offsets as a base.
-		long zipStart = MemorySegmentUtil.indexOfQuad(data, 0, ZipPatterns.LOCAL_FILE_HEADER_QUAD);
+		// Read central directories only within the resolved END/CEN bounds.
+		Zip64Support.ResolvedEnd resolvedEnd = Zip64Support.resolveEndOfCentralDirectory(data, end);
+		long centralDirectoryOffset = resolvedEnd.centralDirectoryStart();
+		long centralDirectoryEnd = resolvedEnd.centralDirectoryEnd();
+		while (centralDirectoryOffset < centralDirectoryEnd) {
+			long remaining = centralDirectoryEnd - centralDirectoryOffset;
+			if (remaining < CentralDirectoryFileHeader.MIN_FIXED_SIZE)
+				throw new IOException("Invalid central directory: remaining bytes[" + remaining +
+						"] less than minimum header size at offset[" + centralDirectoryOffset + "]");
+			if (MemorySegmentUtil.readQuad(data, centralDirectoryOffset) != ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER_QUAD)
+				throw new IOException("Invalid central directory header signature at offset[" + centralDirectoryOffset + "]");
 
-		// Read central directories
-		long len = data.byteSize();
-		long centralDirectoryOffset = zipStart + end.getCentralDirectoryOffset();
-		while (centralDirectoryOffset < len && MemorySegmentUtil.readQuad(data, centralDirectoryOffset) == ZipPatterns.CENTRAL_DIRECTORY_FILE_HEADER_QUAD) {
+			// Read and add the CEN, aborting if it cannot be read.
 			CentralDirectoryFileHeader directory = new CentralDirectoryFileHeader();
 			try {
 				directory.read(data, centralDirectoryOffset);
@@ -68,17 +74,27 @@ public class ForwardScanZipReader extends AbstractZipReader {
 				// When the CEN cannot be read, we can't recover
 				throw new IOException(ex);
 			}
-			centralDirectoryOffset += directory.length();
+
+			// Find the next offset, ensuring it doesn't exceed the bounds of the central directory.
+			long nextOffset = centralDirectoryOffset + directory.length();
+			if (nextOffset > centralDirectoryEnd)
+				throw new IOException("Invalid central directory length at offset[" + centralDirectoryOffset + "]");
+			centralDirectoryOffset = nextOffset;
 			zip.addPart(directory);
 		}
+
+		// Debugging check to ensure we ended up at the expected end of the central directory.
+		//  if (centralDirectoryOffset != centralDirectoryEnd)
+		//    throw new IOException("Invalid central directory bounds");
 
 		// Read local files
 		// - Set to prevent duplicate file header entries for the same offset
 		NavigableSet<Long> offsets = new TreeSet<>();
 		for (CentralDirectoryFileHeader directory : zip.getCentralDirectories()) {
-			long offset = zipStart + directory.getRelativeOffsetOfLocalHeader();
+			long offset = resolvedEnd.baseOffset() + directory.getRelativeOffsetOfLocalHeader();
 			if (!offsets.contains(offset)
-					&& offset < data.byteSize()
+					&& offset >= 0L
+					&& offset <= data.byteSize() - LocalFileHeader.MIN_FIXED_SIZE
 					&& MemorySegmentUtil.readQuad(data, offset) == ZipPatterns.LOCAL_FILE_HEADER_QUAD) {
 				LocalFileHeader file = newLocalFileHeader();
 				directory.link(file);

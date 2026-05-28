@@ -88,7 +88,7 @@ public class JvmZipReader extends AbstractZipReader {
 		long len = data.byteSize();
 
 		// Parse central-directory entries only inside the END-declared bounds we just validated.
-		readCentralDirectories(zip, data, endInfo.centralDirectoryStart(), endOfCentralDirectoryOffset);
+		readCentralDirectories(zip, data, endInfo.centralDirectoryStart(), endInfo.centralDirectoryEnd());
 		long jvmBaseFileOffset = endInfo.baseOffset();
 
 		// If the END-derived base offset does not appear usable, fall back to the older local-header scan.
@@ -195,14 +195,25 @@ public class JvmZipReader extends AbstractZipReader {
 		long fileLength = data.byteSize();
 		long minOffset = Math.max(0L, fileLength - MAX_END_SEARCH);
 		long offset = MemorySegmentUtil.lastIndexOfQuad(data, fileLength - 4, ZipPatterns.END_OF_CENTRAL_DIRECTORY_QUAD);
+		IOException deferredFailure = null;
 
 		// Walk backward through every candidate in the legal END search window until one validates.
 		while (offset >= minOffset && offset >= 0L) {
-			EndInfo endInfo = tryReadEndOfCentralDirectory(data, offset);
+			EndInfo endInfo;
+			try {
+				endInfo = tryReadEndOfCentralDirectory(data, offset);
+			} catch (IOException ex) {
+				if (deferredFailure == null || ex.getMessage().contains("Split or multi-disk"))
+					deferredFailure = ex;
+				offset = MemorySegmentUtil.lastIndexOfQuad(data, offset - 1L, ZipPatterns.END_OF_CENTRAL_DIRECTORY_QUAD);
+				continue;
+			}
 			if (endInfo != null)
 				return endInfo;
 			offset = MemorySegmentUtil.lastIndexOfQuad(data, offset - 1L, ZipPatterns.END_OF_CENTRAL_DIRECTORY_QUAD);
 		}
+		if (deferredFailure != null)
+			throw deferredFailure;
 		throw new IOException("No valid End-Of-Central-Directory found!");
 	}
 
@@ -222,7 +233,7 @@ public class JvmZipReader extends AbstractZipReader {
 	 * @return Validated END information, or {@code null} when the candidate is bogus.
 	 */
 	@Nullable
-	private EndInfo tryReadEndOfCentralDirectory(@Nonnull MemorySegment data, long offset) {
+	private EndInfo tryReadEndOfCentralDirectory(@Nonnull MemorySegment data, long offset) throws IOException {
 		EndOfCentralDirectory end = newEndOfCentralDirectory();
 		try {
 			// Decode the END fields first; many bogus matches fail immediately on bounds checks.
@@ -231,21 +242,21 @@ public class JvmZipReader extends AbstractZipReader {
 			return null;
 		}
 
+		// Prefer the normal EOF-aligned case, but fall back to structural validation for suspicious matches.
 		long fileLength = data.byteSize();
 		long archiveEnd = offset + EndOfCentralDirectory.END_HEADER_LENGTH + end.getZipCommentLength();
-		boolean exactEndMatch = archiveEnd == fileLength;
-
-		// Prefer the normal EOF-aligned case, but fall back to structural validation for suspicious matches.
-		if (!exactEndMatch && !isValidEndHeader(data, offset, end.getCentralDirectorySize(), end.getCentralDirectoryOffset(), end.getNumEntries()))
+		Zip64Support.ResolvedEnd resolvedEnd = Zip64Support.resolveEndOfCentralDirectory(data, end);
+		if (archiveEnd != fileLength && !isValidEndHeader(data, resolvedEnd.centralDirectoryEnd(), end.getCentralDirectorySize(),
+				end.getCentralDirectoryOffset(), end.getNumEntries()))
 			return null;
 
 		// Convert the validated END fields into absolute offsets for bounded CEN/LOC parsing.
-		long centralDirectoryStart = offset - end.getCentralDirectorySize();
-		long baseOffset = centralDirectoryStart - end.getCentralDirectoryOffset();
-		if (centralDirectoryStart < 0L || centralDirectoryStart > offset)
+		long centralDirectoryStart = resolvedEnd.centralDirectoryStart();
+		long baseOffset = resolvedEnd.baseOffset();
+		if (centralDirectoryStart < 0L || centralDirectoryStart > resolvedEnd.centralDirectoryEnd())
 			return null;
 
-		return new EndInfo(end, centralDirectoryStart, baseOffset);
+		return new EndInfo(end, centralDirectoryStart, baseOffset, resolvedEnd.centralDirectoryEnd());
 	}
 
 	/**
@@ -263,7 +274,7 @@ public class JvmZipReader extends AbstractZipReader {
 	 * @param data
 	 * 		ZIP bytes.
 	 * @param endPos
-	 * 		Offset of the candidate END record.
+	 * 		Exclusive upper bound of the central-directory range.
 	 * @param centralDirectorySize
 	 * 		CEN byte length declared by the candidate END.
 	 * @param centralDirectoryOffset
@@ -321,7 +332,7 @@ public class JvmZipReader extends AbstractZipReader {
 	 * @param centralDirectoryStart
 	 * 		Absolute start of the CEN block, derived from the validated END.
 	 * @param endOffset
-	 * 		Absolute start of the END record, used as the exclusive upper bound for CEN parsing.
+	 * 		Exclusive upper bound for CEN parsing.
 	 *
 	 * @throws IOException
 	 * 		When any CEN entry falls outside the validated bounds or cannot be decoded.
@@ -433,5 +444,18 @@ public class JvmZipReader extends AbstractZipReader {
 		return null;
 	}
 
-	private record EndInfo(@Nonnull EndOfCentralDirectory end, long centralDirectoryStart, long baseOffset) {}
+	/**
+	 * Internal carrier for a validated END record and the absolute bounds derived from it.
+	 *
+	 * @param end
+	 * 		Legacy END record accepted by validation.
+	 * @param centralDirectoryStart
+	 * 		Absolute start offset of the central-directory block.
+	 * @param baseOffset
+	 * 		Base file offset used to translate CEN-relative local-header offsets.
+	 * @param centralDirectoryEnd
+	 * 		Exclusive upper bound of the central-directory block.
+	 */
+	private record EndInfo(@Nonnull EndOfCentralDirectory end, long centralDirectoryStart,
+	                       long baseOffset, long centralDirectoryEnd) {}
 }

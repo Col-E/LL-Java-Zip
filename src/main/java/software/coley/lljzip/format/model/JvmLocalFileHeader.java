@@ -39,35 +39,16 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 		long relativeDataOffsetEnd;
 		Long absoluteDataOffsetEnd = offsets.ceiling(offset + relativeDataOffsetStart);
 
-		// While we do scan to the next header, we need to consider the optional data-descriptor component.
-		// If it is present, the end range of the data should be cut by 16 bytes (the size of the data-descriptor)
+		// When the local header exposes a trustworthy size (including ZIP64 extra values), use it
+		// directly and leave any trailing data descriptor outside the file-data slice.
 		//
-		// Per section 4.3.9 of the zip file spec:
-		//      This descriptor MUST exist if bit 3 of the general purpose bit flag is set.
-		//      It is byte aligned and immediately follows the last byte of compressed data.
-		//      This descriptor SHOULD be used only when it was not possible to
-		//      seek in the output ZIP file (output can be std-out, or non-seekable device)
-		//
-		// Thus, we subtract the length of the data descriptor section from the data end offset.
+ 		// For descriptor info see APPNOTE 4.3.9
 		if (absoluteDataOffsetEnd != null && (getGeneralPurposeBitFlag() & 0b1000) == 0b1000) {
-			// Format:
-			//  data-descriptor-header  4 bytes 08 07 4b 50
-			//  crc-32                  4 bytes
-			//  compressed size         4 bytes
-			//  uncompressed size       4 bytes
-			//
-			// The JVM technically allows the header to be excluded, so we split the offset fixing
-			// into two parts.
-			//
-			// In some WEIRD cases the bit flag can be set, but the data-descriptor will be missing.
-			// When this occurs we can validate the range is currently correct by checking if the data end offset
-			// is the beginning of another file header. If we find the file header, the bit flag is a lie,
-			// and we do not need to manipulate our data end offset.
-			if ((MemorySegmentUtil.readWord(data, absoluteDataOffsetEnd) & ZipPatterns.PK_WORD) != ZipPatterns.PK_WORD) {
-				absoluteDataOffsetEnd -= 12;
-				if (MemorySegmentUtil.readQuad(data, absoluteDataOffsetEnd) == ZipPatterns.DATA_DESCRIPTOR_QUAD) {
-					absoluteDataOffsetEnd -= 4;
-				}
+			long explicitFileDataLength = getExplicitFileDataLength();
+			if (explicitFileDataLength >= 0L) {
+				long candidateDataEnd = offset + relativeDataOffsetStart + explicitFileDataLength;
+				if (candidateDataEnd <= absoluteDataOffsetEnd)
+					absoluteDataOffsetEnd = candidateDataEnd;
 			}
 		}
 		relativeDataOffsetEnd = absoluteDataOffsetEnd == null ? relativeDataOffsetStart : absoluteDataOffsetEnd - offset;
@@ -91,6 +72,11 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 		// Whether its valid, who really knows?
 		foundData = fileDataLength != 0;
 		return fileData;
+	}
+
+	private long getExplicitFileDataLength() {
+		long length = getCompressionMethod() == ZipCompressions.STORED ? getUncompressedSize() : getCompressedSize();
+		return length > 0L ? length : -1L;
 	}
 
 	@Override
@@ -117,33 +103,38 @@ public class JvmLocalFileHeader extends LocalFileHeader {
 		//   compressedSize = directoryFileHeader.compressedSize;
 		//   uncompressedSize = directoryFileHeader.uncompressedSize;
 		//
-		// That being said, we want a fallback if no data is found.
-		// This may occur if something with offset detection fails.
-		//
-		// Update file data with new compressed/uncompressed size if it was not able to be found previously
-		// with only the local data available.
-		if (!foundData) {
-			// Extract updated length from CEN values
-			long fileDataLength;
-			if (getCompressionMethod() == ZipCompressions.STORED) {
-				fileDataLength = getUncompressedSize() & 0xFFFFFFFFL;
-			} else {
-				fileDataLength = getCompressedSize() & 0xFFFFFFFFL;
-			}
+		// Update file data with authoritative CEN sizes when the current range is missing or includes a descriptor.
+		long fileDataLength;
+		if (getCompressionMethod() == ZipCompressions.STORED) {
+			fileDataLength = getUncompressedSize();
+		} else {
+			fileDataLength = getCompressedSize();
+		}
 
-			// Compute absolute end offset for data.
-			long absoluteDataOffsetStart = offset + relativeDataOffsetStart;
-			long availableDataEnd = data.byteSize();
-			if (relativeDataOffsetEnd > relativeDataOffsetStart)
-				availableDataEnd = Math.min(availableDataEnd, offset + relativeDataOffsetEnd);
-			long absoluteDataOffsetEnd = absoluteDataOffsetStart + fileDataLength;
+		// Get the absolute data offsets and bounds for the file data.
+		// Ensure the data range is within the file.
+		long absoluteDataOffsetStart = offset + relativeDataOffsetStart;
+		long availableDataEnd = data.byteSize();
+		if (relativeDataOffsetEnd > relativeDataOffsetStart)
+			availableDataEnd = Math.min(availableDataEnd, offset + relativeDataOffsetEnd);
+		long absoluteDataOffsetEnd = absoluteDataOffsetStart + fileDataLength;
 
-			// Only allow lengths that are within a sensible range.
-			// Data should not be overflowing into adjacent header entries or beyond the file bounds.
-			// - If it is, the data here is likely intentionally tampered with to screw with parsers
-			if (fileDataLength >= 0 && absoluteDataOffsetStart >= 0 && absoluteDataOffsetEnd <= availableDataEnd) {
-				fileData = MemorySegmentData.of(data, absoluteDataOffsetStart, fileDataLength);
-			}
+		// If we see any of the following conditions:
+		//  - We didn't find any data
+		//  - The general purpose bit flag indicates a data descriptor is present
+		//  - The file data length doesn't match the expected length
+		// Then we should realign the file data range to match the authoritative CEN sizes,
+		// as what we have is invalid.
+		boolean shouldRealignDataRange = !foundData ||
+				(getGeneralPurposeBitFlag() & 0b1000) == 0b1000 ||
+				fileData.length() != fileDataLength;
+		if (shouldRealignDataRange
+				&& fileDataLength >= 0L
+				&& absoluteDataOffsetStart >= 0L
+				&& absoluteDataOffsetEnd <= availableDataEnd) {
+			fileData = MemorySegmentData.of(data, absoluteDataOffsetStart, fileDataLength);
+			relativeDataOffsetEnd = relativeDataOffsetStart + fileDataLength;
+			foundData = fileDataLength != 0L;
 		}
 	}
 }
