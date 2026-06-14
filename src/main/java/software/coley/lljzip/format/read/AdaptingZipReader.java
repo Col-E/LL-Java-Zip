@@ -38,7 +38,7 @@ public class AdaptingZipReader implements ZipReader {
 					int copyable = (int) Math.min(BUFFER_SIZE, length - offset);
 					MemorySegment.copy(data, offset, wrapper, 0, copyable);
 					os.write(buf, 0, copyable);
-					offset += length;
+					offset += copyable;
 				}
 			}
 			fill(zip, temp);
